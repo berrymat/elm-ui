@@ -103,4 +103,4 @@ fetchContent container headerData =
                 [ Cmd.map ContentMsg cmdContent
                 ]
     in
-        ( { container | headerInfo = newHeaderInfo }, cmdBatch )
+        ( { container | headerInfo = newHeaderInfo, tab = updatedTab }, cmdBatch )
