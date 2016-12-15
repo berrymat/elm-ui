@@ -1,16 +1,13 @@
 module Header.Messages exposing (..)
 
-import Http
 import Header.Models exposing (..)
 import RemoteData exposing (..)
-import Tree.Models exposing (NodeId, NodeType)
 import Ui.DropdownMenu
 import Ui.Modal
 
 
 type Msg
-    = FetchHeader NodeType NodeId
-    | HeaderResponse (WebData HeaderData)
+    = HeaderResponse (WebData HeaderData)
     | ActionMenu Ui.DropdownMenu.Msg
     | CloseActionMenu
     | NoAction

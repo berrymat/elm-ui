@@ -11,6 +11,7 @@ import Erl
 import Http
 import Json.Decode as Decode exposing (field)
 import HttpBuilder exposing (..)
+import RemoteData exposing (fromResult)
 
 
 {-
@@ -26,7 +27,7 @@ authenticate username password nodeType nodeId =
     HttpBuilder.get (authenticateUrl username password)
         |> withExpect (Http.expectJson (authenticateDecoder nodeType nodeId))
         |> withCredentials
-        |> send OnAuthenticate
+        |> send (OnAuthenticate << RemoteData.fromResult)
 
 
 authenticateUrl : String -> String -> String
@@ -46,7 +47,15 @@ authenticateDecoder nodeType nodeId =
         Decode.string
 
 
-fetchInitialData : NodeType -> NodeId -> Container -> Cmd Msg
+fetchIfAuthorized : Container -> AuthResult -> ( Container, Cmd Msg )
+fetchIfAuthorized container authResult =
+    if authResult.result == "OK" then
+        fetchInitialData authResult.nodeType authResult.nodeId container
+    else
+        ( container, Cmd.none )
+
+
+fetchInitialData : NodeType -> NodeId -> Container -> ( Container, Cmd Msg )
 fetchInitialData nodeType nodeId container =
     let
         treeCmd =
@@ -55,10 +64,13 @@ fetchInitialData nodeType nodeId container =
             else
                 Cmd.none
 
-        headerCmd =
+        ( newHeaderInfo, subCmd ) =
             if (isHeaderEmpty container.headerInfo) then
-                Cmd.map HeaderMsg (Header.Commands.fetchHeader nodeType nodeId)
+                Header.Commands.fetchHeader container.headerInfo nodeType nodeId
             else
-                Cmd.none
+                ( container.headerInfo, Cmd.none )
+
+        headerCmd =
+            Cmd.map HeaderMsg subCmd
     in
-        Cmd.batch [ treeCmd, headerCmd ]
+        ( { container | headerInfo = newHeaderInfo }, Cmd.batch [ treeCmd, headerCmd ] )

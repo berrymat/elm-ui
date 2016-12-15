@@ -15,13 +15,6 @@ update message headerInfo =
             headerInfo.ui
     in
         case message of
-            FetchHeader nodeType nodeId ->
-                let
-                    cmd =
-                        fetchHeader nodeType nodeId
-                in
-                    ( { headerInfo | data = Loading }, cmd )
-
             HeaderResponse newHeaderData ->
                 ( { headerInfo | data = newHeaderData }, Cmd.none )
 

@@ -1,40 +1,47 @@
 module Header.Commands exposing (..)
 
-import Http
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Header.Messages exposing (..)
 import Header.Models exposing (..)
 import Tree.Models exposing (NodeType(..), NodeId)
-import Ui.DropdownMenu
 import Helpers.Helpers exposing (apiUrl, fetcher)
-import HttpBuilder exposing (..)
 import RemoteData exposing (..)
 
 
-fetchHeader : NodeType -> NodeId -> Cmd Msg
-fetchHeader nodeType nodeId =
-    if nodeId /= "" then
-        case nodeType of
-            RootType ->
-                fetchRoot nodeId
+fetchHeader : HeaderInfo -> NodeType -> NodeId -> ( HeaderInfo, Cmd Msg )
+fetchHeader headerInfo nodeType nodeId =
+    let
+        cmd =
+            if nodeId /= "" && nodeId /= (headerId headerInfo) then
+                case nodeType of
+                    RootType ->
+                        fetchRoot nodeId
 
-            CustomerType ->
-                fetchCustomer nodeId
+                    CustomerType ->
+                        fetchCustomer nodeId
 
-            ClientType ->
-                fetchClient nodeId
+                    ClientType ->
+                        fetchClient nodeId
 
-            SiteType ->
-                fetchSite nodeId
+                    SiteType ->
+                        fetchSite nodeId
 
-            StaffType ->
-                fetchStaff nodeId
+                    StaffType ->
+                        fetchStaff nodeId
 
-            FolderType ->
+                    FolderType ->
+                        Cmd.none
+            else
                 Cmd.none
-    else
-        Cmd.none
+
+        newData =
+            if cmd /= Cmd.none then
+                Loading
+            else
+                headerInfo.data
+    in
+        ( { headerInfo | data = newData }, cmd )
 
 
 fetchRoot : NodeId -> Cmd Msg

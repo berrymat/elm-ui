@@ -12,6 +12,7 @@ import Header.Update
 import Content.Commands
 import Content.Update
 import Navigation
+import RemoteData
 
 
 updatePathFromTree : Container -> Tree -> Cmd Tree.Messages.Msg -> List Node -> ( Container, Cmd Msg )
@@ -28,12 +29,11 @@ updatePathFromTree container updatedTree cmdTree path =
                 Nothing ->
                     ( container.tree.id, container.tree.nodeType )
 
+        ( newHeaderInfo, subMsg ) =
+            Header.Commands.fetchHeader container.headerInfo headerType headerId
+
         cmdHeader =
-            if headerId /= (Header.Models.headerId container.headerInfo) then
-                Header.Commands.fetchHeader headerType headerId
-                    |> Cmd.map HeaderMsg
-            else
-                Cmd.none
+            Cmd.map HeaderMsg subMsg
 
         cmdBatch =
             Cmd.batch
@@ -41,7 +41,7 @@ updatePathFromTree container updatedTree cmdTree path =
                 , cmdHeader
                 ]
     in
-        ( { container | tree = updatedTree, path = path }, cmdBatch )
+        ( { container | tree = updatedTree, path = path, headerInfo = newHeaderInfo }, cmdBatch )
 
 
 update : Msg -> Container -> ( Container, Cmd Msg )
@@ -52,14 +52,9 @@ update message container =
             , Navigation.newUrl "#container/customer/path/Customer-46-Client"
             )
 
-        OnAuthenticate (Ok result) ->
-            if result.result == "OK" then
-                ( container, fetchInitialData result.nodeType result.nodeId container )
-            else
-                ( container, Cmd.none )
-
-        OnAuthenticate (Err error) ->
-            ( container, Cmd.none )
+        OnAuthenticate result ->
+            RemoteData.map (fetchIfAuthorized container) result
+                |> RemoteData.withDefault ( container, Cmd.none )
 
         SelectPath nodeId ->
             let

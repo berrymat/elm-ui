@@ -6,12 +6,12 @@ import Header.Models exposing (..)
 import Tree.Messages
 import Header.Messages
 import Content.Messages
-import Http
+import RemoteData exposing (WebData)
 
 
 type Msg
     = ShowContainer
-    | OnAuthenticate (Result Http.Error AuthResult)
+    | OnAuthenticate (WebData AuthResult)
     | SelectPath NodeId
     | SelectTab TabType
     | TreeMsg Tree.Messages.Msg
