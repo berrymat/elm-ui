@@ -2,7 +2,7 @@ module Header.View exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Header.Messages exposing (..)
+import Container.Messages exposing (..)
 import Header.Models exposing (..)
 import Header.Root.View exposing (headerRoot)
 import Header.Customer.View exposing (headerCustomer)

@@ -2,7 +2,7 @@ module Header.Commands exposing (..)
 
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
-import Header.Messages exposing (..)
+import Container.Messages exposing (..)
 import Header.Models exposing (..)
 import Tree.Models exposing (NodeType(..), NodeId)
 import Helpers.Helpers exposing (apiUrl, fetcher)

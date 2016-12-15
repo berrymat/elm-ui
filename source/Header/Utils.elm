@@ -3,7 +3,7 @@ module Header.Utils exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Header.Models exposing (..)
-import Header.Messages exposing (..)
+import Container.Messages exposing (..)
 
 
 headerItem : String -> String -> AccessType -> Maybe String -> Html Msg

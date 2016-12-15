@@ -21,9 +21,7 @@ view container =
                 (Tree.View.view container.tree)
             ]
         , div [ class "body" ]
-            [ Html.map
-                HeaderMsg
-                (Header.View.view container.headerInfo)
+            [ Header.View.view container.headerInfo
             , div [ class "body-path" ]
                 [ viewPath container
                 , viewTabs container
