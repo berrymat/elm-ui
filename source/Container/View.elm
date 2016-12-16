@@ -5,7 +5,7 @@ import Html.Attributes exposing (class, style, attribute, href, id, classList, s
 import Html.Events exposing (onClick)
 import Container.Messages exposing (..)
 import Container.Models exposing (..)
-import Header.Models exposing (..)
+import Helpers.Models exposing (..)
 import Tree.View
 import Header.View
 import Content.View

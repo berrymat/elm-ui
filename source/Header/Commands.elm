@@ -2,10 +2,11 @@ module Header.Commands exposing (..)
 
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
+import Json.Encode as Encode
 import Container.Messages exposing (..)
 import Header.Models exposing (..)
-import Tree.Models exposing (NodeType(..), NodeId)
-import Helpers.Helpers exposing (apiUrl, fetcher)
+import Helpers.Models exposing (..)
+import Helpers.Helpers exposing (apiUrl, fetcher, putter)
 import RemoteData exposing (..)
 
 
@@ -44,9 +45,36 @@ fetchHeader headerInfo nodeType nodeId =
         ( { headerInfo | data = newData }, cmd )
 
 
+putHeader : NodeId -> HeaderData -> Cmd Msg
+putHeader nodeId data =
+    case data.header of
+        RootHeader root ->
+            putRoot nodeId root
+
+        CustomerHeader customer ->
+            putCustomer nodeId customer
+
+        ClientHeader client ->
+            putClient nodeId client
+
+        SiteHeader site ->
+            putSite nodeId site
+
+        StaffHeader staff ->
+            putStaff nodeId staff
+
+        Empty ->
+            Cmd.none
+
+
 fetchRoot : NodeId -> Cmd Msg
 fetchRoot nodeId =
     fetcher (rootUrl nodeId) rootDecoder (HeaderResponse << RemoteData.fromResult)
+
+
+putRoot : NodeId -> Root -> Cmd Msg
+putRoot nodeId root =
+    putter (rootUrl nodeId) (encodeRoot root) rootDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 fetchCustomer : NodeId -> Cmd Msg
@@ -54,9 +82,19 @@ fetchCustomer nodeId =
     fetcher (customerUrl nodeId) customerDecoder (HeaderResponse << RemoteData.fromResult)
 
 
+putCustomer : NodeId -> Customer -> Cmd Msg
+putCustomer nodeId customer =
+    putter (customerUrl nodeId) (encodeCustomer customer) customerDecoder (HeaderPutResponse << RemoteData.fromResult)
+
+
 fetchClient : NodeId -> Cmd Msg
 fetchClient nodeId =
     fetcher (clientUrl nodeId) clientDecoder (HeaderResponse << RemoteData.fromResult)
+
+
+putClient : NodeId -> Client -> Cmd Msg
+putClient nodeId client =
+    putter (clientUrl nodeId) (encodeClient client) clientDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 fetchSite : NodeId -> Cmd Msg
@@ -64,9 +102,19 @@ fetchSite nodeId =
     fetcher (siteUrl nodeId) siteDecoder (HeaderResponse << RemoteData.fromResult)
 
 
+putSite : NodeId -> Site -> Cmd Msg
+putSite nodeId site =
+    putter (siteUrl nodeId) (encodeSite site) siteDecoder (HeaderPutResponse << RemoteData.fromResult)
+
+
 fetchStaff : NodeId -> Cmd Msg
 fetchStaff nodeId =
     fetcher (staffUrl nodeId) staffDecoder (HeaderResponse << RemoteData.fromResult)
+
+
+putStaff : NodeId -> Staff -> Cmd Msg
+putStaff nodeId staff =
+    putter (staffUrl nodeId) (encodeStaff staff) staffDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 rootUrl : NodeId -> String
@@ -110,6 +158,25 @@ rootDecoder =
         )
         (field "tabs" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
+
+
+encodeRoot : Root -> Encode.Value
+encodeRoot root =
+    Encode.object
+        [ ( "values"
+          , Encode.object
+                [ ( "name", Encode.string (Maybe.withDefault "" root.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" root.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" root.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" root.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" root.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" root.values.postcode) )
+                , ( "contact", Encode.string (Maybe.withDefault "" root.values.contact) )
+                , ( "tel", Encode.string (Maybe.withDefault "" root.values.tel) )
+                , ( "email", Encode.string (Maybe.withDefault "" root.values.email) )
+                ]
+          )
+        ]
 
 
 rootAccessDecoder : Decode.Decoder RootAccess
@@ -163,6 +230,25 @@ customerDecoder =
         (field "useraccess" useraccessDecoder)
 
 
+encodeCustomer : Customer -> Encode.Value
+encodeCustomer customer =
+    Encode.object
+        [ ( "values"
+          , Encode.object
+                [ ( "name", Encode.string (Maybe.withDefault "" customer.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" customer.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" customer.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" customer.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" customer.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" customer.values.postcode) )
+                , ( "contact", Encode.string (Maybe.withDefault "" customer.values.contact) )
+                , ( "tel", Encode.string (Maybe.withDefault "" customer.values.tel) )
+                , ( "email", Encode.string (Maybe.withDefault "" customer.values.email) )
+                ]
+          )
+        ]
+
+
 customerAccessDecoder : Decode.Decoder CustomerAccess
 customerAccessDecoder =
     decode createCustomerAccess
@@ -212,6 +298,25 @@ clientDecoder =
         )
         (field "tabs" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
+
+
+encodeClient : Client -> Encode.Value
+encodeClient client =
+    Encode.object
+        [ ( "values"
+          , Encode.object
+                [ ( "name", Encode.string (Maybe.withDefault "" client.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" client.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" client.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" client.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" client.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" client.values.postcode) )
+                , ( "contact", Encode.string (Maybe.withDefault "" client.values.contact) )
+                , ( "tel", Encode.string (Maybe.withDefault "" client.values.tel) )
+                , ( "email", Encode.string (Maybe.withDefault "" client.values.email) )
+                ]
+          )
+        ]
 
 
 clientAccessDecoder : Decode.Decoder ClientAccess
@@ -264,6 +369,25 @@ siteDecoder =
         )
         (field "tabs" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
+
+
+encodeSite : Site -> Encode.Value
+encodeSite site =
+    Encode.object
+        [ ( "values"
+          , Encode.object
+                [ ( "name", Encode.string (Maybe.withDefault "" site.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" site.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" site.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" site.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" site.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" site.values.postcode) )
+                , ( "contact", Encode.string (Maybe.withDefault "" site.values.contact) )
+                , ( "tel", Encode.string (Maybe.withDefault "" site.values.tel) )
+                , ( "email", Encode.string (Maybe.withDefault "" site.values.email) )
+                ]
+          )
+        ]
 
 
 siteAccessDecoder : Decode.Decoder SiteAccess
@@ -321,6 +445,25 @@ staffDecoder =
         )
         (field "tabs" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
+
+
+encodeStaff : Staff -> Encode.Value
+encodeStaff staff =
+    Encode.object
+        [ ( "values"
+          , Encode.object
+                [ ( "name", Encode.string (Maybe.withDefault "" staff.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" staff.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" staff.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" staff.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" staff.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" staff.values.postcode) )
+                , ( "tel", Encode.string (Maybe.withDefault "" staff.values.tel) )
+                , ( "mob", Encode.string (Maybe.withDefault "" staff.values.mob) )
+                , ( "email", Encode.string (Maybe.withDefault "" staff.values.email) )
+                ]
+          )
+        ]
 
 
 staffAccessDecoder : Decode.Decoder StaffAccess

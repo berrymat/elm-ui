@@ -2,8 +2,9 @@ module Container.Commands exposing (..)
 
 import Container.Messages exposing (..)
 import Container.Models exposing (..)
-import Tree.Models exposing (NodeId, NodeType, Node, ChildrenState(..))
-import Header.Models exposing (isHeaderEmpty, getTabFromType, HeaderData)
+import Helpers.Models exposing (..)
+import Tree.Models exposing (..)
+import Header.Models exposing (isHeaderEmpty, getTabFromType)
 import Tree.Commands
 import Header.Commands
 import Content.Commands
@@ -13,6 +14,12 @@ import Http
 import Json.Decode as Decode exposing (field)
 import HttpBuilder exposing (..)
 import RemoteData exposing (..)
+import Components.Form as Form
+import Header.Root.View
+import Header.Customer.View
+import Header.Client.View
+import Header.Site.View
+import Header.Staff.View
 
 
 {-
@@ -80,8 +87,19 @@ fetchContent container headerData =
         headerInfo =
             container.headerInfo
 
+        ui =
+            headerInfo.ui
+
+        {-
+           newEditForm =
+               initEditForm container headerData
+        -}
         newHeaderInfo =
-            { headerInfo | data = Success headerData }
+            { headerInfo
+                | data =
+                    Success headerData
+                    --, ui = { ui | editForm = newEditForm }
+            }
 
         headerId =
             Header.Models.headerId container.headerInfo
@@ -104,3 +122,74 @@ fetchContent container headerData =
                 ]
     in
         ( { container | headerInfo = newHeaderInfo, tab = updatedTab }, cmdBatch )
+
+
+initEditForm : Container -> HeaderData -> Maybe (Form.Model Msg)
+initEditForm container data =
+    case data.header of
+        RootHeader root ->
+            Just (Header.Root.View.initEditForm root)
+
+        CustomerHeader customer ->
+            Just (Header.Customer.View.initEditForm customer)
+
+        ClientHeader client ->
+            Just (Header.Client.View.initEditForm client)
+
+        SiteHeader site ->
+            Just (Header.Site.View.initEditForm site)
+
+        StaffHeader staff ->
+            Just (Header.Staff.View.initEditForm staff)
+
+        Empty ->
+            Nothing
+
+
+updateState : Form.Model Msg -> Container -> HeaderData -> Container
+updateState form container data =
+    let
+        headerInfo =
+            container.headerInfo
+
+        updateHeader header =
+            { container | headerInfo = { headerInfo | data = Success { data | header = header } } }
+    in
+        case data.header of
+            RootHeader root ->
+                let
+                    newRoot =
+                        Header.Root.View.updateState form root
+                in
+                    updateHeader (RootHeader newRoot)
+
+            CustomerHeader customer ->
+                let
+                    newCustomer =
+                        Header.Customer.View.updateState form customer
+                in
+                    updateHeader (CustomerHeader newCustomer)
+
+            ClientHeader client ->
+                let
+                    newClient =
+                        Header.Client.View.updateState form client
+                in
+                    updateHeader (ClientHeader newClient)
+
+            SiteHeader site ->
+                let
+                    newSite =
+                        Header.Site.View.updateState form site
+                in
+                    updateHeader (SiteHeader newSite)
+
+            StaffHeader staff ->
+                let
+                    newStaff =
+                        Header.Staff.View.updateState form staff
+                in
+                    updateHeader (StaffHeader newStaff)
+
+            Empty ->
+                container

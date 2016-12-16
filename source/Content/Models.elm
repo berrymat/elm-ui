@@ -1,6 +1,7 @@
 module Content.Models exposing (..)
 
-import Tree.Models exposing (NodeId, Tree, Node)
+import Helpers.Models exposing (..)
+import Tree.Models exposing (Tree, Node)
 import Table
 
 

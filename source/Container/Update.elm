@@ -11,9 +11,10 @@ import Header.Commands
 import Content.Commands
 import Content.Update
 import Navigation
-import RemoteData
+import RemoteData exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
+import Components.Form as Form
 
 
 updatePathFromTree : Container -> Tree -> Cmd Tree.Messages.Msg -> List Node -> ( Container, Cmd Msg )
@@ -99,6 +100,38 @@ update message container =
                 RemoteData.map (fetchContent container) newHeaderData
                     |> RemoteData.withDefault ( container, Cmd.none )
 
+            HeaderPutResponse webdata ->
+                let
+                    x =
+                        Debug.log "HeaderPutResponse Data" webdata
+
+                    newContainer =
+                        case webdata of
+                            NotAsked ->
+                                container
+
+                            Loading ->
+                                container
+
+                            Failure err ->
+                                let
+                                    x =
+                                        Debug.log ("Failure " ++ (toString err))
+                                in
+                                    container
+
+                            Success data ->
+                                let
+                                    newEditModal =
+                                        Ui.Modal.close ui.editModal
+
+                                    newUi =
+                                        { ui | editModal = newEditModal }
+                                in
+                                    { container | headerInfo = { headerInfo | ui = newUi, data = webdata } }
+                in
+                    ( newContainer, Cmd.none )
+
             ActionMenu action ->
                 let
                     newActionMenu =
@@ -127,16 +160,49 @@ update message container =
                     newEditModal =
                         Ui.Modal.close ui.editModal
 
-                    newActionMenu =
-                        Ui.DropdownMenu.close ui.actionMenu
-
                     newUi =
-                        { ui | editModal = newEditModal, actionMenu = newActionMenu }
+                        { ui | editModal = newEditModal }
                 in
                     ( { container | headerInfo = { headerInfo | ui = newUi } }, Cmd.none )
 
+            SaveEditModal ->
+                case ui.editForm of
+                    Just form ->
+                        let
+                            {-
+                               newEditModal =
+                                   Ui.Modal.close ui.editModal
+
+                               newUi =
+                                   { ui | editModal = newEditModal }
+                            -}
+                            nodeId =
+                                Header.Models.headerId headerInfo
+
+                            newContainer =
+                                RemoteData.map (updateState form container) container.headerInfo.data
+                                    |> RemoteData.withDefault container
+
+                            newEffect =
+                                RemoteData.map (Header.Commands.putHeader nodeId) newContainer.headerInfo.data
+                                    |> RemoteData.withDefault Cmd.none
+
+                            {-
+                               newContainer =
+                                   { container | headerInfo = { headerInfo | ui = newUi } }
+                            -}
+                        in
+                            ( newContainer, newEffect )
+
+                    Nothing ->
+                        ( container, Cmd.none )
+
             OpenEditModal ->
                 let
+                    newEditForm =
+                        RemoteData.map (initEditForm container) headerInfo.data
+                            |> RemoteData.withDefault ui.editForm
+
                     newEditModal =
                         Ui.Modal.open ui.editModal
 
@@ -144,7 +210,7 @@ update message container =
                         Ui.DropdownMenu.close ui.actionMenu
 
                     newUi =
-                        { ui | editModal = newEditModal, actionMenu = newActionMenu }
+                        { ui | editModal = newEditModal, editForm = newEditForm, actionMenu = newActionMenu }
                 in
                     ( { container | headerInfo = { headerInfo | ui = newUi } }, Cmd.none )
 
@@ -193,6 +259,38 @@ update message container =
                         { ui | deleteModal = newDeleteModal }
                 in
                     ( { container | headerInfo = { headerInfo | ui = newUi } }, Cmd.none )
+
+            Form act ->
+                case ui.editForm of
+                    Just form ->
+                        let
+                            ( newForm, effect ) =
+                                Form.update act form
+
+                            ( newContainer, newEffect ) =
+                                ( { container | headerInfo = { headerInfo | ui = { ui | editForm = Just newForm } } }
+                                , Cmd.map Form effect
+                                )
+                        in
+                            ( newContainer, newEffect )
+
+                    Nothing ->
+                        ( container, Cmd.none )
+
+
+
+{- TODO
+   let
+       updatedComponent input =
+           { input
+               | disabled = Form.valueOfCheckbox "disabled" False model.form
+               , readonly = Form.valueOfCheckbox "readonly" False model.form
+               , placeholder = Form.valueOfInput "placeholder" "" model.form
+               , value = Form.valueOfInput "value" "" model.form
+           }
+   in
+       ( { model | input = updatedComponent model.input }, effect )
+-}
 
 
 subscriptions : Container -> Sub Msg

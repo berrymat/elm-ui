@@ -1,6 +1,7 @@
 module Tree.Messages exposing (..)
 
 import Http
+import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 
 

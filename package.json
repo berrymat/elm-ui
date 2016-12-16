@@ -3,7 +3,7 @@
   "version": "0.4.3",
   "description": "UI Libary in Elm",
   "scripts": {
-    "start": "bin/index.js server",
+    "start": "bin/index.js server --debug",
     "deploy": "gulp deploy",
     "predeploy": "npm run build",
     "build": "bin/index.js build",

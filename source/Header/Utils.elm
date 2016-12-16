@@ -2,7 +2,7 @@ module Header.Utils exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Header.Models exposing (..)
+import Helpers.Models exposing (..)
 import Container.Messages exposing (..)
 
 

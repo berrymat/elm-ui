@@ -1,8 +1,6 @@
 module Tree.Models exposing (..)
 
-
-type alias NodeId =
-    String
+import Helpers.Models exposing (..)
 
 
 type alias TempNode =
@@ -33,15 +31,6 @@ type ChildrenState
     | Collapsed
     | Expanding
     | Expanded
-
-
-type NodeType
-    = RootType
-    | CustomerType
-    | ClientType
-    | SiteType
-    | StaffType
-    | FolderType
 
 
 type alias Node =

@@ -2,7 +2,7 @@ module Content.Messages exposing (..)
 
 import Http
 import Content.Models exposing (..)
-import Tree.Models exposing (NodeId)
+import Helpers.Models exposing (NodeId)
 import Tree.Messages
 import Table
 

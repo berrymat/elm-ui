@@ -4,6 +4,7 @@ import Http
 import Json.Decode as Decode exposing (field)
 import Tree.Messages exposing (..)
 import Tree.Models exposing (..)
+import Helpers.Models exposing (..)
 import Helpers.Helpers exposing (apiUrl, fetcher)
 
 

@@ -1,7 +1,8 @@
 module Container.Models exposing (..)
 
-import Tree.Models exposing (Tree, initialTree, Node, NodeId, NodeType)
-import Header.Models exposing (HeaderInfo, initialHeaderInfo, Tab, TabType(..))
+import Helpers.Models exposing (..)
+import Tree.Models exposing (Tree, initialTree, Node)
+import Header.Models exposing (HeaderInfo, initialHeaderInfo)
 import Content.Models exposing (Content, initialContent)
 
 
@@ -28,11 +29,4 @@ type alias PathItem =
     { id : String
     , nodeType : NodeType
     , name : String
-    }
-
-
-type alias AuthResult =
-    { nodeType : NodeType
-    , nodeId : NodeId
-    , result : String
     }

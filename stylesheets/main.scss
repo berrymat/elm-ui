@@ -106,11 +106,17 @@ ui-modal {
     ui-modal-content {
         overflow-y: auto;
         flex: 1 1 auto;
+        padding: 0;
+
+        ui-form {
+          width: 100%;
+        }
     }
     ui-modal-footer {
         flex: 0 0 auto;
     }
 }
+
 /*
 $bg-color-1: rgb(2, 48, 87);
 $color-1: rgb(98, 144, 183);

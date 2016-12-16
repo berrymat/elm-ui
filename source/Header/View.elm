@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Container.Messages exposing (..)
+import Helpers.Models exposing (..)
 import Header.Models exposing (..)
 import Header.Root.View
 import Header.Customer.View
@@ -17,6 +18,7 @@ import Ui.Container
 import Ui.DropdownMenu
 import Ui.IconButton
 import Ui.Modal
+import Components.Form as Form
 
 
 view : HeaderInfo -> Html Msg
@@ -107,12 +109,20 @@ headerActions header useraccess ui =
         dropdownViewModel =
             actionDropdownViewModel header useraccess ui
 
+        modalContent =
+            case ui.editForm of
+                Just form ->
+                    [ Form.view Form form ]
+
+                Nothing ->
+                    [ text "Edit Modal" ]
+
         editModalViewModel =
-            { content = [ text "Edit Modal" ]
+            { content = modalContent
             , title = "Edit Details"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Save" CloseEditModal
+                    [ Ui.Button.primary "Save" SaveEditModal
                     , Ui.Button.secondary "Close" CloseEditModal
                     ]
                 ]
