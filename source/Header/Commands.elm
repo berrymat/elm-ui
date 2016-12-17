@@ -4,17 +4,18 @@ import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Container.Messages exposing (..)
+import Container.Models exposing (..)
 import Header.Models exposing (..)
 import Helpers.Models exposing (..)
 import Helpers.Helpers exposing (apiUrl, fetcher, putter)
 import RemoteData exposing (..)
 
 
-fetchHeader : HeaderInfo -> NodeType -> NodeId -> ( HeaderInfo, Cmd Msg )
-fetchHeader headerInfo nodeType nodeId =
+fetchHeader : Container -> ( NodeType, NodeId ) -> ( Container, Cmd Msg )
+fetchHeader container ( nodeType, nodeId ) =
     let
         cmd =
-            if nodeId /= "" && nodeId /= (headerId headerInfo) then
+            if nodeId /= "" && nodeId /= (headerId container.headerData) then
                 case nodeType of
                     RootType ->
                         fetchRoot nodeId
@@ -40,9 +41,9 @@ fetchHeader headerInfo nodeType nodeId =
             if cmd /= Cmd.none then
                 Loading
             else
-                headerInfo.data
+                container.headerData
     in
-        ( { headerInfo | data = newData }, cmd )
+        ( { container | headerData = newData }, cmd )
 
 
 putHeader : NodeId -> HeaderData -> Cmd Msg

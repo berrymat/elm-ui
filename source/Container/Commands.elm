@@ -22,20 +22,12 @@ import Header.Site.View
 import Header.Staff.View
 
 
-{-
-   authenticate : String -> String -> NodeType -> NodeId -> Cmd Msg
-   authenticate username password nodeType nodeId =
-       Http.get (authenticateUrl username password) (authenticateDecoder nodeType nodeId)
-           |> Http.send OnAuthenticate
--}
-
-
 authenticate : String -> String -> NodeType -> NodeId -> Cmd Msg
 authenticate username password nodeType nodeId =
     HttpBuilder.get (authenticateUrl username password)
         |> withExpect (Http.expectJson (authenticateDecoder nodeType nodeId))
         |> withCredentials
-        |> send (OnAuthenticate << RemoteData.fromResult)
+        |> send (AuthenticateResponse << RemoteData.fromResult)
 
 
 authenticateUrl : String -> String -> String
@@ -72,43 +64,32 @@ fetchInitialData nodeType nodeId container =
             else
                 Cmd.none
 
-        ( newHeaderInfo, headerCmd ) =
-            if (isHeaderEmpty container.headerInfo) then
-                Header.Commands.fetchHeader container.headerInfo nodeType nodeId
+        ( newContainer, headerCmd ) =
+            if (isHeaderEmpty container.headerData) then
+                Header.Commands.fetchHeader container ( nodeType, nodeId )
             else
-                ( container.headerInfo, Cmd.none )
+                ( container, Cmd.none )
     in
-        ( { container | headerInfo = newHeaderInfo }, Cmd.batch [ treeCmd, headerCmd ] )
+        ( newContainer, Cmd.batch [ treeCmd, headerCmd ] )
 
 
 fetchContent : Container -> HeaderData -> ( Container, Cmd Msg )
 fetchContent container headerData =
     let
-        headerInfo =
-            container.headerInfo
-
         ui =
-            headerInfo.ui
+            container.headerUi
 
-        {-
-           newEditForm =
-               initEditForm container headerData
-        -}
-        newHeaderInfo =
-            { headerInfo
-                | data =
-                    Success headerData
-                    --, ui = { ui | editForm = newEditForm }
-            }
+        newContainer =
+            { container | headerData = Success headerData }
 
         headerId =
-            Header.Models.headerId container.headerInfo
+            Header.Models.headerId container.headerData
 
         updatedHeaderId =
-            Header.Models.headerId newHeaderInfo
+            Header.Models.headerId newContainer.headerData
 
         updatedTab =
-            getTabFromType newHeaderInfo container.tab.tabType
+            getTabFromType newContainer.headerData container.tab.tabType
 
         cmdContent =
             if (headerId /= updatedHeaderId) then
@@ -121,7 +102,7 @@ fetchContent container headerData =
                 [ Cmd.map ContentMsg cmdContent
                 ]
     in
-        ( { container | headerInfo = newHeaderInfo, tab = updatedTab }, cmdBatch )
+        ( { newContainer | tab = updatedTab }, cmdBatch )
 
 
 initEditForm : Container -> HeaderData -> Maybe (Form.Model Msg)
@@ -149,11 +130,8 @@ initEditForm container data =
 updateState : Form.Model Msg -> Container -> HeaderData -> Container
 updateState form container data =
     let
-        headerInfo =
-            container.headerInfo
-
         updateHeader header =
-            { container | headerInfo = { headerInfo | data = Success { data | header = header } } }
+            { container | headerData = Success { data | header = header } }
     in
         case data.header of
             RootHeader root ->

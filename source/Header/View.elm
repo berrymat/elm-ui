@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Container.Messages exposing (..)
+import Container.Models exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (..)
 import Header.Root.View
@@ -21,10 +22,10 @@ import Ui.Modal
 import Components.Form as Form
 
 
-view : HeaderInfo -> Html Msg
-view headerInfo =
+view : Container -> Html Msg
+view container =
     div [ class "body-header" ]
-        (case headerInfo.data of
+        (case container.headerData of
             NotAsked ->
                 [ text "Initializing." ]
 
@@ -35,7 +36,7 @@ view headerInfo =
                 [ text ("Error: " ++ toString err) ]
 
             Success data ->
-                (header data.header data.useraccess headerInfo.ui)
+                (header data.header data.useraccess container.headerUi)
         )
 
 
@@ -83,24 +84,50 @@ headerImage header =
             []
 
 
+dropdownMenuItem : String -> String -> ModalType -> Html Msg
+dropdownMenuItem icon name type_ =
+    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open) ]
+        [ Ui.icon icon True []
+        , node "span" [] [ text name ]
+        ]
+
+
 actionDropdownViewModel : Header -> UserAccess -> HeaderUi -> Ui.DropdownMenu.ViewModel Msg
 actionDropdownViewModel header useraccess ui =
-    { element =
-        Ui.IconButton.secondary "Actions"
-            "chevron-down"
-            "right"
-            NoAction
-    , items =
-        [ Ui.DropdownMenu.item [ onClick OpenEditModal ]
-            [ Ui.icon "android-download" True []
-            , node "span" [] [ text "Edit" ]
+    let
+        actions =
+            [ ( "android-download", "Edit", Edit )
+            , ( "trash-b", "Delete", Delete )
             ]
-        , Ui.DropdownMenu.item [ onClick OpenDeleteModal ]
-            [ Ui.icon "trash-b" True []
-            , node "span" [] [ text "Delete" ]
-            ]
-        ]
-    }
+
+        actionFilter ( _, _, type_ ) =
+            case type_ of
+                Edit ->
+                    useraccess.admin || useraccess.owner
+
+                Delete ->
+                    case header of
+                        CustomerHeader _ ->
+                            useraccess.admin && useraccess.root
+
+                        _ ->
+                            useraccess.admin
+
+        {-
+           _ ->
+               useraccess.admin
+        -}
+        accessibleActions =
+            List.filter actionFilter actions
+    in
+        { element =
+            Ui.IconButton.secondary "Actions"
+                "chevron-down"
+                "right"
+                NoAction
+        , items =
+            List.map (\( icon, name, type_ ) -> dropdownMenuItem icon name type_) accessibleActions
+        }
 
 
 headerActions : Header -> UserAccess -> HeaderUi -> List (Html Msg)
@@ -112,7 +139,7 @@ headerActions header useraccess ui =
         modalContent =
             case ui.editForm of
                 Just form ->
-                    [ Form.view Form form ]
+                    [ Form.view EditFormMsg form ]
 
                 Nothing ->
                     [ text "Edit Modal" ]
@@ -122,8 +149,8 @@ headerActions header useraccess ui =
             , title = "Edit Details"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Save" SaveEditModal
-                    , Ui.Button.secondary "Close" CloseEditModal
+                    [ Ui.Button.primary "Save" (ModalAction Edit Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction Edit Cancel)
                     ]
                 ]
             }
@@ -133,15 +160,15 @@ headerActions header useraccess ui =
             , title = "Delete Details"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Save" CloseDeleteModal
-                    , Ui.Button.secondary "Close" CloseDeleteModal
+                    [ Ui.Button.primary "Delete" (ModalAction Delete Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction Delete Cancel)
                     ]
                 ]
             }
     in
         [ Ui.DropdownMenu.view dropdownViewModel ActionMenu ui.actionMenu
-        , Ui.Modal.view EditModal editModalViewModel ui.editModal
-        , Ui.Modal.view DeleteModal deleteModalViewModel ui.deleteModal
+        , Ui.Modal.view (ModalMsg Edit) editModalViewModel ui.editModal
+        , Ui.Modal.view (ModalMsg Delete) deleteModalViewModel ui.deleteModal
         ]
 
 

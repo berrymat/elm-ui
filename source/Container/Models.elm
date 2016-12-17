@@ -2,14 +2,16 @@ module Container.Models exposing (..)
 
 import Helpers.Models exposing (..)
 import Tree.Models exposing (Tree, initialTree, Node)
-import Header.Models exposing (HeaderInfo, initialHeaderInfo)
+import Header.Models exposing (..)
 import Content.Models exposing (Content, initialContent)
+import RemoteData exposing (..)
 
 
 type alias Container =
     { tree : Tree
     , path : List Node
-    , headerInfo : HeaderInfo
+    , headerData : WebData HeaderData
+    , headerUi : HeaderUi
     , tab : Tab
     , content : Content
     }
@@ -19,7 +21,8 @@ initialContainer : Container
 initialContainer =
     { tree = initialTree
     , path = []
-    , headerInfo = initialHeaderInfo
+    , headerData = NotAsked
+    , headerUi = initialHeaderUi
     , tab = Tab EmptyTab ""
     , content = initialContent
     }

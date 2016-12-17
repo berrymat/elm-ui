@@ -21,7 +21,7 @@ view container =
                 (Tree.View.view container.tree)
             ]
         , div [ class "body" ]
-            [ Header.View.view container.headerInfo
+            [ Header.View.view container
             , div [ class "body-path" ]
                 [ viewPath container
                 , viewTabs container
@@ -85,7 +85,7 @@ viewTabs : Container -> Html Msg
 viewTabs container =
     let
         tabs =
-            RemoteData.map (\d -> d.tabs) container.headerInfo.data
+            RemoteData.map (\d -> d.tabs) container.headerData
                 |> RemoteData.withDefault []
     in
         div [ class "tabs" ]

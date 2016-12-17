@@ -16,17 +16,6 @@ type alias HeaderUi =
     }
 
 
-type alias HeaderInfo =
-    { data : WebData HeaderData
-    , ui : HeaderUi
-    }
-
-
-initialHeaderInfo : HeaderInfo
-initialHeaderInfo =
-    HeaderInfo NotAsked initialHeaderUi
-
-
 initialHeaderUi : HeaderUi
 initialHeaderUi =
     { actionMenu = Ui.DropdownMenu.init
@@ -58,22 +47,22 @@ extractId data =
             ""
 
 
-headerId : HeaderInfo -> NodeId
-headerId headerInfo =
-    RemoteData.map extractId headerInfo.data
+headerId : WebData HeaderData -> NodeId
+headerId data =
+    RemoteData.map extractId data
         |> RemoteData.withDefault ""
 
 
-isHeaderEmpty : HeaderInfo -> Bool
-isHeaderEmpty headerInfo =
-    (headerInfo.data == NotAsked)
+isHeaderEmpty : WebData HeaderData -> Bool
+isHeaderEmpty data =
+    (data == NotAsked)
 
 
-getTabFromType : HeaderInfo -> TabType -> Tab
-getTabFromType headerInfo tabType =
+getTabFromType : WebData HeaderData -> TabType -> Tab
+getTabFromType data tabType =
     let
         tabs =
-            RemoteData.map (\data -> data.tabs) headerInfo.data
+            RemoteData.map (\data -> data.tabs) data
                 |> RemoteData.withDefault []
 
         maybeTab =
