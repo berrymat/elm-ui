@@ -5,11 +5,7 @@ import UrlParser exposing (..)
 
 
 type Route
-    = PlayersRoute
-    | PlayerRoute String
-    | TeamsRoute
-    | TeamRoute String
-    | ContainerRoot
+    = ContainerRoot
     | ContainerRoute String String
     | NotFoundRoute
 
@@ -17,12 +13,7 @@ type Route
 matchers : Parser (Route -> a) a
 matchers =
     oneOf
-        [ map TeamsRoute top
-        , map PlayerRoute (s "players" </> string)
-        , map PlayersRoute (s "players")
-        , map TeamRoute (s "teams" </> string)
-        , map TeamsRoute (s "teams")
-        , map ContainerRoute (s "container" </> string </> s "path" </> string)
+        [ map ContainerRoute (s "container" </> string </> s "path" </> string)
         , map ContainerRoot (s "container")
         ]
 

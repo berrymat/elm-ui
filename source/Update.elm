@@ -3,14 +3,10 @@ module Update exposing (..)
 import Ui.App
 import Messages exposing (Msg(..))
 import Models exposing (Model)
-import Players.Update
-import Teams.Update
 import Helpers.Models exposing (..)
 import Container.Messages
 import Container.Update
 import Routing exposing (Route(..), parseLocation)
-import Players.Commands
-import Teams.Commands
 import Container.Commands
 import Tree.Models exposing (convertNodeType)
 
@@ -18,28 +14,10 @@ import Tree.Models exposing (convertNodeType)
 fetchData : Model -> ( Model, Cmd Msg )
 fetchData model =
     case model.route of
-        PlayersRoute ->
-            if List.isEmpty model.players then
-                ( model, Cmd.map PlayersMsg Players.Commands.fetchAll )
-            else
-                ( model, Cmd.none )
-
-        PlayerRoute id ->
-            ( model, Cmd.none )
-
-        TeamsRoute ->
-            if List.isEmpty model.teams then
-                ( model, Cmd.map TeamsMsg Teams.Commands.fetchAll )
-            else
-                ( model, Cmd.none )
-
-        TeamRoute id ->
-            ( model, Cmd.none )
-
         ContainerRoute type_ id ->
             let
                 maybeNodeType =
-                    convertNodeType type_
+                    Debug.log "convertNodeType" (convertNodeType type_)
             in
                 case maybeNodeType of
                     Just nodeType ->
@@ -74,20 +52,6 @@ update msg model =
                     Ui.App.update act model.app
             in
                 ( { model | app = app }, Cmd.map App effect )
-
-        PlayersMsg subMsg ->
-            let
-                ( updatedPlayers, cmd ) =
-                    Players.Update.update subMsg model.players
-            in
-                ( { model | players = updatedPlayers }, Cmd.map PlayersMsg cmd )
-
-        TeamsMsg subMsg ->
-            let
-                ( updatedTeams, cmd ) =
-                    Teams.Update.update subMsg model.teams
-            in
-                ( { model | teams = updatedTeams }, Cmd.map TeamsMsg cmd )
 
         ContainerMsg subMsg ->
             let

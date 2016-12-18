@@ -40,6 +40,7 @@ type Header
 type alias HeaderData =
     { header : Header
     , tabs : List Tab
+    , childtypes : List Tab
     , useraccess : UserAccess
     }
 

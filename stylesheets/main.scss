@@ -260,7 +260,7 @@ div.k-treeview {
 }
 
 .k-treeview .k-plus,.k-treeview .k-minus,.k-treeview .k-plus-disabled,.k-treeview .k-minus-disabled {
-    /*margin-top: 3px;*/
+    margin-top: 3px;
     margin-left: -16px;
     cursor: pointer;
 }
@@ -384,6 +384,16 @@ div.k-treeview {
     display: flex;
     color: $color-6;
     border-bottom: 1px solid $bg-color-1;
+    min-height: 220px;
+}
+
+.header-loading {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
 }
 
 .body-header-image {

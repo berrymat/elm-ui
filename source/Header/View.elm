@@ -20,6 +20,8 @@ import Ui.DropdownMenu
 import Ui.IconButton
 import Ui.Modal
 import Components.Form as Form
+import Ui.Helpers.Env
+import Json.Decode as Decode
 
 
 view : Container -> Html Msg
@@ -30,7 +32,9 @@ view container =
                 [ text "Initializing." ]
 
             Loading ->
-                [ text "Loading." ]
+                [ div [ class "header-loading" ]
+                    [ i [ class "fa fa-spin fa-refresh" ] [] ]
+                ]
 
             Failure err ->
                 [ text ("Error: " ++ toString err) ]
@@ -52,8 +56,12 @@ header header useraccess ui =
 headerImage : Header -> Html Msg
 headerImage header =
     let
+        endpoint =
+            Ui.Helpers.Env.get "endpoint" Decode.string
+                |> Result.withDefault "http://localhost"
+
         backgroundStyle image =
-            ( "background-image", "url('" ++ image ++ "')" )
+            ( "background-image", "url('" ++ endpoint ++ image ++ "')" )
 
         backgroundImage =
             (case header of

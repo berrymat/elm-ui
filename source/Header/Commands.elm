@@ -149,7 +149,7 @@ staffUrl nodeId =
 
 rootDecoder : Decode.Decoder HeaderData
 rootDecoder =
-    Decode.map3 HeaderData
+    Decode.map4 HeaderData
         (Decode.map RootHeader
             (decode Root
                 |> required "id" Decode.string
@@ -158,6 +158,7 @@ rootDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -219,7 +220,7 @@ rootValuesDecoder =
 
 customerDecoder : Decode.Decoder HeaderData
 customerDecoder =
-    Decode.map3 HeaderData
+    Decode.map4 HeaderData
         (Decode.map CustomerHeader
             (decode customer
                 |> required "id" Decode.string
@@ -228,6 +229,7 @@ customerDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -289,7 +291,7 @@ customerValuesDecoder =
 
 clientDecoder : Decode.Decoder HeaderData
 clientDecoder =
-    Decode.map3 HeaderData
+    Decode.map4 HeaderData
         (Decode.map ClientHeader
             (decode Client
                 |> required "id" Decode.string
@@ -298,6 +300,7 @@ clientDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -360,7 +363,7 @@ clientValuesDecoder =
 
 siteDecoder : Decode.Decoder HeaderData
 siteDecoder =
-    Decode.map3 HeaderData
+    Decode.map4 HeaderData
         (Decode.map SiteHeader
             (decode Site
                 |> required "id" Decode.string
@@ -369,6 +372,7 @@ siteDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -436,7 +440,7 @@ siteValuesDecoder =
 
 staffDecoder : Decode.Decoder HeaderData
 staffDecoder =
-    Decode.map3 HeaderData
+    Decode.map4 HeaderData
         (Decode.map StaffHeader
             (decode Staff
                 |> required "id" Decode.string
@@ -445,6 +449,7 @@ staffDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list tabDecoder))
         (field "useraccess" useraccessDecoder)
 
 

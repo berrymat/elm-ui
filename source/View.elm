@@ -8,17 +8,11 @@ import Ui.Layout
 import Ui.Header
 import Messages exposing (Msg(..))
 import Models exposing (Model)
-import Players.Edit
-import Players.List
-import Players.Messages exposing (Msg(..))
-import Players.Models exposing (PlayerId)
-import Teams.Edit
-import Teams.List
-import Teams.Messages exposing (Msg(..))
-import Teams.Models exposing (TeamId)
 import Container.View
 import Container.Messages exposing (Msg(..))
 import Routing exposing (Route(..))
+import Header.Models
+import RemoteData exposing (..)
 
 
 view : Model -> Html Messages.Msg
@@ -35,43 +29,53 @@ view model =
 
 nav : Model -> Html Messages.Msg
 nav model =
-    Ui.Header.view
-        [ Ui.Header.title
-            { text = "Home"
-            , action = Nothing
-            , link = Nothing
-            , target = ""
-            }
-        , Ui.spacer
-        , Ui.Header.item
-            { text = "Teams"
-            , action = Just (TeamsMsg ShowTeams)
-            , link = Nothing
-            , target = ""
-            }
-        , Ui.Header.separator
-        , Ui.Header.item
-            { text = "Players"
-            , action = Just (PlayersMsg ShowPlayers)
-            , link = Nothing
-            , target = ""
-            }
-        , Ui.Header.separator
-        , Ui.Header.item
-            { text = "Container"
-            , action = Just (ContainerMsg ShowContainer)
-            , link = Nothing
-            , target = ""
-            }
-        , Ui.Header.separator
-        , Ui.Header.icon
-            { glyph = "navicon-round"
-            , action = Nothing
-            , link = Nothing
-            , target = ""
-            , size = 24
-            }
-        ]
+    let
+        container =
+            model.container
+
+        headerId =
+            Header.Models.headerId container.headerData
+
+        headeritem tab =
+            Ui.Header.item
+                { text = tab.name
+                , action = Just (ContainerMsg ShowContainer)
+                , link = Nothing
+                , target = ""
+                }
+
+        childitems =
+            case container.headerData of
+                Success data ->
+                    List.map headeritem data.childtypes
+                        |> List.intersperse (Ui.Header.separator)
+
+                _ ->
+                    []
+
+        items =
+            [ Ui.Header.item
+                { text = "Home"
+                , action = Just (ContainerMsg ShowContainer)
+                , link = Nothing
+                , target = ""
+                }
+            , Ui.Header.separator
+            ]
+                ++ childitems
+                ++ [ Ui.spacer
+                   , Ui.Header.separator
+                   , Ui.Header.icon
+                        { glyph = "navicon-round"
+                        , action = Nothing
+                        , link = Nothing
+                        , target = ""
+                        , size = 24
+                        }
+                   ]
+    in
+        Ui.Header.view
+            items
 
 
 footer : Model -> Html Messages.Msg
@@ -83,18 +87,6 @@ footer model =
 page : Model -> Html Messages.Msg
 page model =
     case model.route of
-        PlayersRoute ->
-            Html.map PlayersMsg (Players.List.view model.players)
-
-        PlayerRoute id ->
-            playerEditPage model id
-
-        TeamsRoute ->
-            Html.map TeamsMsg (Teams.List.view model.teams)
-
-        TeamRoute id ->
-            teamEditPage model id
-
         ContainerRoute type_ id ->
             Html.map ContainerMsg
                 (Container.View.view
@@ -109,38 +101,6 @@ page model =
 
         NotFoundRoute ->
             notFoundView
-
-
-playerEditPage : Model -> PlayerId -> Html Messages.Msg
-playerEditPage model playerId =
-    let
-        maybePlayer =
-            model.players
-                |> List.filter (\player -> player.id == playerId)
-                |> List.head
-    in
-        case maybePlayer of
-            Just player ->
-                Html.map PlayersMsg (Players.Edit.view player)
-
-            Nothing ->
-                notFoundView
-
-
-teamEditPage : Model -> TeamId -> Html Messages.Msg
-teamEditPage model teamId =
-    let
-        maybeTeam =
-            model.teams
-                |> List.filter (\team -> team.id == teamId)
-                |> List.head
-    in
-        case maybeTeam of
-            Just team ->
-                Html.map TeamsMsg (Teams.Edit.view team)
-
-            Nothing ->
-                notFoundView
 
 
 notFoundView : Html msg
