@@ -3,7 +3,7 @@ module Tree.Update exposing (..)
 import Tree.Messages exposing (Msg(..))
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
-import Tree.Commands
+import Tree.Commands exposing (..)
 
 
 selectNode : NodeId -> Node -> ( Node, List Node )
@@ -97,6 +97,9 @@ toggleNode nodeId node =
 
                     Expanded ->
                         ( { node | childrenState = Collapsed }, Cmd.none )
+
+                    RootNode ->
+                        ( { node | childrenState = Expanding }, Tree.Commands.fetchRoot node.id )
             else
                 toggleChildNodes nodeId node
     in
@@ -131,6 +134,8 @@ createNode tempNode =
         , childrenState =
             if tempNode.hasChildren then
                 Collapsed
+            else if tempNode.isRoot then
+                RootNode
             else
                 NoChildren
         , childNodes = ChildNodes []
@@ -185,38 +190,45 @@ fetchedNode nodeId tempChildren tree =
         { tree | childNodes = (ChildNodes newChildren) }
 
 
-update : Msg -> Tree -> ( Tree, Cmd Msg, List Node )
+update : Msg -> Tree -> ( Tree, Cmd Msg, Maybe (List Node), Maybe ( NodeType, NodeId ) )
 update message tree =
     case message of
         OnFetchRoot (Ok tempChildren) ->
-            ( fetchedRoot tempChildren, Cmd.none, tree.path )
+            ( fetchedRoot tempChildren, Cmd.none, Nothing, Nothing )
 
         OnFetchRoot (Err error) ->
-            ( tree, Cmd.none, tree.path )
+            ( tree, Cmd.none, Nothing, Nothing )
 
         OnFetchNode nodeId (Ok tempChildren) ->
-            ( fetchedNode nodeId tempChildren tree, Cmd.none, tree.path )
+            ( fetchedNode nodeId tempChildren tree, Cmd.none, Nothing, Nothing )
 
         OnFetchNode nodeId (Err error) ->
-            ( tree, Cmd.none, tree.path )
+            ( tree, Cmd.none, Nothing, Nothing )
 
         ToggleNode nodeId ->
             let
                 ( newTree, cmds ) =
                     toggle nodeId tree
             in
-                ( newTree, cmds, tree.path )
+                ( newTree, cmds, Nothing, Nothing )
 
         SelectRoot ->
             let
                 newTree =
                     select tree.id tree
             in
-                ( newTree, Cmd.none, newTree.path )
+                ( newTree, Cmd.none, Just newTree.path, Nothing )
 
         SelectNode nodeId ->
             let
                 newTree =
                     select nodeId tree
             in
-                ( newTree, Cmd.none, newTree.path )
+                ( newTree, Cmd.none, Just newTree.path, Nothing )
+
+        SelectNewRoot nodeType nodeId ->
+            let
+                newTree =
+                    select nodeId tree
+            in
+                ( newTree, fetchRoot nodeId, Just newTree.path, Just ( nodeType, nodeId ) )

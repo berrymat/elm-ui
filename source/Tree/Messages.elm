@@ -11,3 +11,4 @@ type Msg
     | ToggleNode NodeId
     | SelectRoot
     | SelectNode NodeId
+    | SelectNewRoot NodeType NodeId

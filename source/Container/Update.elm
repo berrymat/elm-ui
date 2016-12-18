@@ -6,6 +6,7 @@ import Container.Models exposing (..)
 import Tree.Messages
 import Tree.Update
 import Tree.Models exposing (..)
+import Helpers.Models exposing (..)
 import Header.Models exposing (..)
 import Header.Commands
 import Content.Commands
@@ -17,22 +18,36 @@ import Ui.Modal
 import Components.Form as Form
 
 
-updatePathFromTree : Container -> Tree -> Cmd Tree.Messages.Msg -> List Node -> ( Container, Cmd Msg )
-updatePathFromTree container updatedTree cmdTree path =
+updatePathFromTree : Container -> Tree -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> ( Container, Cmd Msg )
+updatePathFromTree container updatedTree cmdTree maybePath maybeRoot =
     let
         ( newContainer, cmdHeader ) =
-            List.head path
-                |> Maybe.map (\s -> ( s.nodeType, s.id ))
-                |> Maybe.withDefault ( container.tree.nodeType, container.tree.id )
-                |> Header.Commands.fetchHeader container
+            case maybePath of
+                Just path ->
+                    List.head path
+                        |> Maybe.map (\s -> ( s.nodeType, s.id ))
+                        |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id )
+                        |> Header.Commands.fetchHeader { container | path = path }
+
+                Nothing ->
+                    ( container, Cmd.none )
+
+        cmdRoot =
+            case maybeRoot of
+                Just ( treeType, treeId ) ->
+                    Navigation.newUrl ("#container/" ++ (toString treeType) ++ "/path/" ++ treeId)
+
+                Nothing ->
+                    Cmd.none
 
         cmdBatch =
             Cmd.batch
                 [ Cmd.map TreeMsg cmdTree
                 , cmdHeader
+                , cmdRoot
                 ]
     in
-        ( { newContainer | tree = updatedTree, path = path }, cmdBatch )
+        ( { newContainer | tree = updatedTree }, cmdBatch )
 
 
 update : Msg -> Container -> ( Container, Cmd Msg )
@@ -44,8 +59,30 @@ update message container =
         case message of
             ShowContainer ->
                 ( container
-                , Navigation.newUrl "#container/customer/path/Customer-46-Client"
+                , Navigation.newUrl "#container"
                 )
+
+            LoadContainer nodeType nodeId ->
+                case container.authResult of
+                    NotAsked ->
+                        let
+                            cmd =
+                                authenticate
+                                    "berry.matthew@me.com"
+                                    "Cirrus8914!"
+                                    nodeType
+                                    nodeId
+                        in
+                            ( { container | authResult = Loading }, cmd )
+
+                    Loading ->
+                        ( container, Cmd.none )
+
+                    Failure err ->
+                        ( container, Cmd.none )
+
+                    Success result ->
+                        fetchInitialData result.nodeType result.nodeId container
 
             AuthenticateResponse result ->
                 RemoteData.map (fetchIfAuthorized container) result
@@ -53,10 +90,10 @@ update message container =
 
             SelectPath nodeId ->
                 let
-                    ( updatedTree, cmdTree, path ) =
+                    ( updatedTree, cmdTree, maybePath, maybeRoot ) =
                         Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
                 in
-                    updatePathFromTree container updatedTree cmdTree path
+                    updatePathFromTree container updatedTree cmdTree maybePath maybeRoot
 
             SelectTab tabType ->
                 let
@@ -73,10 +110,10 @@ update message container =
 
             TreeMsg subMsg ->
                 let
-                    ( updatedTree, cmdTree, path ) =
+                    ( updatedTree, cmdTree, maybePath, maybeRoot ) =
                         Tree.Update.update subMsg container.tree
                 in
-                    updatePathFromTree container updatedTree cmdTree path
+                    updatePathFromTree container updatedTree cmdTree maybePath maybeRoot
 
             ContentMsg subMsg ->
                 let

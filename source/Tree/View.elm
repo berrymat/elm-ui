@@ -51,6 +51,9 @@ viewRoot tree =
                 NoChildren ->
                     ( "", "" )
 
+                RootNode ->
+                    ( "k-icon k-minus", "fa fa-angle-double-right" )
+
         nodeStyle =
             "k-in btn regular p0"
                 ++ if tree.selected then
@@ -104,19 +107,22 @@ viewNode node =
             else
                 "false"
 
-        ( iconClass, faClass ) =
+        ( iconClass, faClass, msg ) =
             case node.childrenState of
                 Collapsed ->
-                    ( "k-icon k-plus", "fa fa-caret-right" )
+                    ( "k-icon k-plus", "fa fa-caret-right", (SelectNode node.id) )
 
                 Expanding ->
-                    ( "k-icon k-minus", "fa fa-spin fa-refresh" )
+                    ( "k-icon k-minus", "fa fa-spin fa-refresh", (SelectNode node.id) )
 
                 Expanded ->
-                    ( "k-icon k-minus", "fa fa-caret-down" )
+                    ( "k-icon k-minus", "fa fa-caret-down", (SelectNode node.id) )
 
                 NoChildren ->
-                    ( "", "" )
+                    ( "", "", (SelectNode node.id) )
+
+                RootNode ->
+                    ( "k-icon k-minus", "fa fa-angle-double-right", (SelectNewRoot node.nodeType node.id) )
 
         nodeStyle =
             "k-in btn regular p0"
@@ -147,7 +153,7 @@ viewNode node =
                     ]
                 , div
                     [ class nodeStyle
-                    , onClick (SelectNode node.id)
+                    , onClick msg
                     ]
                     [ text node.name ]
                 ]

@@ -22,6 +22,7 @@ type ModalAction
 
 type Msg
     = ShowContainer
+    | LoadContainer NodeType NodeId
     | AuthenticateResponse (WebData AuthResult)
     | SelectPath NodeId
     | SelectTab TabType

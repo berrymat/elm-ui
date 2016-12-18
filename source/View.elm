@@ -101,6 +101,12 @@ page model =
                     model.container
                 )
 
+        ContainerRoot ->
+            Html.map ContainerMsg
+                (Container.View.view
+                    model.container
+                )
+
         NotFoundRoute ->
             notFoundView
 

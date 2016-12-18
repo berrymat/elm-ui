@@ -3,6 +3,7 @@ module Content.Update exposing (..)
 import Content.Commands exposing (..)
 import Content.Messages exposing (..)
 import Content.Models exposing (..)
+import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Tree.Messages
 import Tree.Update
@@ -51,10 +52,10 @@ update message content =
             case content of
                 FoldersContent folders ->
                     let
-                        ( updatedTree, cmdTree, path ) =
+                        ( updatedTree, cmdTree, maybePath, maybeRoot ) =
                             Tree.Update.update subMsg folders.tree
                     in
-                        updatePathFromTree content folders updatedTree cmdTree path
+                        updatePathFromTree content folders updatedTree cmdTree maybePath maybeRoot
 
                 UsersContent _ ->
                     ( content, Cmd.none )
@@ -94,30 +95,35 @@ update message content =
                     ( content, Cmd.none )
 
 
-updatePathFromTree : Content -> Folders -> Tree -> Cmd Tree.Messages.Msg -> List Node -> ( Content, Cmd Msg )
-updatePathFromTree content folders updatedTree cmdTree path =
-    let
-        maybeSelected =
-            log "path" (List.head path)
+updatePathFromTree : Content -> Folders -> Tree -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> ( Content, Cmd Msg )
+updatePathFromTree content folders updatedTree cmdTree maybePath maybeRoot =
+    case maybePath of
+        Just path ->
+            let
+                maybeSelected =
+                    log "path" (List.head path)
 
-        folderId =
-            case maybeSelected of
-                Just selected ->
-                    selected.id
+                folderId =
+                    case maybeSelected of
+                        Just selected ->
+                            selected.id
 
-                Nothing ->
-                    updatedTree.id
+                        Nothing ->
+                            updatedTree.id
 
-        cmdFiles =
-            if folderId /= folders.folderId then
-                log "fetchFiles" (fetchFiles folderId)
-            else
-                Cmd.none
+                cmdFiles =
+                    if folderId /= folders.folderId then
+                        log "fetchFiles" (fetchFiles folderId)
+                    else
+                        Cmd.none
 
-        cmdBatch =
-            Cmd.batch
-                [ Cmd.map TreeMsg cmdTree
-                , cmdFiles
-                ]
-    in
-        ( FoldersContent { folders | tree = updatedTree, path = path }, cmdBatch )
+                cmdBatch =
+                    Cmd.batch
+                        [ Cmd.map TreeMsg cmdTree
+                        , cmdFiles
+                        ]
+            in
+                ( FoldersContent { folders | tree = updatedTree, path = path }, cmdBatch )
+
+        Nothing ->
+            ( FoldersContent folders, Cmd.none )

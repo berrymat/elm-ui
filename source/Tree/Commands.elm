@@ -1,6 +1,5 @@
 module Tree.Commands exposing (..)
 
-import Http
 import Json.Decode as Decode exposing (field)
 import Tree.Messages exposing (..)
 import Tree.Models exposing (..)
@@ -29,11 +28,12 @@ fetchNodeUrl nodeId =
 
 tempNodeDecoder : Decode.Decoder TempNode
 tempNodeDecoder =
-    Decode.map4 TempNode
+    Decode.map5 TempNode
         (field "id" Decode.string)
         (field "type" Decode.string)
         (field "name" Decode.string)
         (field "hasChildren" Decode.bool)
+        (field "isRoot" Decode.bool)
 
 
 tempRootDecoder : Decode.Decoder TempRoot

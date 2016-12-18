@@ -5,6 +5,8 @@ import Messages exposing (Msg(..))
 import Models exposing (Model)
 import Players.Update
 import Teams.Update
+import Helpers.Models exposing (..)
+import Container.Messages
 import Container.Update
 import Routing exposing (Route(..), parseLocation)
 import Players.Commands
@@ -13,26 +15,26 @@ import Container.Commands
 import Tree.Models exposing (convertNodeType)
 
 
-fetchData : Model -> Cmd Msg
+fetchData : Model -> ( Model, Cmd Msg )
 fetchData model =
     case model.route of
         PlayersRoute ->
             if List.isEmpty model.players then
-                Cmd.map PlayersMsg Players.Commands.fetchAll
+                ( model, Cmd.map PlayersMsg Players.Commands.fetchAll )
             else
-                Cmd.none
+                ( model, Cmd.none )
 
         PlayerRoute id ->
-            Cmd.none
+            ( model, Cmd.none )
 
         TeamsRoute ->
             if List.isEmpty model.teams then
-                Cmd.map TeamsMsg Teams.Commands.fetchAll
+                ( model, Cmd.map TeamsMsg Teams.Commands.fetchAll )
             else
-                Cmd.none
+                ( model, Cmd.none )
 
         TeamRoute id ->
-            Cmd.none
+            ( model, Cmd.none )
 
         ContainerRoute type_ id ->
             let
@@ -41,19 +43,26 @@ fetchData model =
             in
                 case maybeNodeType of
                     Just nodeType ->
-                        Cmd.map ContainerMsg
-                            (Container.Commands.authenticate
-                                "berry.matthew@me.com"
-                                "Cirrus8914!"
-                                nodeType
-                                id
-                            )
+                        let
+                            ( newContainer, containerMsg ) =
+                                Container.Update.update (Container.Messages.LoadContainer nodeType id)
+                                    model.container
+                        in
+                            ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
 
                     Nothing ->
-                        Cmd.none
+                        ( model, Cmd.none )
+
+        ContainerRoot ->
+            let
+                ( newContainer, containerMsg ) =
+                    Container.Update.update (Container.Messages.LoadContainer RootType "")
+                        model.container
+            in
+                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
 
         NotFoundRoute ->
-            Cmd.none
+            ( model, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -97,4 +106,4 @@ update msg model =
                 newModel =
                     { model | route = newRoute }
             in
-                ( newModel, fetchData newModel )
+                fetchData newModel

@@ -9,6 +9,7 @@ type Route
     | PlayerRoute String
     | TeamsRoute
     | TeamRoute String
+    | ContainerRoot
     | ContainerRoute String String
     | NotFoundRoute
 
@@ -22,6 +23,7 @@ matchers =
         , map TeamRoute (s "teams" </> string)
         , map TeamsRoute (s "teams")
         , map ContainerRoute (s "container" </> string </> s "path" </> string)
+        , map ContainerRoot (s "container")
         ]
 
 

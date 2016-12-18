@@ -18,7 +18,7 @@ init location =
         model =
             initialModel currentRoute
     in
-        ( model, fetchData model )
+        fetchData model
 
 
 subscriptions : Model -> Sub Msg

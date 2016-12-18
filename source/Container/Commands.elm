@@ -12,6 +12,7 @@ import Helpers.Helpers exposing (apiUrl)
 import Erl
 import Http
 import Json.Decode as Decode exposing (field)
+import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import HttpBuilder exposing (..)
 import RemoteData exposing (..)
 import Components.Form as Form
@@ -43,14 +44,38 @@ authenticateUrl username password =
 
 authenticateDecoder : NodeType -> NodeId -> Decode.Decoder AuthResult
 authenticateDecoder nodeType nodeId =
-    Decode.map (AuthResult nodeType nodeId)
-        Decode.string
+    decode (makeAuthResult nodeType nodeId)
+        |> required "type" Decode.string
+        |> required "id" Decode.string
+        |> required "result" Decode.string
+
+
+makeAuthResult : NodeType -> NodeId -> String -> String -> String -> AuthResult
+makeAuthResult nodeType nodeId resultTypeString resultId result =
+    let
+        resultType =
+            Maybe.withDefault RootType (convertNodeType resultTypeString)
+    in
+        AuthResult
+            (if nodeId == "" then
+                resultType
+             else
+                nodeType
+            )
+            (if nodeId == "" then
+                resultId
+             else
+                nodeId
+            )
+            result
 
 
 fetchIfAuthorized : Container -> AuthResult -> ( Container, Cmd Msg )
 fetchIfAuthorized container authResult =
     if authResult.result == "OK" then
-        fetchInitialData authResult.nodeType authResult.nodeId container
+        fetchInitialData authResult.nodeType
+            authResult.nodeId
+            { container | authResult = Success authResult }
     else
         ( container, Cmd.none )
 
@@ -59,16 +84,10 @@ fetchInitialData : NodeType -> NodeId -> Container -> ( Container, Cmd Msg )
 fetchInitialData nodeType nodeId container =
     let
         treeCmd =
-            if container.tree.childrenState == NoChildren then
-                Cmd.map TreeMsg (Tree.Commands.fetchRoot nodeId)
-            else
-                Cmd.none
+            Cmd.map TreeMsg (Tree.Commands.fetchRoot nodeId)
 
         ( newContainer, headerCmd ) =
-            if (isHeaderEmpty container.headerData) then
-                Header.Commands.fetchHeader container ( nodeType, nodeId )
-            else
-                ( container, Cmd.none )
+            Header.Commands.fetchHeader container ( nodeType, nodeId )
     in
         ( newContainer, Cmd.batch [ treeCmd, headerCmd ] )
 

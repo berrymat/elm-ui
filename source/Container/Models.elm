@@ -8,7 +8,8 @@ import RemoteData exposing (..)
 
 
 type alias Container =
-    { tree : Tree
+    { authResult : WebData AuthResult
+    , tree : Tree
     , path : List Node
     , headerData : WebData HeaderData
     , headerUi : HeaderUi
@@ -19,7 +20,8 @@ type alias Container =
 
 initialContainer : Container
 initialContainer =
-    { tree = initialTree
+    { authResult = NotAsked
+    , tree = initialTree
     , path = []
     , headerData = NotAsked
     , headerUi = initialHeaderUi

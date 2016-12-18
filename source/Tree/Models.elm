@@ -8,6 +8,7 @@ type alias TempNode =
     , type_ : String
     , name : String
     , hasChildren : Bool
+    , isRoot : Bool
     }
 
 
@@ -31,6 +32,7 @@ type ChildrenState
     | Collapsed
     | Expanding
     | Expanded
+    | RootNode
 
 
 type alias Node =
