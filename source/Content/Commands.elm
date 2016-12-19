@@ -8,6 +8,7 @@ import Tree.Models exposing (..)
 import Table
 import Debug
 import Helpers.Helpers exposing (apiUrl, fetcher)
+import RemoteData exposing (..)
 
 
 fetchContent : TabType -> NodeId -> Cmd Msg
@@ -150,7 +151,7 @@ createNode nodeId type_ name children =
          else
             Expanded
         )
-        (ChildNodes children)
+        (Success (ChildNodes children))
 
 
 createChild : NodeId -> String -> String -> Node
@@ -172,7 +173,7 @@ createChild nodeId type_ name =
              else
                 Expanded
             )
-            (ChildNodes children)
+            (Success (ChildNodes children))
 
 
 usersDecoder : Decode.Decoder Users

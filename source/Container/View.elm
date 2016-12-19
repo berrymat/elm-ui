@@ -5,6 +5,7 @@ import Html.Attributes exposing (class, style, attribute, href, id, classList, s
 import Html.Events exposing (onClick)
 import Container.Messages exposing (..)
 import Container.Models exposing (..)
+import Tree.Models exposing (..)
 import Helpers.Models exposing (..)
 import Tree.View
 import Header.View
@@ -14,11 +15,17 @@ import RemoteData exposing (..)
 
 view : Container -> Html Msg
 view container =
+    RemoteData.map (viewSuccess container) container.tree
+        |> RemoteData.withDefault (div [] [])
+
+
+viewSuccess : Container -> Tree -> Html Msg
+viewSuccess container tree =
     div [ class "fullview" ]
         [ div [ class "sidebar" ]
             [ Html.map
                 TreeMsg
-                (Tree.View.view container.tree)
+                (Tree.View.view tree)
             ]
         , div [ class "body" ]
             [ Header.View.view container
@@ -53,10 +60,13 @@ lastPathItem item =
 
 viewPath : Container -> Html Msg
 viewPath container =
-    let
-        tree =
-            container.tree
+    RemoteData.map (viewPathSuccess container) container.tree
+        |> RemoteData.withDefault (div [] [])
 
+
+viewPathSuccess : Container -> Tree -> Html Msg
+viewPathSuccess container tree =
+    let
         rootItem =
             { id = tree.id, nodeType = tree.nodeType, name = tree.name }
 

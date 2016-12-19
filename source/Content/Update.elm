@@ -7,6 +7,7 @@ import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Tree.Messages
 import Tree.Update
+import RemoteData exposing (..)
 import Debug exposing (..)
 
 
@@ -53,9 +54,9 @@ update message content =
                 FoldersContent folders ->
                     let
                         ( updatedTree, cmdTree, maybePath, maybeRoot ) =
-                            Tree.Update.update subMsg folders.tree
+                            Tree.Update.update subMsg (Success folders.tree)
                     in
-                        updatePathFromTree content folders updatedTree cmdTree maybePath maybeRoot
+                        updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree
 
                 UsersContent _ ->
                     ( content, Cmd.none )
@@ -95,8 +96,14 @@ update message content =
                     ( content, Cmd.none )
 
 
-updatePathFromTree : Content -> Folders -> Tree -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> ( Content, Cmd Msg )
-updatePathFromTree content folders updatedTree cmdTree maybePath maybeRoot =
+updatePathFromTree : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Content, Cmd Msg )
+updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree =
+    RemoteData.map (updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot) updatedTree
+        |> RemoteData.withDefault ( content, Cmd.none )
+
+
+updatePathFromTreeSuccess : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ( Content, Cmd Msg )
+updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTree =
     case maybePath of
         Just path ->
             let

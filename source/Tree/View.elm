@@ -5,6 +5,7 @@ import Html.Attributes exposing (class, attribute, href, id, classList)
 import Html.Events exposing (onClick)
 import Tree.Messages exposing (..)
 import Tree.Models exposing (..)
+import RemoteData exposing (..)
 
 
 view : Tree -> Html Msg
@@ -130,9 +131,6 @@ viewNode node =
                     " k-state-selected"
                    else
                     ""
-
-        (Tree.Models.ChildNodes childNodes) =
-            node.childNodes
     in
         li
             [ class "k-item"
@@ -158,5 +156,16 @@ viewNode node =
                     [ text node.name ]
                 ]
             , ul [ class "k-group", attribute "role" "group", attribute "style" childStyle ]
-                (List.map viewNode childNodes)
+                (viewChildNodes node.childNodes)
             ]
+
+
+viewChildNodes : WebData ChildNodes -> List (Html Msg)
+viewChildNodes childNodes =
+    RemoteData.map viewChildren childNodes
+        |> RemoteData.withDefault [ div [] [] ]
+
+
+viewChildren : ChildNodes -> List (Html Msg)
+viewChildren (ChildNodes childNodes) =
+    List.map viewNode childNodes

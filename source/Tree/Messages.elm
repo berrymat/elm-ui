@@ -1,13 +1,13 @@
 module Tree.Messages exposing (..)
 
-import Http
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
+import RemoteData exposing (WebData)
 
 
 type Msg
-    = OnFetchRoot (Result Http.Error TempRoot)
-    | OnFetchNode NodeId (Result Http.Error TempChildren)
+    = OnFetchRoot (WebData TempRoot)
+    | OnFetchNode NodeId (WebData TempChildren)
     | ToggleNode NodeId
     | SelectRoot
     | SelectNode NodeId

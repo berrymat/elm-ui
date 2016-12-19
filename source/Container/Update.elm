@@ -18,8 +18,14 @@ import Ui.Modal
 import Components.Form as Form
 
 
-updatePathFromTree : Container -> Tree -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> ( Container, Cmd Msg )
-updatePathFromTree container updatedTree cmdTree maybePath maybeRoot =
+updatePathFromTree : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Container, Cmd Msg )
+updatePathFromTree container cmdTree maybePath maybeRoot updatedTree =
+    RemoteData.map (updatePathFromTreeSuccess container cmdTree maybePath maybeRoot) updatedTree
+        |> RemoteData.withDefault ( container, Cmd.none )
+
+
+updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ( Container, Cmd Msg )
+updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
     let
         ( newContainer, cmdHeader ) =
             case maybePath of
@@ -47,7 +53,7 @@ updatePathFromTree container updatedTree cmdTree maybePath maybeRoot =
                 , cmdRoot
                 ]
     in
-        ( { newContainer | tree = updatedTree }, cmdBatch )
+        ( { newContainer | tree = Success updatedTree }, cmdBatch )
 
 
 update : Msg -> Container -> ( Container, Cmd Msg )
@@ -93,7 +99,7 @@ update message container =
                     ( updatedTree, cmdTree, maybePath, maybeRoot ) =
                         Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
                 in
-                    updatePathFromTree container updatedTree cmdTree maybePath maybeRoot
+                    updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
 
             SelectTab tabType ->
                 let
@@ -113,7 +119,7 @@ update message container =
                     ( updatedTree, cmdTree, maybePath, maybeRoot ) =
                         Tree.Update.update subMsg container.tree
                 in
-                    updatePathFromTree container updatedTree cmdTree maybePath maybeRoot
+                    updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
 
             ContentMsg subMsg ->
                 let

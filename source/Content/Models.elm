@@ -3,6 +3,7 @@ module Content.Models exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (Tree, Node)
 import Table
+import RemoteData exposing (WebData)
 
 
 type Content

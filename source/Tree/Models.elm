@@ -1,6 +1,7 @@
 module Tree.Models exposing (..)
 
 import Helpers.Models exposing (..)
+import RemoteData exposing (..)
 
 
 type alias TempNode =
@@ -41,7 +42,7 @@ type alias Node =
     , name : String
     , selected : Bool
     , childrenState : ChildrenState
-    , childNodes : ChildNodes
+    , childNodes : WebData ChildNodes
     }
 
 
@@ -76,20 +77,6 @@ convertNodeType type_ =
         Just FolderType
     else
         Nothing
-
-
-
-{-
-   new : Node
-   new =
-       { id = "0"
-       , nodeType = RootType
-       , name = ""
-       , selected = False
-       , childrenState = NoChildren
-       , childNodes = ChildNodes []
-       }
--}
 
 
 initialTree : Tree
