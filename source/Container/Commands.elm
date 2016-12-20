@@ -83,6 +83,9 @@ fetchIfAuthorized container authResult =
 fetchInitialData : NodeType -> NodeId -> Container -> ( Container, Cmd Msg )
 fetchInitialData nodeType nodeId container =
     let
+        x =
+            Debug.log "fetchInitialData" ( nodeType, nodeId )
+
         treeCmd =
             Cmd.map TreeMsg (Tree.Commands.fetchRoot nodeId)
 

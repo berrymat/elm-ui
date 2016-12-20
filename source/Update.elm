@@ -14,6 +14,14 @@ import Tree.Models exposing (convertNodeType)
 fetchData : Model -> ( Model, Cmd Msg )
 fetchData model =
     case model.route of
+        ContainerRoot ->
+            let
+                ( newContainer, containerMsg ) =
+                    Container.Update.update (Container.Messages.LoadContainer RootType "")
+                        model.container
+            in
+                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
+
         ContainerRoute type_ id ->
             let
                 maybeNodeType =
@@ -30,14 +38,6 @@ fetchData model =
 
                     Nothing ->
                         ( model, Cmd.none )
-
-        ContainerRoot ->
-            let
-                ( newContainer, containerMsg ) =
-                    Container.Update.update (Container.Messages.LoadContainer RootType "")
-                        model.container
-            in
-                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
 
         NotFoundRoute ->
             ( model, Cmd.none )

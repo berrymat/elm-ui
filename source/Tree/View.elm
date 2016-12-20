@@ -38,23 +38,6 @@ viewRoot tree =
             else
                 "false"
 
-        ( iconClass, faClass ) =
-            case tree.childrenState of
-                Collapsed ->
-                    ( "k-icon k-plus", "fa fa-caret-right" )
-
-                Expanding ->
-                    ( "k-icon k-minus", "fa fa-spin fa-refresh" )
-
-                Expanded ->
-                    ( "k-icon k-minus", "fa fa-caret-down" )
-
-                NoChildren ->
-                    ( "", "" )
-
-                RootNode ->
-                    ( "k-icon k-minus", "fa fa-angle-double-right" )
-
         nodeStyle =
             "k-in btn regular p0"
                 ++ if tree.selected then
@@ -72,21 +55,8 @@ viewRoot tree =
             , attribute "role" "treeitem"
             ]
             [ div [ class "k-mid" ]
-                [ span
-                    [ class iconClass
-                    , attribute "role" "presentation"
-                    , onClick (ToggleNode tree.id)
-                    ]
-                    [ i
-                        [ class faClass
-                        ]
-                        []
-                    ]
-                , div
-                    [ class nodeStyle
-                    , onClick SelectRoot
-                    ]
-                    [ text tree.name ]
+                [ nodeIcon (nodeClasses tree.childrenState) (ToggleNode tree.id)
+                , nodeText tree.selected tree.name SelectRoot
                 ]
             , ul [ class "k-group", attribute "role" "group", attribute "style" childStyle ]
                 (List.map viewNode childNodes)
@@ -108,29 +78,7 @@ viewNode node =
             else
                 "false"
 
-        ( iconClass, faClass, msg ) =
-            case node.childrenState of
-                Collapsed ->
-                    ( "k-icon k-plus", "fa fa-caret-right", (SelectNode node.id) )
-
-                Expanding ->
-                    ( "k-icon k-minus", "fa fa-spin fa-refresh", (SelectNode node.id) )
-
-                Expanded ->
-                    ( "k-icon k-minus", "fa fa-caret-down", (SelectNode node.id) )
-
-                NoChildren ->
-                    ( "", "", (SelectNode node.id) )
-
-                RootNode ->
-                    ( "k-icon k-minus", "fa fa-angle-double-right", (SelectNewRoot node.nodeType node.id) )
-
-        nodeStyle =
-            "k-in btn regular p0"
-                ++ if node.selected then
-                    " k-state-selected"
-                   else
-                    ""
+        -- SelectNewRoot node.nodeType node.id
     in
         li
             [ class "k-item"
@@ -138,23 +86,7 @@ viewNode node =
             , attribute "data-expanded" expandedValue
             , attribute "role" "treeitem"
             ]
-            [ div [ class "k-mid" ]
-                [ span
-                    [ class iconClass
-                    , attribute "role" "presentation"
-                    , onClick (ToggleNode node.id)
-                    ]
-                    [ i
-                        [ class faClass
-                        ]
-                        []
-                    ]
-                , div
-                    [ class nodeStyle
-                    , onClick msg
-                    ]
-                    [ text node.name ]
-                ]
+            [ nodeView node
             , ul [ class "k-group", attribute "role" "group", attribute "style" childStyle ]
                 (viewChildNodes node.childNodes)
             ]
@@ -169,3 +101,83 @@ viewChildNodes childNodes =
 viewChildren : ChildNodes -> List (Html Msg)
 viewChildren (ChildNodes childNodes) =
     List.map viewNode childNodes
+
+
+nodeClasses : ChildrenState -> ( String, String )
+nodeClasses childrenState =
+    case childrenState of
+        Collapsed ->
+            ( "k-icon k-plus", "fa fa-caret-right" )
+
+        Expanding ->
+            ( "k-icon k-minus", "fa fa-spin fa-refresh" )
+
+        Expanded ->
+            ( "k-icon k-minus", "fa fa-caret-down" )
+
+        NoChildren ->
+            ( "", "" )
+
+        RootNode ->
+            ( "k-icon k-minus", "fa fa-angle-double-right" )
+
+
+
+-- msg = (ToggleNode node.id)
+
+
+nodeView : Node -> Html Msg
+nodeView node =
+    let
+        iconMsg =
+            case node.childrenState of
+                Collapsed ->
+                    ToggleNode node.id
+
+                Expanding ->
+                    ToggleNode node.id
+
+                Expanded ->
+                    ToggleNode node.id
+
+                NoChildren ->
+                    NoAction
+
+                RootNode ->
+                    OpenNewRoot node.nodeType node.id
+
+        iconHtml =
+            nodeIcon (nodeClasses node.childrenState) iconMsg
+
+        textHtml =
+            nodeText node.selected node.name (SelectNode node.id)
+    in
+        div [ class "k-mid" ]
+            [ iconHtml, textHtml ]
+
+
+nodeIcon : ( String, String ) -> Msg -> Html Msg
+nodeIcon ( iconClass, faClass ) msg =
+    span
+        [ class iconClass
+        , attribute "role" "presentation"
+        , onClick msg
+        ]
+        [ i [ class faClass ] [] ]
+
+
+nodeText : Bool -> String -> Msg -> Html Msg
+nodeText selected name msg =
+    let
+        nodeStyle =
+            "k-in btn regular p0"
+                ++ if selected then
+                    " k-state-selected"
+                   else
+                    ""
+    in
+        div
+            [ class nodeStyle
+            , onClick msg
+            ]
+            [ text name ]

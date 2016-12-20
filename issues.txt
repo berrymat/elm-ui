@@ -1,0 +1,8 @@
++ Clicking Home and navigating doesn't reload anything!
+
++ Initial load doesn't get correct header
+
++ Want to change ChildrenState.Expanding to use WebData status instead
+
++ Child entity types for nav bar should be sent with tree, not entity
+

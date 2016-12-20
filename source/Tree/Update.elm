@@ -7,10 +7,62 @@ import Tree.Commands exposing (..)
 import RemoteData exposing (..)
 
 
+update : Msg -> WebData Tree -> ( WebData Tree, Cmd Msg, Maybe (List Node), Maybe ( NodeType, NodeId ) )
+update message tree =
+    case message of
+        OnFetchRoot tempRoot ->
+            ( fetchedRoot tempRoot tree, Cmd.none, Nothing, Nothing )
+
+        OnFetchNode nodeId tempChildren ->
+            ( fetchedNode nodeId tempChildren tree, Cmd.none, Nothing, Nothing )
+
+        ToggleNode nodeId ->
+            let
+                ( newTree, cmds ) =
+                    toggle nodeId tree
+            in
+                ( newTree, cmds, Nothing, Nothing )
+
+        SelectRoot ->
+            let
+                ( newTree, newPath ) =
+                    select Nothing tree
+            in
+                ( newTree, Cmd.none, newPath, Nothing )
+
+        SelectNode nodeId ->
+            let
+                ( newTree, newPath ) =
+                    select (Just nodeId) tree
+            in
+                ( newTree, Cmd.none, newPath, Nothing )
+
+        OpenNewRoot nodeType nodeId ->
+            let
+                ( newTree, newPath ) =
+                    select (Just nodeId) tree
+            in
+                ( newTree, Cmd.none, Nothing, Just ( nodeType, nodeId ) )
+
+        NoAction ->
+            ( tree, Cmd.none, Nothing, Nothing )
+
+
 selectNode : NodeId -> List Node -> Node -> ( Node, List Node )
 selectNode nodeId path node =
-    RemoteData.map (selectNodeSuccess nodeId node path) node.childNodes
-        |> RemoteData.withDefault ( node, path )
+    let
+        defaultNode =
+            let
+                newNode =
+                    { node | selected = node.id == nodeId }
+
+                newPath =
+                    List.filter (\n -> n.selected) [ newNode ]
+            in
+                ( newNode, newPath )
+    in
+        RemoteData.map (selectNodeSuccess nodeId node path) node.childNodes
+            |> RemoteData.withDefault defaultNode
 
 
 selectNodeSuccess : NodeId -> Node -> List Node -> ChildNodes -> ( Node, List Node )
@@ -244,41 +296,3 @@ fetchedNodeSuccess nodeId tempChildren tree =
             List.map (expandChildren nodeId tempChildren) childNodes
     in
         { tree | childNodes = (ChildNodes newChildren) }
-
-
-update : Msg -> WebData Tree -> ( WebData Tree, Cmd Msg, Maybe (List Node), Maybe ( NodeType, NodeId ) )
-update message tree =
-    case message of
-        OnFetchRoot tempRoot ->
-            ( fetchedRoot tempRoot tree, Cmd.none, Nothing, Nothing )
-
-        OnFetchNode nodeId tempChildren ->
-            ( fetchedNode nodeId tempChildren tree, Cmd.none, Nothing, Nothing )
-
-        ToggleNode nodeId ->
-            let
-                ( newTree, cmds ) =
-                    toggle nodeId tree
-            in
-                ( newTree, cmds, Nothing, Nothing )
-
-        SelectRoot ->
-            let
-                ( newTree, newPath ) =
-                    select Nothing tree
-            in
-                ( newTree, Cmd.none, newPath, Nothing )
-
-        SelectNode nodeId ->
-            let
-                ( newTree, newPath ) =
-                    select (Just nodeId) tree
-            in
-                ( newTree, Cmd.none, newPath, Nothing )
-
-        SelectNewRoot nodeType nodeId ->
-            let
-                ( newTree, newPath ) =
-                    select (Just nodeId) tree
-            in
-                ( newTree, fetchRoot nodeId, newPath, Just ( nodeType, nodeId ) )

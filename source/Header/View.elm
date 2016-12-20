@@ -29,19 +29,30 @@ view container =
     div [ class "body-header" ]
         (case container.headerData of
             NotAsked ->
-                [ text "Initializing." ]
+                (headerPending "fa fa-spin fa-spinner")
 
             Loading ->
-                [ div [ class "header-loading" ]
-                    [ i [ class "fa fa-spin fa-refresh" ] [] ]
-                ]
+                (headerPending "fa fa-spin fa-refresh")
 
             Failure err ->
-                [ text ("Error: " ++ toString err) ]
+                (headerPending "fa fa-exclamation-triangle")
 
             Success data ->
                 (header data.header data.useraccess container.headerUi)
         )
+
+
+headerPending : String -> List (Html Msg)
+headerPending iconClass =
+    [ div [ class "body-header-image" ] []
+      --    , div [ class "body-header-content header-loading" ]
+      --        [ div [ class "header-loading" ]
+      --        [ i [ class iconClass ] [] ]
+      --        ]
+    , div [ class "body-header-extra header-loading" ]
+        [ i [ class iconClass ] [] ]
+      --        []
+    ]
 
 
 header : Header -> UserAccess -> HeaderUi -> List (Html Msg)

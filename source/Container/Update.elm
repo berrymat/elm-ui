@@ -18,44 +18,6 @@ import Ui.Modal
 import Components.Form as Form
 
 
-updatePathFromTree : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Container, Cmd Msg )
-updatePathFromTree container cmdTree maybePath maybeRoot updatedTree =
-    RemoteData.map (updatePathFromTreeSuccess container cmdTree maybePath maybeRoot) updatedTree
-        |> RemoteData.withDefault ( container, Cmd.none )
-
-
-updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ( Container, Cmd Msg )
-updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
-    let
-        ( newContainer, cmdHeader ) =
-            case maybePath of
-                Just path ->
-                    List.head path
-                        |> Maybe.map (\s -> ( s.nodeType, s.id ))
-                        |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id )
-                        |> Header.Commands.fetchHeader { container | path = path }
-
-                Nothing ->
-                    ( container, Cmd.none )
-
-        cmdRoot =
-            case maybeRoot of
-                Just ( treeType, treeId ) ->
-                    Navigation.newUrl ("#container/" ++ (toString treeType) ++ "/path/" ++ treeId)
-
-                Nothing ->
-                    Cmd.none
-
-        cmdBatch =
-            Cmd.batch
-                [ Cmd.map TreeMsg cmdTree
-                , cmdHeader
-                , cmdRoot
-                ]
-    in
-        ( { newContainer | tree = Success updatedTree }, cmdBatch )
-
-
 update : Msg -> Container -> ( Container, Cmd Msg )
 update message container =
     let
@@ -64,31 +26,10 @@ update message container =
     in
         case message of
             ShowContainer ->
-                ( container
-                , Navigation.newUrl "#container"
-                )
+                updateShowContainer container
 
             LoadContainer nodeType nodeId ->
-                case container.authResult of
-                    NotAsked ->
-                        let
-                            cmd =
-                                authenticate
-                                    "berry.matthew@me.com"
-                                    "Cirrus8914!"
-                                    nodeType
-                                    nodeId
-                        in
-                            ( { container | authResult = Loading }, cmd )
-
-                    Loading ->
-                        ( container, Cmd.none )
-
-                    Failure err ->
-                        ( container, Cmd.none )
-
-                    Success result ->
-                        fetchInitialData result.nodeType result.nodeId container
+                updateLoadContainer nodeType nodeId container
 
             AuthenticateResponse result ->
                 RemoteData.map (fetchIfAuthorized container) result
@@ -198,6 +139,114 @@ subscriptions container =
     Sub.batch
         [ Sub.map ActionMenu (Ui.DropdownMenu.subscriptions container.headerUi.actionMenu)
         ]
+
+
+updateShowContainer : Container -> ( Container, Cmd Msg )
+updateShowContainer container =
+    ( container, Navigation.newUrl "#container" )
+
+
+updateLoadContainer : NodeType -> NodeId -> Container -> ( Container, Cmd Msg )
+updateLoadContainer nodeType nodeId container =
+    case container.authResult of
+        NotAsked ->
+            let
+                cmd =
+                    authenticate
+                        "berry.matthew@me.com"
+                        "Cirrus8914!"
+                        nodeType
+                        nodeId
+            in
+                ( { container | authResult = Loading }, cmd )
+
+        Loading ->
+            ( container, Cmd.none )
+
+        Failure err ->
+            ( container, Cmd.none )
+
+        Success result ->
+            let
+                fetchType =
+                    if nodeId == "" then
+                        result.nodeType
+                    else
+                        nodeType
+
+                fetchId =
+                    if nodeId == "" then
+                        result.nodeId
+                    else
+                        nodeId
+            in
+                fetchInitialData fetchType fetchId container
+
+
+updatePathFromTree : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Container, Cmd Msg )
+updatePathFromTree container cmdTree maybePath maybeRoot updatedTree =
+    RemoteData.map (updatePathFromTreeSuccess container cmdTree maybePath maybeRoot) updatedTree
+        |> RemoteData.withDefault ( container, Cmd.none )
+
+
+updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ( Container, Cmd Msg )
+updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
+    let
+        x =
+            Debug.log "updatePathFromTreeSuccess maybePath" maybePath
+
+        y =
+            Debug.log "updatePathFromTreeSuccess maybeRoot" maybeRoot
+
+        ( newContainer, cmdHeader ) =
+            case maybePath of
+                Just path ->
+                    List.head path
+                        |> Maybe.map (\s -> ( s.nodeType, s.id ))
+                        |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id )
+                        |> Header.Commands.fetchHeader { container | path = path }
+
+                Nothing ->
+                    ( container, Cmd.none )
+
+        cmdRoot =
+            case maybeRoot of
+                Just ( treeType, treeId ) ->
+                    Navigation.newUrl ("#container/" ++ (nodeTypeToPath treeType) ++ "/path/" ++ treeId)
+
+                Nothing ->
+                    Cmd.none
+
+        cmdBatch =
+            Cmd.batch
+                [ Cmd.map TreeMsg cmdTree
+                , cmdHeader
+                , cmdRoot
+                ]
+    in
+        ( { newContainer | tree = Success updatedTree }, cmdBatch )
+
+
+nodeTypeToPath : NodeType -> String
+nodeTypeToPath nodeType =
+    case nodeType of
+        RootType ->
+            "Root"
+
+        CustomerType ->
+            "Customer"
+
+        ClientType ->
+            "Client"
+
+        SiteType ->
+            "Site"
+
+        StaffType ->
+            "Staff"
+
+        FolderType ->
+            "Folder"
 
 
 

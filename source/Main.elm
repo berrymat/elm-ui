@@ -17,6 +17,9 @@ init location =
 
         model =
             initialModel currentRoute
+
+        x =
+            Debug.log "Main.elm: init - currentRoute" currentRoute
     in
         fetchData model
 
