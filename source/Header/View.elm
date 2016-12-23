@@ -45,13 +45,8 @@ view container =
 headerPending : String -> List (Html Msg)
 headerPending iconClass =
     [ div [ class "body-header-image" ] []
-      --    , div [ class "body-header-content header-loading" ]
-      --        [ div [ class "header-loading" ]
-      --        [ i [ class iconClass ] [] ]
-      --        ]
     , div [ class "body-header-extra header-loading" ]
         [ i [ class iconClass ] [] ]
-      --        []
     ]
 
 

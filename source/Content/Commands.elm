@@ -152,6 +152,7 @@ createNode nodeId type_ name children =
             Expanded
         )
         (Success (ChildNodes children))
+        RootType
 
 
 createChild : NodeId -> String -> String -> Node
@@ -174,6 +175,7 @@ createChild nodeId type_ name =
                 Expanded
             )
             (Success (ChildNodes children))
+            RootType
 
 
 usersDecoder : Decode.Decoder Users

@@ -29,12 +29,13 @@ fetchNodeUrl nodeId =
 
 tempNodeDecoder : Decode.Decoder TempNode
 tempNodeDecoder =
-    Decode.map5 TempNode
+    Decode.map6 TempNode
         (field "id" Decode.string)
         (field "type" Decode.string)
         (field "name" Decode.string)
         (field "hasChildren" Decode.bool)
         (field "isRoot" Decode.bool)
+        (field "rootType" Decode.string)
 
 
 tempRootDecoder : Decode.Decoder TempRoot

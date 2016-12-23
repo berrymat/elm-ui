@@ -18,6 +18,7 @@ type alias AuthResult =
     { nodeType : NodeType
     , nodeId : NodeId
     , result : String
+    , childtypes : List Entity
     }
 
 
@@ -40,13 +41,19 @@ type Header
 type alias HeaderData =
     { header : Header
     , tabs : List Tab
-    , childtypes : List Tab
+    , childtypes : List Entity
     , useraccess : UserAccess
     }
 
 
 type alias Tab =
     { tabType : TabType
+    , name : String
+    }
+
+
+type alias Entity =
+    { nodeType : NodeType
     , name : String
     }
 

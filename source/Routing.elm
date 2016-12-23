@@ -5,16 +5,20 @@ import UrlParser exposing (..)
 
 
 type Route
-    = ContainerRoot
-    | ContainerRoute String String
+    = HomeRoute
+    | CustomerRoute String
+    | ClientRoute String
+    | StaffRoute String
     | NotFoundRoute
 
 
 matchers : Parser (Route -> a) a
 matchers =
     oneOf
-        [ map ContainerRoute (s "container" </> string </> s "path" </> string)
-        , map ContainerRoot (s "container")
+        [ map HomeRoute (s "Home")
+        , map CustomerRoute (s "Customer" </> string)
+        , map ClientRoute (s "Client" </> string)
+        , map StaffRoute (s "Staff" </> string)
         ]
 
 

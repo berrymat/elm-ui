@@ -13,6 +13,7 @@ type alias Container =
     , path : List Node
     , headerData : WebData HeaderData
     , headerUi : HeaderUi
+    , childtypes : List Entity
     , tab : Tab
     , content : Content
     }
@@ -25,6 +26,7 @@ initialContainer =
     , path = []
     , headerData = NotAsked
     , headerUi = initialHeaderUi
+    , childtypes = []
     , tab = Tab EmptyTab ""
     , content = initialContent
     }

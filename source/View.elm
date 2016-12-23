@@ -11,8 +11,8 @@ import Models exposing (Model)
 import Container.View
 import Container.Messages exposing (Msg(..))
 import Routing exposing (Route(..))
-import Header.Models
-import RemoteData exposing (..)
+import Container.Models exposing (..)
+import RemoteData
 
 
 view : Model -> Html Messages.Msg
@@ -33,30 +33,34 @@ nav model =
         container =
             model.container
 
-        headerId =
-            Header.Models.headerId container.headerData
+        strippedId treeId =
+            String.split "-" treeId
+                |> List.reverse
+                |> List.tail
+                |> Maybe.withDefault []
+                |> List.reverse
+                |> String.join "-"
 
-        headeritem tab =
+        headerId =
+            RemoteData.map (\t -> strippedId t.id) container.tree
+                |> RemoteData.withDefault ""
+
+        headeritem entity =
             Ui.Header.item
-                { text = tab.name
-                , action = Just (ContainerMsg ShowContainer)
+                { text = entity.name
+                , action = Just (ContainerMsg (Goto entity.nodeType headerId))
                 , link = Nothing
                 , target = ""
                 }
 
         childitems =
-            case container.headerData of
-                Success data ->
-                    List.map headeritem data.childtypes
-                        |> List.intersperse (Ui.Header.separator)
-
-                _ ->
-                    []
+            List.map headeritem container.childtypes
+                |> List.intersperse (Ui.Header.separator)
 
         items =
             [ Ui.Header.item
                 { text = "Home"
-                , action = Just (ContainerMsg ShowContainer)
+                , action = Just (ContainerMsg GotoHome)
                 , link = Nothing
                 , target = ""
                 }
@@ -87,20 +91,25 @@ footer model =
 page : Model -> Html Messages.Msg
 page model =
     case model.route of
-        ContainerRoute type_ id ->
-            Html.map ContainerMsg
-                (Container.View.view
-                    model.container
-                )
+        HomeRoute ->
+            containerPage model.container
 
-        ContainerRoot ->
-            Html.map ContainerMsg
-                (Container.View.view
-                    model.container
-                )
+        CustomerRoute id ->
+            containerPage model.container
+
+        ClientRoute id ->
+            containerPage model.container
+
+        StaffRoute id ->
+            containerPage model.container
 
         NotFoundRoute ->
             notFoundView
+
+
+containerPage : Container -> Html Messages.Msg
+containerPage container =
+    Html.map ContainerMsg (Container.View.view container)
 
 
 notFoundView : Html msg

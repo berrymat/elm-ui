@@ -7,37 +7,42 @@ import Helpers.Models exposing (..)
 import Container.Messages
 import Container.Update
 import Routing exposing (Route(..), parseLocation)
-import Container.Commands
-import Tree.Models exposing (convertNodeType)
 
 
 fetchData : Model -> ( Model, Cmd Msg )
 fetchData model =
     case model.route of
-        ContainerRoot ->
+        HomeRoute ->
             let
                 ( newContainer, containerMsg ) =
-                    Container.Update.update (Container.Messages.LoadContainer RootType "")
+                    Container.Update.update (Container.Messages.LoadContainer RootType "" RootType)
                         model.container
             in
                 ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
 
-        ContainerRoute type_ id ->
+        CustomerRoute id ->
             let
-                maybeNodeType =
-                    Debug.log "convertNodeType" (convertNodeType type_)
+                ( newContainer, containerMsg ) =
+                    Container.Update.update (Container.Messages.LoadContainer RootType id CustomerType)
+                        model.container
             in
-                case maybeNodeType of
-                    Just nodeType ->
-                        let
-                            ( newContainer, containerMsg ) =
-                                Container.Update.update (Container.Messages.LoadContainer nodeType id)
-                                    model.container
-                        in
-                            ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
+                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
 
-                    Nothing ->
-                        ( model, Cmd.none )
+        ClientRoute id ->
+            let
+                ( newContainer, containerMsg ) =
+                    Container.Update.update (Container.Messages.LoadContainer CustomerType id ClientType)
+                        model.container
+            in
+                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
+
+        StaffRoute id ->
+            let
+                ( newContainer, containerMsg ) =
+                    Container.Update.update (Container.Messages.LoadContainer CustomerType id StaffType)
+                        model.container
+            in
+                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
 
         NotFoundRoute ->
             ( model, Cmd.none )

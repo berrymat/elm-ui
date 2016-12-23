@@ -214,6 +214,9 @@ createNode tempNode =
     let
         nodeType =
             Maybe.withDefault RootType (convertNodeType tempNode.type_)
+
+        rootType =
+            Maybe.withDefault RootType (convertNodeType tempNode.rootType)
     in
         { id = tempNode.id
         , nodeType = nodeType
@@ -227,6 +230,7 @@ createNode tempNode =
             else
                 NoChildren
         , childNodes = NotAsked
+        , rootType = rootType
         }
 
 

@@ -144,7 +144,7 @@ nodeView node =
                     NoAction
 
                 RootNode ->
-                    OpenNewRoot node.nodeType node.id
+                    OpenNewRoot node.rootType node.id
 
         iconHtml =
             nodeIcon (nodeClasses node.childrenState) iconMsg

@@ -10,6 +10,7 @@ type alias TempNode =
     , name : String
     , hasChildren : Bool
     , isRoot : Bool
+    , rootType : String
     }
 
 
@@ -43,6 +44,7 @@ type alias Node =
     , selected : Bool
     , childrenState : ChildrenState
     , childNodes : WebData ChildNodes
+    , rootType : NodeType
     }
 
 

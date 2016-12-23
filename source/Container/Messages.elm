@@ -21,14 +21,15 @@ type ModalAction
 
 
 type Msg
-    = ShowContainer
-    | LoadContainer NodeType NodeId
+    = GotoHome
+    | Goto NodeType NodeId
+    | LoadContainer NodeType NodeId NodeType
     | AuthenticateResponse (WebData AuthResult)
     | SelectPath NodeId
     | SelectTab TabType
     | TreeMsg Tree.Messages.Msg
     | ContentMsg Content.Messages.Msg
-    | HeaderResponse (WebData HeaderData)
+    | HeaderResponse Bool (WebData HeaderData)
     | HeaderPutResponse (WebData HeaderData)
       -- ACTION MENU
     | ActionMenu Ui.DropdownMenu.Msg

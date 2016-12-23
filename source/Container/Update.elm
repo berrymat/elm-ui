@@ -6,6 +6,7 @@ import Container.Models exposing (..)
 import Tree.Messages
 import Tree.Update
 import Tree.Models exposing (..)
+import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (..)
 import Header.Commands
@@ -25,11 +26,14 @@ update message container =
             container.headerUi
     in
         case message of
-            ShowContainer ->
-                updateShowContainer container
+            GotoHome ->
+                updateGotoHome container
 
-            LoadContainer nodeType nodeId ->
-                updateLoadContainer nodeType nodeId container
+            Goto nodeType nodeId ->
+                updateGoto container nodeType nodeId
+
+            LoadContainer parentType nodeId childType ->
+                updateLoadContainer parentType nodeId childType container
 
             AuthenticateResponse result ->
                 RemoteData.map (fetchIfAuthorized container) result
@@ -69,8 +73,8 @@ update message container =
                 in
                     ( { container | content = updatedContent }, Cmd.map ContentMsg cmdContent )
 
-            HeaderResponse newHeaderData ->
-                RemoteData.map (fetchContent container) newHeaderData
+            HeaderResponse isTree newHeaderData ->
+                RemoteData.map (fetchContent container isTree) newHeaderData
                     |> RemoteData.withDefault ( container, Cmd.none )
 
             HeaderPutResponse webdata ->
@@ -141,13 +145,27 @@ subscriptions container =
         ]
 
 
-updateShowContainer : Container -> ( Container, Cmd Msg )
-updateShowContainer container =
-    ( container, Navigation.newUrl "#container" )
+updateGotoHome : Container -> ( Container, Cmd Msg )
+updateGotoHome container =
+    ( container, Navigation.newUrl "#Home" )
 
 
-updateLoadContainer : NodeType -> NodeId -> Container -> ( Container, Cmd Msg )
-updateLoadContainer nodeType nodeId container =
+updateGoto : Container -> NodeType -> NodeId -> ( Container, Cmd Msg )
+updateGoto container nodeType nodeId =
+    ( container, goto nodeType nodeId )
+
+
+goto : NodeType -> NodeId -> Cmd Msg
+goto nodeType nodeId =
+    let
+        path =
+            nodeTypeToPath nodeType
+    in
+        Navigation.newUrl ("#" ++ path ++ "/" ++ nodeId)
+
+
+updateLoadContainer : NodeType -> NodeId -> NodeType -> Container -> ( Container, Cmd Msg )
+updateLoadContainer parentType nodeId childType container =
     case container.authResult of
         NotAsked ->
             let
@@ -155,8 +173,6 @@ updateLoadContainer nodeType nodeId container =
                     authenticate
                         "berry.matthew@me.com"
                         "Cirrus8914!"
-                        nodeType
-                        nodeId
             in
                 ( { container | authResult = Loading }, cmd )
 
@@ -168,19 +184,37 @@ updateLoadContainer nodeType nodeId container =
 
         Success result ->
             let
-                fetchType =
-                    if nodeId == "" then
-                        result.nodeType
-                    else
-                        nodeType
-
-                fetchId =
-                    if nodeId == "" then
-                        result.nodeId
-                    else
-                        nodeId
+                maybeTypes =
+                    maybeAuthResultTypes result
             in
-                fetchInitialData fetchType fetchId container
+                case maybeTypes of
+                    Just ( resultParentType, resultNodeId, resultChildType ) ->
+                        let
+                            parentType_ =
+                                if nodeId == "" then
+                                    resultParentType
+                                else
+                                    parentType
+
+                            nodeId_ =
+                                if nodeId == "" then
+                                    resultNodeId
+                                else
+                                    nodeId
+
+                            childType_ =
+                                if nodeId == "" then
+                                    resultChildType
+                                else
+                                    childType
+                        in
+                            fetchInitialData parentType_
+                                nodeId_
+                                childType_
+                                container
+
+                    Nothing ->
+                        ( container, Cmd.none )
 
 
 updatePathFromTree : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Container, Cmd Msg )
@@ -202,8 +236,8 @@ updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
             case maybePath of
                 Just path ->
                     List.head path
-                        |> Maybe.map (\s -> ( s.nodeType, s.id ))
-                        |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id )
+                        |> Maybe.map (\s -> ( s.nodeType, s.id, False ))
+                        |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id, True )
                         |> Header.Commands.fetchHeader { container | path = path }
 
                 Nothing ->
@@ -212,7 +246,7 @@ updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
         cmdRoot =
             case maybeRoot of
                 Just ( treeType, treeId ) ->
-                    Navigation.newUrl ("#container/" ++ (nodeTypeToPath treeType) ++ "/path/" ++ treeId)
+                    goto treeType treeId
 
                 Nothing ->
                     Cmd.none
@@ -225,28 +259,6 @@ updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
                 ]
     in
         ( { newContainer | tree = Success updatedTree }, cmdBatch )
-
-
-nodeTypeToPath : NodeType -> String
-nodeTypeToPath nodeType =
-    case nodeType of
-        RootType ->
-            "Root"
-
-        CustomerType ->
-            "Customer"
-
-        ClientType ->
-            "Client"
-
-        SiteType ->
-            "Site"
-
-        StaffType ->
-            "Staff"
-
-        FolderType ->
-            "Folder"
 
 
 

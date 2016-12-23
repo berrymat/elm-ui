@@ -6,7 +6,7 @@ import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Header.Models exposing (isHeaderEmpty, getTabFromType)
 import Tree.Commands
-import Header.Commands
+import Header.Commands exposing (..)
 import Content.Commands
 import Helpers.Helpers exposing (apiUrl)
 import Erl
@@ -21,12 +21,13 @@ import Header.Customer.View
 import Header.Client.View
 import Header.Site.View
 import Header.Staff.View
+import Helpers.Helpers exposing (..)
 
 
-authenticate : String -> String -> NodeType -> NodeId -> Cmd Msg
-authenticate username password nodeType nodeId =
+authenticate : String -> String -> Cmd Msg
+authenticate username password =
     HttpBuilder.get (authenticateUrl username password)
-        |> withExpect (Http.expectJson (authenticateDecoder nodeType nodeId))
+        |> withExpect (Http.expectJson authenticateDecoder)
         |> withCredentials
         |> send (AuthenticateResponse << RemoteData.fromResult)
 
@@ -42,67 +43,86 @@ authenticateUrl username password =
         Erl.toString erl
 
 
-authenticateDecoder : NodeType -> NodeId -> Decode.Decoder AuthResult
-authenticateDecoder nodeType nodeId =
-    decode (makeAuthResult nodeType nodeId)
+authenticateDecoder : Decode.Decoder AuthResult
+authenticateDecoder =
+    decode makeAuthResult
         |> required "type" Decode.string
         |> required "id" Decode.string
         |> required "result" Decode.string
+        |> required "childtypes" (Decode.list entityDecoder)
 
 
-makeAuthResult : NodeType -> NodeId -> String -> String -> String -> AuthResult
-makeAuthResult nodeType nodeId resultTypeString resultId result =
+makeAuthResult : String -> String -> String -> List Entity -> AuthResult
+makeAuthResult resultTypeString resultId result childtypes =
     let
         resultType =
             Maybe.withDefault RootType (convertNodeType resultTypeString)
     in
         AuthResult
-            (if nodeId == "" then
-                resultType
-             else
-                nodeType
-            )
-            (if nodeId == "" then
-                resultId
-             else
-                nodeId
-            )
+            resultType
+            resultId
             result
+            childtypes
+
+
+maybeAuthResultTypes : AuthResult -> Maybe ( NodeType, NodeId, NodeType )
+maybeAuthResultTypes authResult =
+    if authResult.result == "OK" then
+        List.head authResult.childtypes
+            |> Maybe.map (\r -> ( authResult.nodeType, authResult.nodeId, r.nodeType ))
+    else
+        Nothing
 
 
 fetchIfAuthorized : Container -> AuthResult -> ( Container, Cmd Msg )
 fetchIfAuthorized container authResult =
-    if authResult.result == "OK" then
-        fetchInitialData authResult.nodeType
-            authResult.nodeId
-            { container | authResult = Success authResult }
-    else
-        ( container, Cmd.none )
+    let
+        maybeTypes =
+            maybeAuthResultTypes authResult
+    in
+        case maybeTypes of
+            Just ( parentType, nodeId, childType ) ->
+                fetchInitialData parentType
+                    nodeId
+                    childType
+                    { container | authResult = Success authResult }
+
+            Nothing ->
+                ( container, Cmd.none )
 
 
-fetchInitialData : NodeType -> NodeId -> Container -> ( Container, Cmd Msg )
-fetchInitialData nodeType nodeId container =
+fetchInitialData : NodeType -> NodeId -> NodeType -> Container -> ( Container, Cmd Msg )
+fetchInitialData parentType nodeId childType container =
     let
         x =
-            Debug.log "fetchInitialData" ( nodeType, nodeId )
+            Debug.log "fetchInitialData" ( parentType, nodeId, childType )
+
+        treeId =
+            nodeId ++ "-" ++ (nodeTypeToPath childType)
 
         treeCmd =
-            Cmd.map TreeMsg (Tree.Commands.fetchRoot nodeId)
+            Cmd.map TreeMsg (Tree.Commands.fetchRoot treeId)
 
         ( newContainer, headerCmd ) =
-            Header.Commands.fetchHeader container ( nodeType, nodeId )
+            Header.Commands.fetchHeader container ( parentType, nodeId, True )
     in
         ( newContainer, Cmd.batch [ treeCmd, headerCmd ] )
 
 
-fetchContent : Container -> HeaderData -> ( Container, Cmd Msg )
-fetchContent container headerData =
+fetchContent : Container -> Bool -> HeaderData -> ( Container, Cmd Msg )
+fetchContent container isTree headerData =
     let
         ui =
             container.headerUi
 
+        childtypes =
+            if isTree then
+                headerData.childtypes
+            else
+                container.childtypes
+
         newContainer =
-            { container | headerData = Success headerData }
+            { container | headerData = Success headerData, childtypes = childtypes }
 
         headerId =
             Header.Models.headerId container.headerData

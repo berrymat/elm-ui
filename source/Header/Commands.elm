@@ -5,32 +5,33 @@ import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Container.Messages exposing (..)
 import Container.Models exposing (..)
+import Tree.Models exposing (..)
 import Header.Models exposing (..)
 import Helpers.Models exposing (..)
 import Helpers.Helpers exposing (apiUrl, fetcher, putter)
 import RemoteData exposing (..)
 
 
-fetchHeader : Container -> ( NodeType, NodeId ) -> ( Container, Cmd Msg )
-fetchHeader container ( nodeType, nodeId ) =
+fetchHeader : Container -> ( NodeType, NodeId, Bool ) -> ( Container, Cmd Msg )
+fetchHeader container ( nodeType, nodeId, isTree ) =
     let
         cmd =
             if nodeId /= "" && nodeId /= (headerId container.headerData) then
                 case nodeType of
                     RootType ->
-                        fetchRoot nodeId
+                        fetchRoot nodeId isTree
 
                     CustomerType ->
-                        fetchCustomer nodeId
+                        fetchCustomer nodeId isTree
 
                     ClientType ->
-                        fetchClient nodeId
+                        fetchClient nodeId isTree
 
                     SiteType ->
-                        fetchSite nodeId
+                        fetchSite nodeId isTree
 
                     StaffType ->
-                        fetchStaff nodeId
+                        fetchStaff nodeId isTree
 
                     FolderType ->
                         Cmd.none
@@ -68,9 +69,9 @@ putHeader nodeId data =
             Cmd.none
 
 
-fetchRoot : NodeId -> Cmd Msg
-fetchRoot nodeId =
-    fetcher (rootUrl nodeId) rootDecoder (HeaderResponse << RemoteData.fromResult)
+fetchRoot : NodeId -> Bool -> Cmd Msg
+fetchRoot nodeId isTree =
+    fetcher (rootUrl nodeId) rootDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
 putRoot : NodeId -> Root -> Cmd Msg
@@ -78,9 +79,9 @@ putRoot nodeId root =
     putter (rootUrl nodeId) (encodeRoot root) rootDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
-fetchCustomer : NodeId -> Cmd Msg
-fetchCustomer nodeId =
-    fetcher (customerUrl nodeId) customerDecoder (HeaderResponse << RemoteData.fromResult)
+fetchCustomer : NodeId -> Bool -> Cmd Msg
+fetchCustomer nodeId isTree =
+    fetcher (customerUrl nodeId) customerDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
 putCustomer : NodeId -> Customer -> Cmd Msg
@@ -88,9 +89,9 @@ putCustomer nodeId customer =
     putter (customerUrl nodeId) (encodeCustomer customer) customerDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
-fetchClient : NodeId -> Cmd Msg
-fetchClient nodeId =
-    fetcher (clientUrl nodeId) clientDecoder (HeaderResponse << RemoteData.fromResult)
+fetchClient : NodeId -> Bool -> Cmd Msg
+fetchClient nodeId isTree =
+    fetcher (clientUrl nodeId) clientDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
 putClient : NodeId -> Client -> Cmd Msg
@@ -98,9 +99,9 @@ putClient nodeId client =
     putter (clientUrl nodeId) (encodeClient client) clientDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
-fetchSite : NodeId -> Cmd Msg
-fetchSite nodeId =
-    fetcher (siteUrl nodeId) siteDecoder (HeaderResponse << RemoteData.fromResult)
+fetchSite : NodeId -> Bool -> Cmd Msg
+fetchSite nodeId isTree =
+    fetcher (siteUrl nodeId) siteDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
 putSite : NodeId -> Site -> Cmd Msg
@@ -108,9 +109,9 @@ putSite nodeId site =
     putter (siteUrl nodeId) (encodeSite site) siteDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
-fetchStaff : NodeId -> Cmd Msg
-fetchStaff nodeId =
-    fetcher (staffUrl nodeId) staffDecoder (HeaderResponse << RemoteData.fromResult)
+fetchStaff : NodeId -> Bool -> Cmd Msg
+fetchStaff nodeId isTree =
+    fetcher (staffUrl nodeId) staffDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
 putStaff : NodeId -> Staff -> Cmd Msg
@@ -158,7 +159,7 @@ rootDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
-        (field "childtypes" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list entityDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -229,7 +230,7 @@ customerDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
-        (field "childtypes" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list entityDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -300,7 +301,7 @@ clientDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
-        (field "childtypes" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list entityDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -372,7 +373,7 @@ siteDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
-        (field "childtypes" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list entityDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -449,7 +450,7 @@ staffDecoder =
             )
         )
         (field "tabs" (Decode.list tabDecoder))
-        (field "childtypes" (Decode.list tabDecoder))
+        (field "childtypes" (Decode.list entityDecoder))
         (field "useraccess" useraccessDecoder)
 
 
@@ -506,7 +507,12 @@ staffValuesDecoder =
         |> required "email" (Decode.nullable Decode.string)
 
 
-createTab : NodeId -> String -> Tab
+createEntity : String -> String -> Entity
+createEntity id name =
+    Entity (convertNodeType id |> Maybe.withDefault RootType) name
+
+
+createTab : String -> String -> Tab
 createTab id name =
     if id == "folders" then
         Tab FoldersType name
@@ -521,6 +527,13 @@ createTab id name =
 tabDecoder : Decode.Decoder Tab
 tabDecoder =
     Decode.map2 createTab
+        (field "id" Decode.string)
+        (field "name" Decode.string)
+
+
+entityDecoder : Decode.Decoder Entity
+entityDecoder =
+    Decode.map2 createEntity
         (field "id" Decode.string)
         (field "name" Decode.string)
 

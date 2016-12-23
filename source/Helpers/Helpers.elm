@@ -5,6 +5,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Http
 import HttpBuilder exposing (..)
+import Helpers.Models exposing (..)
 
 
 apiUrl : String
@@ -41,3 +42,25 @@ fullAddress maybeAddress1 maybeAddress2 maybeAddress3 maybeAddress4 maybePostcod
         |> List.filter (\a -> String.length (a) > 0)
         |> String.join ", "
         |> Just
+
+
+nodeTypeToPath : NodeType -> String
+nodeTypeToPath nodeType =
+    case nodeType of
+        RootType ->
+            "Root"
+
+        CustomerType ->
+            "Customer"
+
+        ClientType ->
+            "Client"
+
+        SiteType ->
+            "Site"
+
+        StaffType ->
+            "Staff"
+
+        FolderType ->
+            "Folder"
