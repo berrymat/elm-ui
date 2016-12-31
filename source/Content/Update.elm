@@ -9,6 +9,7 @@ import Tree.Messages
 import Tree.Update
 import RemoteData exposing (..)
 import Debug exposing (..)
+import Ui.Modal
 
 
 update : Msg -> Content -> ( Content, Cmd Msg )
@@ -32,68 +33,72 @@ update message content =
         OnFetchCases nodeId (Err error) ->
             ( content, Cmd.none )
 
-        OnFetchFiles nodeId (Ok files) ->
+        OnFoldersMsg foldersMsg ->
             case content of
                 FoldersContent folders ->
-                    ( FoldersContent { folders | folderId = nodeId, files = files }, Cmd.none )
+                    updateFolders foldersMsg content folders
 
-                UsersContent _ ->
+                _ ->
                     ( content, Cmd.none )
 
-                CasesContent _ ->
-                    ( content, Cmd.none )
 
-                EmptyContent ->
-                    ( content, Cmd.none )
+updateFolders : FoldersMsg -> Content -> Folders -> ( Content, Cmd Msg )
+updateFolders foldersMsg content folders =
+    case foldersMsg of
+        OnFetchFiles nodeId (Ok files) ->
+            ( FoldersContent { folders | folderId = nodeId, files = files }, Cmd.none )
 
         OnFetchFiles nodeId (Err error) ->
             ( content, Cmd.none )
 
         TreeMsg subMsg ->
-            case content of
-                FoldersContent folders ->
-                    let
-                        ( updatedTree, cmdTree, maybePath, maybeRoot ) =
-                            Tree.Update.update subMsg (Success folders.tree)
-                    in
-                        updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree
-
-                UsersContent _ ->
-                    ( content, Cmd.none )
-
-                CasesContent _ ->
-                    ( content, Cmd.none )
-
-                EmptyContent ->
-                    ( content, Cmd.none )
+            let
+                ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                    Tree.Update.update subMsg (Success folders.tree)
+            in
+                updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree
 
         SetQuery newQuery ->
-            case content of
-                FoldersContent folders ->
-                    ( FoldersContent { folders | query = newQuery }, Cmd.none )
-
-                UsersContent _ ->
-                    ( content, Cmd.none )
-
-                CasesContent _ ->
-                    ( content, Cmd.none )
-
-                EmptyContent ->
-                    ( content, Cmd.none )
+            ( FoldersContent { folders | query = newQuery }, Cmd.none )
 
         SetTableState newState ->
-            case content of
-                FoldersContent folders ->
-                    ( FoldersContent { folders | tableState = newState }, Cmd.none )
+            ( FoldersContent { folders | tableState = newState }, Cmd.none )
 
-                UsersContent _ ->
-                    ( content, Cmd.none )
+        ToggleFile nodeId ->
+            let
+                newFiles =
+                    List.map
+                        (\f ->
+                            if (f.id == nodeId) then
+                                { f | checked = not f.checked }
+                            else
+                                f
+                        )
+                        folders.files
+            in
+                ( FoldersContent { folders | files = newFiles }, Cmd.none )
 
-                CasesContent _ ->
-                    ( content, Cmd.none )
+        ModalAction NewFolder action ->
+            let
+                newNewFolderModal =
+                    case action of
+                        Open ->
+                            Ui.Modal.open folders.newFolderModal
 
-                EmptyContent ->
-                    ( content, Cmd.none )
+                        Save ->
+                            Ui.Modal.close folders.newFolderModal
+
+                        Cancel ->
+                            Ui.Modal.close folders.newFolderModal
+            in
+                ( FoldersContent { folders | newFolderModal = newNewFolderModal }, Cmd.none )
+
+        ModalMsg NewFolder modalMsg ->
+            let
+                newNewFolderModal =
+                    Ui.Modal.update modalMsg folders.newFolderModal
+            in
+                ( FoldersContent { folders | newFolderModal = newNewFolderModal }, Cmd.none )
 
 
 updatePathFromTree : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Content, Cmd Msg )
@@ -126,7 +131,7 @@ updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTre
 
                 cmdBatch =
                     Cmd.batch
-                        [ Cmd.map TreeMsg cmdTree
+                        [ Cmd.map (OnFoldersMsg << TreeMsg) cmdTree
                         , cmdFiles
                         ]
             in

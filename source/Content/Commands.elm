@@ -1,6 +1,7 @@
 module Content.Commands exposing (..)
 
 import Json.Decode as Decode exposing (field, at)
+import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Content.Messages exposing (..)
 import Content.Models exposing (..)
 import Helpers.Models exposing (..)
@@ -9,6 +10,8 @@ import Table
 import Debug
 import Helpers.Helpers exposing (apiUrl, fetcher)
 import RemoteData exposing (..)
+import Ui.Button
+import Ui.Modal
 
 
 fetchContent : TabType -> NodeId -> Cmd Msg
@@ -44,7 +47,7 @@ fetchFolders nodeId =
 
 fetchFiles : NodeId -> Cmd Msg
 fetchFiles nodeId =
-    fetcher (filesUrl nodeId) filesDecoder (OnFetchFiles nodeId)
+    fetcher (filesUrl nodeId) filesDecoder (OnFoldersMsg << OnFetchFiles nodeId)
 
 
 fetchUsers : NodeId -> Cmd Msg
@@ -102,6 +105,8 @@ createFolders nodeId type_ name children =
     in
         Folders
             tree
+            (Ui.Button.init False False "New Folder" "secondary" "medium")
+            Ui.Modal.init
             True
             []
             ""
@@ -200,7 +205,9 @@ filesDecoder =
 
 fileDecoder : Decode.Decoder File
 fileDecoder =
-    Decode.map3 File
-        (field "id" Decode.string)
-        (field "name" Decode.string)
-        (field "datetime" Decode.int)
+    decode File
+        |> required "id" Decode.string
+        |> required "name" Decode.string
+        |> required "datetime" Decode.float
+        |> required "writable" Decode.bool
+        |> hardcoded False

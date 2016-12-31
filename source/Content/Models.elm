@@ -3,7 +3,8 @@ module Content.Models exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (Tree, Node)
 import Table
-import RemoteData exposing (WebData)
+import Ui.Button
+import Ui.Modal
 
 
 type Content
@@ -15,6 +16,8 @@ type Content
 
 type alias Folders =
     { tree : Tree
+    , newFolderButton : Ui.Button.Model
+    , newFolderModal : Ui.Modal.Model
     , selected : Bool
     , path : List Node
     , folderId : NodeId
@@ -27,7 +30,9 @@ type alias Folders =
 type alias File =
     { id : NodeId
     , name : String
-    , datetime : Int
+    , datetime : Float
+    , writable : Bool
+    , checked : Bool
     }
 
 
