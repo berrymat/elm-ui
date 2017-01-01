@@ -3,7 +3,6 @@ module Content.View exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Content.Messages exposing (..)
 import Content.Models exposing (..)
 import Helpers.Models exposing (..)
 import Tree.View
@@ -14,6 +13,7 @@ import Date.Extra.Format as Format exposing (format)
 import Ui.Button
 import Ui.Container
 import Ui.Modal
+import Components.Form as Form
 
 
 view : Content -> Html Msg
@@ -35,8 +35,16 @@ view content =
 contentFolders : Folders -> Html Msg
 contentFolders folders =
     let
+        modalContent =
+            case folders.newFolderForm of
+                Just form ->
+                    [ Form.view (OnFoldersMsg << NewFolderFormMsg) form ]
+
+                Nothing ->
+                    [ text "Edit Modal" ]
+
         newFolderModalViewModel =
-            { content = [ text "New Folder" ]
+            { content = modalContent
             , title = "New Folder"
             , footer =
                 [ Ui.Container.rowEnd []

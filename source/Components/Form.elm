@@ -41,8 +41,8 @@ type alias Model msg =
     , dates : Dict String ( Int, Ui.DatePicker.Model )
     , inputs : Dict String ( Int, Ui.Input.Model )
     , buttons : List ( Int, msg, Ui.Button.Model )
+    , titles : Dict String ( Int, String )
     , uid : String
-    , title : String
     }
 
 
@@ -54,7 +54,7 @@ type alias TempModel =
     , colors : List ( String, Int, Color.Color )
     , checkboxes : List ( String, Int, Bool )
     , dates : List ( String, Int, Date.Date )
-    , title : String
+    , titles : List ( String, Int, String )
     }
 
 
@@ -94,6 +94,9 @@ init data =
                     }
             in
                 ( name, ( index, numberRange ) )
+
+        initTitle ( name, index, value ) =
+            ( name, ( index, value ) )
     in
         { numberRanges = Dict.fromList (List.map initNumberRange data.numberRanges)
         , checkboxes = Dict.fromList (List.map initCheckbox data.checkboxes)
@@ -103,8 +106,8 @@ init data =
         , colors = Dict.fromList (List.map initColors data.colors)
         , inputs = Dict.fromList (List.map initInput data.inputs)
         , buttons = []
+        , titles = Dict.fromList (List.map initTitle data.titles)
         , uid = Uid.uid ()
-        , title = data.title
         }
 
 
@@ -117,6 +120,7 @@ nextPosition model =
         + (Dict.size model.dates)
         + (Dict.size model.colors)
         + (Dict.size model.inputs)
+        + (Dict.size model.titles)
         + (List.length model.buttons)
 
 
@@ -408,6 +412,9 @@ view address fields =
             blockField name
                 (Html.map (address << (NumberRanges name)) (Ui.NumberRange.view data))
 
+        renderTitle name data =
+            node "ui-form-title" [] [ text data ]
+
         blockField name child =
             node "ui-form-block"
                 []
@@ -449,6 +456,7 @@ view address fields =
                 ++ (renderMap (Html.Lazy.lazy2 renderInput) fields.inputs)
                 ++ (renderMap (Html.Lazy.lazy2 renderTextarea) fields.textareas)
                 ++ (renderMap (Html.Lazy.lazy2 renderNumberRange) fields.numberRanges)
+                ++ (renderMap (Html.Lazy.lazy2 renderTitle) fields.titles)
                 ++ (renderButtons fields.buttons)
             )
 
@@ -458,6 +466,5 @@ view address fields =
     in
         node "ui-form"
             []
-            [ node "ui-form-title" [] [ text fields.title ]
-            , Html.Keyed.node "ui-form-fields" [] sortedItems
+            [ Html.Keyed.node "ui-form-fields" [] sortedItems
             ]

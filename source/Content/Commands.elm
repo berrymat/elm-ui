@@ -2,7 +2,7 @@ module Content.Commands exposing (..)
 
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
-import Content.Messages exposing (..)
+import Json.Encode as Encode
 import Content.Models exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
@@ -12,6 +12,8 @@ import Helpers.Helpers exposing (apiUrl, fetcher)
 import RemoteData exposing (..)
 import Ui.Button
 import Ui.Modal
+import Content.Folder exposing (..)
+import Helpers.Helpers exposing (apiUrl, fetcher, poster, putter)
 
 
 fetchContent : TabType -> NodeId -> Cmd Msg
@@ -107,9 +109,11 @@ createFolders nodeId type_ name children =
             tree
             (Ui.Button.init False False "New Folder" "secondary" "medium")
             Ui.Modal.init
+            Nothing
             True
             []
             ""
+            Nothing
             []
             (Table.initialSort "Name")
             ""
@@ -211,3 +215,48 @@ fileDecoder =
         |> required "datetime" Decode.float
         |> required "writable" Decode.bool
         |> hardcoded False
+
+
+encodeFolderInfo : FolderInfo -> Encode.Value
+encodeFolderInfo folderInfo =
+    Encode.object
+        [ ( "id", Encode.string folderInfo.id )
+        , ( "name", Encode.string folderInfo.name )
+        , ( "isShared", Encode.bool folderInfo.isShared )
+        , ( "readableForCustomers", Encode.bool folderInfo.readableForCustomers )
+        , ( "readableForClients", Encode.bool folderInfo.readableForClients )
+        , ( "readableForStaff", Encode.bool folderInfo.readableForStaff )
+        , ( "writableForCustomers", Encode.bool folderInfo.writableForCustomers )
+        , ( "writableForClients", Encode.bool folderInfo.writableForClients )
+        , ( "writableForStaff", Encode.bool folderInfo.writableForStaff )
+        ]
+
+
+folderInfoDecoder : Decode.Decoder FolderInfo
+folderInfoDecoder =
+    decode FolderInfo
+        |> required "id" Decode.string
+        |> required "name" Decode.string
+        |> required "isShared" Decode.bool
+        |> required "readableForCustomers" Decode.bool
+        |> required "readableForClients" Decode.bool
+        |> required "readableForStaff" Decode.bool
+        |> required "writableForCustomers" Decode.bool
+        |> required "writableForClients" Decode.bool
+        |> required "writableForStaff" Decode.bool
+
+
+postFolderInfo : NodeId -> FolderInfo -> Cmd Msg
+postFolderInfo folderId folderInfo =
+    poster (apiUrl ++ "Folders")
+        (encodeFolderInfo folderInfo)
+        foldersDecoder
+        (OnFoldersMsg << FolderInfoPostResponse << RemoteData.fromResult)
+
+
+putFolderInfo : NodeId -> FolderInfo -> Cmd Msg
+putFolderInfo folderId folderInfo =
+    putter (foldersUrl folderId)
+        (encodeFolderInfo folderInfo)
+        foldersDecoder
+        (OnFoldersMsg << FolderInfoPutResponse << RemoteData.fromResult)

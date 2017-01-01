@@ -56,7 +56,7 @@ initEditForm site =
             , choosers = []
             , colors = []
             , dates = []
-            , title = "Site"
+            , titles = []
             }
 
 

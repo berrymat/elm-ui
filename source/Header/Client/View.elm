@@ -53,7 +53,7 @@ initEditForm client =
             , choosers = []
             , colors = []
             , dates = []
-            , title = "Client"
+            , titles = []
             }
 
 

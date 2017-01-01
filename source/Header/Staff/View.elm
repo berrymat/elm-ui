@@ -53,7 +53,7 @@ initEditForm staff =
             , choosers = []
             , colors = []
             , dates = []
-            , title = "Staff"
+            , titles = []
             }
 
 

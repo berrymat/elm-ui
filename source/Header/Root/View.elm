@@ -52,7 +52,7 @@ initEditForm root =
             , choosers = []
             , colors = []
             , dates = []
-            , title = "Root"
+            , titles = []
             }
 
 

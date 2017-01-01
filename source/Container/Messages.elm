@@ -2,7 +2,7 @@ module Container.Messages exposing (..)
 
 import Helpers.Models exposing (..)
 import Tree.Messages
-import Content.Messages
+import Content.Models
 import RemoteData exposing (WebData)
 import Ui.DropdownMenu
 import Ui.Modal
@@ -28,7 +28,7 @@ type Msg
     | SelectPath NodeId
     | SelectTab TabType
     | TreeMsg Tree.Messages.Msg
-    | ContentMsg Content.Messages.Msg
+    | ContentMsg Content.Models.Msg
     | HeaderResponse Bool (WebData HeaderData)
     | HeaderPutResponse (WebData HeaderData)
       -- ACTION MENU
