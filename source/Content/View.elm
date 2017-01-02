@@ -10,8 +10,11 @@ import Table
 import Date
 import Date.Extra.Config.Config_en_us as Config
 import Date.Extra.Format as Format exposing (format)
+import Ui
 import Ui.Button
 import Ui.Container
+import Ui.DropdownMenu
+import Ui.IconButton
 import Ui.Modal
 import Components.Form as Form
 
@@ -32,9 +35,57 @@ view content =
             contentEmpty
 
 
+dropdownMenuItem : String -> String -> ModalType -> Html Msg
+dropdownMenuItem icon name type_ =
+    Ui.DropdownMenu.item [ onClick (OnFoldersMsg (ModalAction type_ Open)) ]
+        [ Ui.icon icon True []
+        , node "span" [] [ text name ]
+        ]
+
+
+actionDropdownViewModel : Folders -> Ui.DropdownMenu.ViewModel Msg
+actionDropdownViewModel folders =
+    let
+        actions =
+            [ ( "var-plus", "New", NewFolder )
+            , ( "var-record", "Edit", EditFolder )
+            , ( "var-arrow-move", "Move", MoveFolder )
+            , ( "trash-b", "Delete", DeleteFolder )
+            ]
+
+        actionFilter ( _, _, type_ ) =
+            case type_ of
+                NewFolder ->
+                    True
+
+                EditFolder ->
+                    True
+
+                MoveFolder ->
+                    True
+
+                DeleteFolder ->
+                    True
+
+        accessibleActions =
+            List.filter actionFilter actions
+    in
+        { element =
+            Ui.IconButton.secondary "Folder Actions"
+                "chevron-up"
+                "right"
+                (OnFoldersMsg NoAction)
+        , items =
+            List.map (\( icon, name, type_ ) -> dropdownMenuItem icon name type_) accessibleActions
+        }
+
+
 contentFolders : Folders -> Html Msg
 contentFolders folders =
     let
+        dropdownViewModel =
+            actionDropdownViewModel folders
+
         modalContent =
             case folders.newFolderForm of
                 Just form ->
@@ -62,7 +113,7 @@ contentFolders folders =
                         (Tree.View.view folders.tree)
                     ]
                 , div [ class "body-content-sidebar-footer" ]
-                    [ Ui.Button.view (OnFoldersMsg (ModalAction NewFolder Open)) folders.newFolderButton
+                    [ Ui.DropdownMenu.view dropdownViewModel (OnFoldersMsg << ActionMenu) folders.newFolderActionMenu
                     , Ui.Modal.view (OnFoldersMsg << (ModalMsg NewFolder)) newFolderModalViewModel folders.newFolderModal
                     ]
                 ]

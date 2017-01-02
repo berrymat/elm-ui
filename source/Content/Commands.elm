@@ -10,9 +10,8 @@ import Table
 import Debug
 import Helpers.Helpers exposing (apiUrl, fetcher)
 import RemoteData exposing (..)
-import Ui.Button
+import Ui.DropdownMenu
 import Ui.Modal
-import Content.Folder exposing (..)
 import Helpers.Helpers exposing (apiUrl, fetcher, poster, putter)
 
 
@@ -107,7 +106,7 @@ createFolders nodeId type_ name children =
     in
         Folders
             tree
-            (Ui.Button.init False False "New Folder" "secondary" "medium")
+            Ui.DropdownMenu.init
             Ui.Modal.init
             Nothing
             True

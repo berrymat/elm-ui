@@ -127,10 +127,6 @@ actionDropdownViewModel header useraccess ui =
                         _ ->
                             useraccess.admin
 
-        {-
-           _ ->
-               useraccess.admin
-        -}
         accessibleActions =
             List.filter actionFilter actions
     in

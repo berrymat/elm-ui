@@ -5,7 +5,7 @@ import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Tree.Messages
 import Table
-import Ui.Button
+import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
 import RemoteData exposing (..)
@@ -13,6 +13,9 @@ import RemoteData exposing (..)
 
 type ModalType
     = NewFolder
+    | EditFolder
+    | MoveFolder
+    | DeleteFolder
 
 
 type ModalAction
@@ -27,6 +30,10 @@ type FoldersMsg
     | SetQuery String
     | SetTableState Table.State
     | ToggleFile NodeId
+      -- ACTION MENU
+    | ActionMenu Ui.DropdownMenu.Msg
+    | CloseActionMenu
+    | NoAction
       -- MODALS
     | ModalAction ModalType ModalAction
     | ModalMsg ModalType Ui.Modal.Msg
@@ -52,7 +59,7 @@ type Content
 
 type alias Folders =
     { tree : Tree
-    , newFolderButton : Ui.Button.Model
+    , newFolderActionMenu : Ui.DropdownMenu.Model
     , newFolderModal : Ui.Modal.Model
     , newFolderForm : Maybe (Form.Model Msg)
     , selected : Bool

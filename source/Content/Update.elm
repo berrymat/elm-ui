@@ -8,6 +8,7 @@ import Tree.Messages
 import Tree.Update
 import RemoteData exposing (..)
 import Debug exposing (..)
+import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
 import Content.Folder
@@ -79,6 +80,17 @@ updateFolders foldersMsg content folders =
             in
                 ( FoldersContent { folders | files = newFiles }, Cmd.none )
 
+        -- ACTION MENU
+        ActionMenu action ->
+            updateActionMenu folders action
+
+        CloseActionMenu ->
+            updateCloseActionMenu folders
+
+        NoAction ->
+            ( content, Cmd.none )
+
+        -- NEW FOLDER MODAL
         ModalAction NewFolder action ->
             let
                 ( newFolders, newCmd ) =
@@ -156,6 +168,27 @@ updateFolders foldersMsg content folders =
                 Success newFolders ->
                     ( FoldersContent { folders | tree = newFolders.tree }, Cmd.none )
 
+        -- EDIT FOLDER MODAL
+        ModalAction EditFolder action ->
+            ( content, Cmd.none )
+
+        ModalMsg EditFolder modalMsg ->
+            ( content, Cmd.none )
+
+        -- MOVE FOLDER MODAL
+        ModalAction MoveFolder action ->
+            ( content, Cmd.none )
+
+        ModalMsg MoveFolder modalMsg ->
+            ( content, Cmd.none )
+
+        -- DELETE FOLDER MODAL
+        ModalAction DeleteFolder action ->
+            ( content, Cmd.none )
+
+        ModalMsg DeleteFolder modalMsg ->
+            ( content, Cmd.none )
+
 
 updatePathFromTree : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Content, Cmd Msg )
 updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree =
@@ -197,14 +230,49 @@ updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTre
             ( FoldersContent folders, Cmd.none )
 
 
+
+-- ACTION MENU UPDATES
+
+
+applyNewActionMenu : Folders -> Ui.DropdownMenu.Model -> ( Content, Cmd Msg )
+applyNewActionMenu folders newMenu =
+    ( FoldersContent { folders | newFolderActionMenu = newMenu }, Cmd.none )
+
+
+updateActionMenu : Folders -> Ui.DropdownMenu.Msg -> ( Content, Cmd Msg )
+updateActionMenu folders action =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.update action folders.newFolderActionMenu
+    in
+        applyNewActionMenu folders newActionMenu
+
+
+updateCloseActionMenu : Folders -> ( Content, Cmd Msg )
+updateCloseActionMenu folders =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close folders.newFolderActionMenu
+    in
+        applyNewActionMenu folders newActionMenu
+
+
+
+-- NEW FOLDER UPDATES
+
+
 updateNewFolderModalOpen : Content -> Folders -> ( Folders, Cmd Msg )
 updateNewFolderModalOpen content folders =
     let
+        newActionMenu =
+            Ui.DropdownMenu.close folders.newFolderActionMenu
+
         newFolderForm =
             Content.Folder.newFolderForm folders.folderId
     in
         ( { folders
-            | newFolderModal = Ui.Modal.open folders.newFolderModal
+            | newFolderActionMenu = newActionMenu
+            , newFolderModal = Ui.Modal.open folders.newFolderModal
             , newFolderForm = Just newFolderForm
           }
         , Cmd.none
