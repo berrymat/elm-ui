@@ -25,7 +25,7 @@ type ModalAction
 
 
 type FoldersMsg
-    = OnFetchFiles NodeId (Result Http.Error (List File))
+    = FetchFolderResponse NodeId (WebData Folder)
     | TreeMsg Tree.Messages.Msg
     | SetQuery String
     | SetTableState Table.State
@@ -44,9 +44,9 @@ type FoldersMsg
 
 
 type Msg
-    = OnFetchFolders NodeId (Result Http.Error Folders)
-    | OnFetchUsers NodeId (Result Http.Error Users)
-    | OnFetchCases NodeId (Result Http.Error Cases)
+    = FetchFoldersResponse NodeId (WebData Folders)
+    | FetchUsersResponse NodeId (WebData Users)
+    | FetchCasesResponse NodeId (WebData Cases)
     | OnFoldersMsg FoldersMsg
 
 
@@ -65,7 +65,12 @@ type alias Folders =
     , selected : Bool
     , path : List Node
     , folderId : NodeId
-    , folderInfo : Maybe FolderInfo
+    , folder : WebData Folder
+    }
+
+
+type alias Folder =
+    { info : FolderInfo
     , files : List File
     , tableState : Table.State
     , query : String

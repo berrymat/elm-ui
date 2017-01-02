@@ -7,51 +7,47 @@ import Tree.Models exposing (..)
 import Tree.Messages
 import Tree.Update
 import RemoteData exposing (..)
-import Debug exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
 import Content.Folder
 
 
-update : Msg -> Content -> ( Content, Cmd Msg )
+update : Msg -> WebData Content -> ( WebData Content, Cmd Msg )
 update message content =
     case message of
-        OnFetchFolders nodeId (Ok folders) ->
-            ( FoldersContent folders, Cmd.none )
+        FetchFoldersResponse nodeId folders ->
+            ( RemoteData.map FoldersContent folders, Cmd.none )
 
-        OnFetchFolders nodeId (Err error) ->
-            ( content, Cmd.none )
+        FetchUsersResponse nodeId users ->
+            ( RemoteData.map UsersContent users, Cmd.none )
 
-        OnFetchUsers nodeId (Ok users) ->
-            ( UsersContent users, Cmd.none )
-
-        OnFetchUsers nodeId (Err error) ->
-            ( content, Cmd.none )
-
-        OnFetchCases nodeId (Ok cases) ->
-            ( CasesContent cases, Cmd.none )
-
-        OnFetchCases nodeId (Err error) ->
-            ( content, Cmd.none )
+        FetchCasesResponse nodeId cases ->
+            ( RemoteData.map CasesContent cases, Cmd.none )
 
         OnFoldersMsg foldersMsg ->
+            updateFolders foldersMsg content
+
+
+updateFolders : FoldersMsg -> WebData Content -> ( WebData Content, Cmd Msg )
+updateFolders foldersMsg webdataContent =
+    let
+        updateFoldersSuccess content =
             case content of
                 FoldersContent folders ->
-                    updateFolders foldersMsg content folders
+                    updateFoldersContent foldersMsg content folders
 
                 _ ->
                     ( content, Cmd.none )
+    in
+        RemoteData.update updateFoldersSuccess webdataContent
 
 
-updateFolders : FoldersMsg -> Content -> Folders -> ( Content, Cmd Msg )
-updateFolders foldersMsg content folders =
+updateFoldersContent : FoldersMsg -> Content -> Folders -> ( Content, Cmd Msg )
+updateFoldersContent foldersMsg content folders =
     case foldersMsg of
-        OnFetchFiles nodeId (Ok files) ->
-            ( FoldersContent { folders | folderId = nodeId, files = files }, Cmd.none )
-
-        OnFetchFiles nodeId (Err error) ->
-            ( content, Cmd.none )
+        FetchFolderResponse nodeId folder ->
+            ( FoldersContent { folders | folderId = nodeId, folder = folder }, Cmd.none )
 
         TreeMsg subMsg ->
             let
@@ -61,14 +57,22 @@ updateFolders foldersMsg content folders =
                 updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree
 
         SetQuery newQuery ->
-            ( FoldersContent { folders | query = newQuery }, Cmd.none )
+            let
+                newFolder =
+                    RemoteData.map (\f -> { f | query = newQuery }) folders.folder
+            in
+                ( FoldersContent { folders | folder = newFolder }, Cmd.none )
 
         SetTableState newState ->
-            ( FoldersContent { folders | tableState = newState }, Cmd.none )
+            let
+                newFolder =
+                    RemoteData.map (\f -> { f | tableState = newState }) folders.folder
+            in
+                ( FoldersContent { folders | folder = newFolder }, Cmd.none )
 
         ToggleFile nodeId ->
             let
-                newFiles =
+                newFiles folder =
                     List.map
                         (\f ->
                             if (f.id == nodeId) then
@@ -76,9 +80,12 @@ updateFolders foldersMsg content folders =
                             else
                                 f
                         )
-                        folders.files
+                        folder.files
+
+                newFolder =
+                    RemoteData.map (\f -> { f | files = newFiles f }) folders.folder
             in
-                ( FoldersContent { folders | files = newFiles }, Cmd.none )
+                ( FoldersContent { folders | folder = newFolder }, Cmd.none )
 
         -- ACTION MENU
         ActionMenu action ->
@@ -202,7 +209,7 @@ updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTre
         Just path ->
             let
                 maybeSelected =
-                    log "path" (List.head path)
+                    List.head path
 
                 folderId =
                     case maybeSelected of
@@ -212,19 +219,19 @@ updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTre
                         Nothing ->
                             updatedTree.id
 
-                cmdFiles =
+                ( newFolders, cmdFolder ) =
                     if folderId /= folders.folderId then
-                        log "fetchFiles" (fetchFiles folderId)
+                        ( { folders | folder = Loading }, fetchFolder folderId )
                     else
-                        Cmd.none
+                        ( folders, Cmd.none )
 
                 cmdBatch =
                     Cmd.batch
                         [ Cmd.map (OnFoldersMsg << TreeMsg) cmdTree
-                        , cmdFiles
+                        , cmdFolder
                         ]
             in
-                ( FoldersContent { folders | tree = updatedTree, path = path }, cmdBatch )
+                ( FoldersContent { newFolders | tree = updatedTree, path = path }, cmdBatch )
 
         Nothing ->
             ( FoldersContent folders, Cmd.none )

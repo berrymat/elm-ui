@@ -5,6 +5,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Container.Messages exposing (..)
 import Container.Models exposing (..)
+import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (..)
 import Header.Root.View
@@ -12,7 +13,6 @@ import Header.Customer.View
 import Header.Client.View
 import Header.Site.View
 import Header.Staff.View
-import RemoteData exposing (..)
 import Ui
 import Ui.Button
 import Ui.Container
@@ -27,19 +27,7 @@ import Json.Decode as Decode
 view : Container -> Html Msg
 view container =
     div [ class "body-header" ]
-        (case container.headerData of
-            NotAsked ->
-                (headerPending "fa fa-spin fa-spinner")
-
-            Loading ->
-                (headerPending "fa fa-spin fa-refresh")
-
-            Failure err ->
-                (headerPending "fa fa-exclamation-triangle")
-
-            Success data ->
-                (header data.header data.useraccess container.headerUi)
-        )
+        (viewWebData container.headerData (header container.headerUi) headerPending)
 
 
 headerPending : String -> List (Html Msg)
@@ -50,10 +38,10 @@ headerPending iconClass =
     ]
 
 
-header : Header -> UserAccess -> HeaderUi -> List (Html Msg)
-header header useraccess ui =
-    [ headerImage header
-    , headerContent header useraccess ui
+header : HeaderUi -> HeaderData -> List (Html Msg)
+header ui data =
+    [ headerImage data.header
+    , headerContent data.header data.useraccess ui
     , div [ class "body-header-extra" ]
         [ text "Extra" ]
     ]

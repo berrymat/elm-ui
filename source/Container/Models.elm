@@ -15,7 +15,7 @@ type alias Container =
     , headerUi : HeaderUi
     , childtypes : List Entity
     , tab : Tab
-    , content : Content
+    , content : WebData Content
     }
 
 
@@ -28,7 +28,7 @@ initialContainer =
     , headerUi = initialHeaderUi
     , childtypes = []
     , tab = Tab EmptyTab ""
-    , content = initialContent
+    , content = NotAsked
     }
 
 

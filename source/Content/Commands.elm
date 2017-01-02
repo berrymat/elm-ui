@@ -20,14 +20,7 @@ fetchContent tabType nodeId =
     if nodeId /= "" then
         case tabType of
             FoldersType ->
-                let
-                    folderCmd =
-                        fetchFolders nodeId
-
-                    filesCmd =
-                        fetchFiles nodeId
-                in
-                    Cmd.batch [ folderCmd, filesCmd ]
+                fetchFolders nodeId
 
             UsersType ->
                 fetchUsers nodeId
@@ -43,22 +36,22 @@ fetchContent tabType nodeId =
 
 fetchFolders : NodeId -> Cmd Msg
 fetchFolders nodeId =
-    fetcher (foldersUrl nodeId) foldersDecoder (OnFetchFolders nodeId)
+    fetcher (foldersUrl nodeId) foldersDecoder ((FetchFoldersResponse nodeId) << RemoteData.fromResult)
 
 
-fetchFiles : NodeId -> Cmd Msg
-fetchFiles nodeId =
-    fetcher (filesUrl nodeId) filesDecoder (OnFoldersMsg << OnFetchFiles nodeId)
+fetchFolder : NodeId -> Cmd Msg
+fetchFolder nodeId =
+    fetcher (filesUrl nodeId) filesDecoder (OnFoldersMsg << FetchFolderResponse nodeId << RemoteData.fromResult)
 
 
 fetchUsers : NodeId -> Cmd Msg
 fetchUsers nodeId =
-    fetcher (usersUrl nodeId) usersDecoder (OnFetchUsers nodeId)
+    fetcher (usersUrl nodeId) usersDecoder ((FetchUsersResponse nodeId) << RemoteData.fromResult)
 
 
 fetchCases : NodeId -> Cmd Msg
 fetchCases nodeId =
-    fetcher (casesUrl nodeId) casesDecoder (OnFetchCases nodeId)
+    fetcher (casesUrl nodeId) casesDecoder ((FetchCasesResponse nodeId) << RemoteData.fromResult)
 
 
 foldersUrl : NodeId -> String
@@ -87,35 +80,31 @@ casesUrl nodeId =
 
 foldersDecoder : Decode.Decoder Folders
 foldersDecoder =
-    Decode.map4 createFolders
-        (field "id" Decode.string)
-        (field "type" Decode.string)
-        (field "name" Decode.string)
-        (field "children" (Decode.list (Decode.lazy (\_ -> folderDecoder))))
+    decode createFolders
+        |> required "tree" foldersTreeDecoder
+        |> required "folder" filesDecoder
 
 
-createFolders : NodeId -> String -> String -> List Node -> Folders
-createFolders nodeId type_ name children =
-    let
-        tree =
-            createTree
-                nodeId
-                type_
-                name
-                children
-    in
-        Folders
-            tree
-            Ui.DropdownMenu.init
-            Ui.Modal.init
-            Nothing
-            True
-            []
-            ""
-            Nothing
-            []
-            (Table.initialSort "Name")
-            ""
+foldersTreeDecoder : Decode.Decoder Tree
+foldersTreeDecoder =
+    decode createTree
+        |> required "id" Decode.string
+        |> required "type" Decode.string
+        |> required "name" Decode.string
+        |> required "children" (Decode.list (Decode.lazy (\_ -> folderDecoder)))
+
+
+createFolders : Tree -> Folder -> Folders
+createFolders tree folder =
+    Folders
+        tree
+        Ui.DropdownMenu.init
+        Ui.Modal.init
+        Nothing
+        True
+        []
+        folder.info.id
+        (Success folder)
 
 
 folderDecoder : Decode.Decoder Node
@@ -200,10 +189,13 @@ casesDecoder =
         (field "name" Decode.string)
 
 
-filesDecoder : Decode.Decoder (List File)
+filesDecoder : Decode.Decoder Folder
 filesDecoder =
-    Decode.map identity
-        (field "files" (Decode.list fileDecoder))
+    decode Folder
+        |> required "info" folderInfoDecoder
+        |> required "files" (Decode.list fileDecoder)
+        |> hardcoded (Table.initialSort "Name")
+        |> hardcoded ""
 
 
 fileDecoder : Decode.Decoder File

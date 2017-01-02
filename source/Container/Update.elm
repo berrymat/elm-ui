@@ -57,7 +57,7 @@ update message container =
                     cmdContent =
                         Content.Commands.fetchContent tabType nodeId
                 in
-                    ( { container | tab = updatedTab }, Cmd.map ContentMsg cmdContent )
+                    ( { container | tab = updatedTab, content = Loading }, Cmd.map ContentMsg cmdContent )
 
             TreeMsg subMsg ->
                 let

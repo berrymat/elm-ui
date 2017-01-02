@@ -133,18 +133,18 @@ fetchContent container isTree headerData =
         updatedTab =
             getTabFromType newContainer.headerData container.tab.tabType
 
-        cmdContent =
+        ( updatedContent, cmdContent ) =
             if (headerId /= updatedHeaderId) then
-                Content.Commands.fetchContent updatedTab.tabType updatedHeaderId
+                ( Loading, Content.Commands.fetchContent updatedTab.tabType updatedHeaderId )
             else
-                Cmd.none
+                ( newContainer.content, Cmd.none )
 
         cmdBatch =
             Cmd.batch
                 [ Cmd.map ContentMsg cmdContent
                 ]
     in
-        ( { newContainer | tab = updatedTab }, cmdBatch )
+        ( { newContainer | tab = updatedTab, content = updatedContent }, cmdBatch )
 
 
 initEditForm : Container -> HeaderData -> Maybe (Form.Model Msg)

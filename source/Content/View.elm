@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Content.Models exposing (..)
+import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Tree.View
 import Table
@@ -17,10 +18,17 @@ import Ui.DropdownMenu
 import Ui.IconButton
 import Ui.Modal
 import Components.Form as Form
+import RemoteData exposing (..)
 
 
-view : Content -> Html Msg
-view content =
+view : WebData Content -> Html Msg
+view webdata =
+    div [ class "body-content" ]
+        (viewWebData webdata viewSuccess viewPendingDefault)
+
+
+viewSuccess : Content -> List (Html Msg)
+viewSuccess content =
     case content of
         FoldersContent folders ->
             contentFolders folders
@@ -80,7 +88,7 @@ actionDropdownViewModel folders =
         }
 
 
-contentFolders : Folders -> Html Msg
+contentFolders : Folders -> List (Html Msg)
 contentFolders folders =
     let
         dropdownViewModel =
@@ -105,40 +113,44 @@ contentFolders folders =
                 ]
             }
     in
-        div [ class "body-content" ]
-            [ div [ class "body-content-sidebar" ]
-                [ div [ class "body-content-sidebar-content" ]
-                    [ Html.map
-                        (OnFoldersMsg << TreeMsg)
-                        (Tree.View.view folders.tree)
-                    ]
-                , div [ class "body-content-sidebar-footer" ]
-                    [ Ui.DropdownMenu.view dropdownViewModel (OnFoldersMsg << ActionMenu) folders.newFolderActionMenu
-                    , Ui.Modal.view (OnFoldersMsg << (ModalMsg NewFolder)) newFolderModalViewModel folders.newFolderModal
-                    ]
+        [ div [ class "body-content-sidebar" ]
+            [ div [ class "body-content-sidebar-content" ]
+                [ Html.map
+                    (OnFoldersMsg << TreeMsg)
+                    (Tree.View.view folders.tree)
                 ]
-            , div [ class "body-content-content" ]
-                [ div [ class "body-content-content-content" ]
-                    [ contentFiles folders ]
-                , div [ class "body-content-content-footer" ]
-                    []
+            , div [ class "body-content-sidebar-footer" ]
+                [ Ui.DropdownMenu.view dropdownViewModel (OnFoldersMsg << ActionMenu) folders.newFolderActionMenu
+                , Ui.Modal.view (OnFoldersMsg << (ModalMsg NewFolder)) newFolderModalViewModel folders.newFolderModal
                 ]
             ]
+        , div [ class "body-content-content" ]
+            [ div [ class "body-content-content-content" ]
+                [ contentFiles folders ]
+            , div [ class "body-content-content-footer" ]
+                []
+            ]
+        ]
 
 
 contentFiles : Folders -> Html Msg
 contentFiles folders =
+    div [ class "file-content" ]
+        (viewWebData folders.folder contentFilesSuccess viewPendingDefault)
+
+
+contentFilesSuccess : Folder -> List (Html Msg)
+contentFilesSuccess folder =
     let
         lowerQuery =
-            String.toLower folders.query
+            String.toLower folder.query
 
         acceptableFiles =
-            List.filter (String.contains lowerQuery << String.toLower << .name) folders.files
+            List.filter (String.contains lowerQuery << String.toLower << .name) folder.files
     in
-        div [ class "file-content" ]
-            [ input [ placeholder "Search by Name", onInput (OnFoldersMsg << SetQuery) ] []
-            , Table.view config folders.tableState acceptableFiles
-            ]
+        [ input [ placeholder "Search by Name", onInput (OnFoldersMsg << SetQuery) ] []
+        , Table.view config folder.tableState acceptableFiles
+        ]
 
 
 checkColumn : String -> (data -> Bool) -> (data -> NodeId) -> Table.Column data Msg
@@ -257,25 +269,22 @@ simpleRowAttrs _ =
     []
 
 
-contentUsers : Users -> Html Msg
+contentUsers : Users -> List (Html Msg)
 contentUsers users =
-    div [ class "body-content" ]
-        [ div [ class "body-content-content" ]
-            [ text "Users" ]
-        ]
+    [ div [ class "body-content-content" ]
+        [ text "Users" ]
+    ]
 
 
-contentCases : Cases -> Html Msg
+contentCases : Cases -> List (Html Msg)
 contentCases cases =
-    div [ class "body-content" ]
-        [ div [ class "body-content-content" ]
-            [ text "Cases" ]
-        ]
+    [ div [ class "body-content-content" ]
+        [ text "Cases" ]
+    ]
 
 
-contentEmpty : Html Msg
+contentEmpty : List (Html Msg)
 contentEmpty =
-    div [ class "body-content" ]
-        [ div [ class "body-content-content" ]
-            [ text "Empty" ]
-        ]
+    [ div [ class "body-content-content" ]
+        [ text "Empty" ]
+    ]

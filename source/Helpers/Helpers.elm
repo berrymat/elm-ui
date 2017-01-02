@@ -3,9 +3,12 @@ module Helpers.Helpers exposing (..)
 import Ui.Helpers.Env
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Html exposing (..)
+import Html.Attributes exposing (..)
 import Http
 import HttpBuilder exposing (..)
 import Helpers.Models exposing (..)
+import RemoteData exposing (..)
 
 
 apiUrl : String
@@ -73,3 +76,26 @@ nodeTypeToPath nodeType =
 
         FolderType ->
             "Folder"
+
+
+viewWebData : WebData a -> (a -> List (Html msg)) -> (String -> List (Html msg)) -> List (Html msg)
+viewWebData webdata viewSuccess viewPending =
+    case webdata of
+        NotAsked ->
+            (viewPending "fa fa-spin fa-spinner")
+
+        Loading ->
+            (viewPending "fa fa-spin fa-refresh")
+
+        Failure err ->
+            (viewPending "fa fa-exclamation-triangle")
+
+        Success data ->
+            (viewSuccess data)
+
+
+viewPendingDefault : String -> List (Html msg)
+viewPendingDefault iconClass =
+    [ div [ class "header-loading" ]
+        [ i [ class iconClass ] [] ]
+    ]
