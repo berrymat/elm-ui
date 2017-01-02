@@ -2,6 +2,7 @@ module Content.Update exposing (..)
 
 import Content.Commands exposing (..)
 import Content.Models exposing (..)
+import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Tree.Messages
@@ -99,51 +100,33 @@ updateFoldersContent foldersMsg content folders =
 
         -- NEW FOLDER MODAL
         ModalAction NewFolder action ->
-            let
-                ( newFolders, newCmd ) =
-                    case action of
-                        Open ->
-                            updateNewFolderModalOpen content folders
-
-                        Save ->
-                            case folders.newFolderForm of
-                                Just form ->
-                                    updateNewFolderModalSave content folders form
-
-                                Nothing ->
-                                    ( folders, Cmd.none )
-
-                        Cancel ->
-                            ( { folders | newFolderModal = Ui.Modal.close folders.newFolderModal }, Cmd.none )
-            in
-                ( FoldersContent newFolders, newCmd )
+            updateModalActionFolder folders action Content.Folder.initFolderInfo Post
 
         ModalMsg NewFolder modalMsg ->
-            let
-                newNewFolderModal =
-                    Ui.Modal.update modalMsg folders.newFolderModal
-            in
-                ( FoldersContent { folders | newFolderModal = newNewFolderModal }, Cmd.none )
+            updateModalMsgFolder folders modalMsg
 
-        NewFolderFormMsg msg ->
+        -- EDIT FOLDER MODAL
+        ModalAction EditFolder action ->
             let
-                ( newNewFolderModal, effect ) =
-                    case folders.newFolderForm of
-                        Just form ->
-                            let
-                                ( newForm, newEffect ) =
-                                    Form.update msg form
-                            in
-                                ( Just newForm, newEffect )
-
-                        Nothing ->
-                            ( Nothing, Cmd.none )
+                updateFolder folder =
+                    updateModalActionFolder folders action (\id -> folder.info) Put
             in
-                ( FoldersContent { folders | newFolderForm = newNewFolderModal }
-                , Cmd.map (OnFoldersMsg << NewFolderFormMsg) effect
+                RemoteData.map updateFolder folders.folder
+                    |> RemoteData.withDefault ( content, Cmd.none )
+
+        ModalMsg EditFolder modalMsg ->
+            updateModalMsgFolder folders modalMsg
+
+        FolderFormMsg msg ->
+            let
+                ( newFolderEditModal, effect ) =
+                    maybeUpdate (Form.update msg) folders.folderEditForm
+            in
+                ( FoldersContent { folders | folderEditForm = newFolderEditModal }
+                , Cmd.map (OnFoldersMsg << FolderFormMsg) effect
                 )
 
-        FolderInfoPostResponse webdata ->
+        FolderInfoSaveResponse webdata ->
             case webdata of
                 NotAsked ->
                     ( content, Cmd.none )
@@ -160,27 +143,6 @@ updateFoldersContent foldersMsg content folders =
                             Tree.Update.update (Tree.Messages.SelectNode folders.folderId) (Success newFolders.tree)
                     in
                         updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree
-
-        FolderInfoPutResponse webdata ->
-            case webdata of
-                NotAsked ->
-                    ( content, Cmd.none )
-
-                Loading ->
-                    ( content, Cmd.none )
-
-                Failure err ->
-                    ( content, Cmd.none )
-
-                Success newFolders ->
-                    ( FoldersContent { folders | tree = newFolders.tree }, Cmd.none )
-
-        -- EDIT FOLDER MODAL
-        ModalAction EditFolder action ->
-            ( content, Cmd.none )
-
-        ModalMsg EditFolder modalMsg ->
-            ( content, Cmd.none )
 
         -- MOVE FOLDER MODAL
         ModalAction MoveFolder action ->
@@ -243,14 +205,14 @@ updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTre
 
 applyNewActionMenu : Folders -> Ui.DropdownMenu.Model -> ( Content, Cmd Msg )
 applyNewActionMenu folders newMenu =
-    ( FoldersContent { folders | newFolderActionMenu = newMenu }, Cmd.none )
+    ( FoldersContent { folders | folderActionMenu = newMenu }, Cmd.none )
 
 
 updateActionMenu : Folders -> Ui.DropdownMenu.Msg -> ( Content, Cmd Msg )
 updateActionMenu folders action =
     let
         newActionMenu =
-            Ui.DropdownMenu.update action folders.newFolderActionMenu
+            Ui.DropdownMenu.update action folders.folderActionMenu
     in
         applyNewActionMenu folders newActionMenu
 
@@ -259,7 +221,7 @@ updateCloseActionMenu : Folders -> ( Content, Cmd Msg )
 updateCloseActionMenu folders =
     let
         newActionMenu =
-            Ui.DropdownMenu.close folders.newFolderActionMenu
+            Ui.DropdownMenu.close folders.folderActionMenu
     in
         applyNewActionMenu folders newActionMenu
 
@@ -268,37 +230,66 @@ updateCloseActionMenu folders =
 -- NEW FOLDER UPDATES
 
 
-updateNewFolderModalOpen : Content -> Folders -> ( Folders, Cmd Msg )
-updateNewFolderModalOpen content folders =
+updateModalActionFolder : Folders -> ModalAction -> (NodeId -> FolderInfo) -> HttpMethod -> ( Content, Cmd Msg )
+updateModalActionFolder folders action folderInfo method =
+    let
+        ( newFolders, newCmd ) =
+            case action of
+                Open ->
+                    updateFolderModalOpen folders folderInfo method
+
+                Save ->
+                    case folders.folderEditForm of
+                        Just form ->
+                            updateFolderModalSave folders folderInfo form method
+
+                        Nothing ->
+                            ( folders, Cmd.none )
+
+                Cancel ->
+                    ( { folders | folderEditModal = Ui.Modal.close folders.folderEditModal }, Cmd.none )
+    in
+        ( FoldersContent newFolders, newCmd )
+
+
+updateFolderModalOpen : Folders -> (NodeId -> FolderInfo) -> HttpMethod -> ( Folders, Cmd Msg )
+updateFolderModalOpen folders folderInfo method =
     let
         newActionMenu =
-            Ui.DropdownMenu.close folders.newFolderActionMenu
+            Ui.DropdownMenu.close folders.folderActionMenu
 
         newFolderForm =
-            Content.Folder.newFolderForm folders.folderId
+            Content.Folder.folderForm (folderInfo folders.folderId)
     in
         ( { folders
-            | newFolderActionMenu = newActionMenu
-            , newFolderModal = Ui.Modal.open folders.newFolderModal
-            , newFolderForm = Just newFolderForm
+            | folderActionMenu = newActionMenu
+            , folderEditMethod = Just method
+            , folderEditModal = Ui.Modal.open folders.folderEditModal
+            , folderEditForm = Just newFolderForm
           }
         , Cmd.none
         )
 
 
-updateNewFolderModalSave : Content -> Folders -> Form.Model Msg -> ( Folders, Cmd Msg )
-updateNewFolderModalSave content folders form =
+updateFolderModalSave : Folders -> (NodeId -> FolderInfo) -> Form.Model Msg -> HttpMethod -> ( Folders, Cmd Msg )
+updateFolderModalSave folders folderInfo form method =
     let
-        newNewFolderModal =
-            Ui.Modal.close folders.newFolderModal
-
-        emptyFolderInfo =
-            Content.Folder.initFolderInfo folders.folderId
+        newFolderEditModal =
+            Ui.Modal.close folders.folderEditModal
 
         newFolderInfo =
-            Content.Folder.updateFolder form emptyFolderInfo
+            Content.Folder.updateFolder form (folderInfo folders.folderId)
 
         newEffect =
-            postFolderInfo folders.folderId newFolderInfo
+            saveFolderInfo folders.folderId newFolderInfo method
     in
-        ( { folders | newFolderModal = newNewFolderModal }, newEffect )
+        ( { folders | folderEditModal = newFolderEditModal }, newEffect )
+
+
+updateModalMsgFolder : Folders -> Ui.Modal.Msg -> ( Content, Cmd Msg )
+updateModalMsgFolder folders modalMsg =
+    let
+        newFolderEditModal =
+            Ui.Modal.update modalMsg folders.folderEditModal
+    in
+        ( FoldersContent { folders | folderEditModal = newFolderEditModal }, Cmd.none )

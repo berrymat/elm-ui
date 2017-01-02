@@ -47,6 +47,29 @@ putter url value decoder msg =
         |> send msg
 
 
+type HttpMethod
+    = Post
+    | Put
+
+
+requester : String -> HttpMethod -> Encode.Value -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
+requester url method value decoder msg =
+    let
+        requestBuilder =
+            case method of
+                Post ->
+                    HttpBuilder.post
+
+                Put ->
+                    HttpBuilder.put
+    in
+        requestBuilder url
+            |> withJsonBody value
+            |> withExpect (Http.expectJson decoder)
+            |> withCredentials
+            |> send msg
+
+
 fullAddress : Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String
 fullAddress maybeAddress1 maybeAddress2 maybeAddress3 maybeAddress4 maybePostcode =
     [ maybeAddress1, maybeAddress2, maybeAddress3, maybeAddress4, maybePostcode ]
@@ -99,3 +122,17 @@ viewPendingDefault iconClass =
     [ div [ class "header-loading" ]
         [ i [ class iconClass ] [] ]
     ]
+
+
+maybeUpdate : (a -> ( b, Cmd c )) -> Maybe a -> ( Maybe b, Cmd c )
+maybeUpdate f maybe =
+    case maybe of
+        Just data ->
+            let
+                ( first, second ) =
+                    f data
+            in
+                ( Just first, second )
+
+        Nothing ->
+            ( Nothing, Cmd.none )

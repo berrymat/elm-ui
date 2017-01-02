@@ -1,6 +1,7 @@
 module Content.Models exposing (..)
 
 import Http
+import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Tree.Messages
@@ -38,9 +39,8 @@ type FoldersMsg
     | ModalAction ModalType ModalAction
     | ModalMsg ModalType Ui.Modal.Msg
       -- NEW FOLDER FORM
-    | NewFolderFormMsg Form.Msg
-    | FolderInfoPostResponse (WebData Folders)
-    | FolderInfoPutResponse (WebData Folders)
+    | FolderFormMsg Form.Msg
+    | FolderInfoSaveResponse (WebData Folders)
 
 
 type Msg
@@ -59,9 +59,10 @@ type Content
 
 type alias Folders =
     { tree : Tree
-    , newFolderActionMenu : Ui.DropdownMenu.Model
-    , newFolderModal : Ui.Modal.Model
-    , newFolderForm : Maybe (Form.Model Msg)
+    , folderActionMenu : Ui.DropdownMenu.Model
+    , folderEditMethod : Maybe HttpMethod
+    , folderEditModal : Ui.Modal.Model
+    , folderEditForm : Maybe (Form.Model Msg)
     , selected : Bool
     , path : List Node
     , folderId : NodeId

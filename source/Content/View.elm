@@ -95,20 +95,31 @@ contentFolders folders =
             actionDropdownViewModel folders
 
         modalContent =
-            case folders.newFolderForm of
+            case folders.folderEditForm of
                 Just form ->
-                    [ Form.view (OnFoldersMsg << NewFolderFormMsg) form ]
+                    [ Form.view (OnFoldersMsg << FolderFormMsg) form ]
 
                 Nothing ->
                     [ text "Edit Modal" ]
 
-        newFolderModalViewModel =
+        ( saveText, modalType ) =
+            case folders.folderEditMethod of
+                Just Post ->
+                    ( "Create", NewFolder )
+
+                Just Put ->
+                    ( "Update", EditFolder )
+
+                Nothing ->
+                    ( "", NewFolder )
+
+        folderEditModalViewModel =
             { content = modalContent
             , title = "New Folder"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Create" (OnFoldersMsg (ModalAction NewFolder Save))
-                    , Ui.Button.secondary "Cancel" (OnFoldersMsg (ModalAction NewFolder Cancel))
+                    [ Ui.Button.primary saveText (OnFoldersMsg (ModalAction modalType Save))
+                    , Ui.Button.secondary "Cancel" (OnFoldersMsg (ModalAction modalType Cancel))
                     ]
                 ]
             }
@@ -120,8 +131,8 @@ contentFolders folders =
                     (Tree.View.view folders.tree)
                 ]
             , div [ class "body-content-sidebar-footer" ]
-                [ Ui.DropdownMenu.view dropdownViewModel (OnFoldersMsg << ActionMenu) folders.newFolderActionMenu
-                , Ui.Modal.view (OnFoldersMsg << (ModalMsg NewFolder)) newFolderModalViewModel folders.newFolderModal
+                [ Ui.DropdownMenu.view dropdownViewModel (OnFoldersMsg << ActionMenu) folders.folderActionMenu
+                , Ui.Modal.view (OnFoldersMsg << (ModalMsg NewFolder)) folderEditModalViewModel folders.folderEditModal
                 ]
             ]
         , div [ class "body-content-content" ]

@@ -7,12 +7,11 @@ import Content.Models exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Table
-import Debug
-import Helpers.Helpers exposing (apiUrl, fetcher)
 import RemoteData exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
-import Helpers.Helpers exposing (apiUrl, fetcher, poster, putter)
+import Helpers.Helpers exposing (..)
+import Debug exposing (..)
 
 
 fetchContent : TabType -> NodeId -> Cmd Msg
@@ -99,6 +98,7 @@ createFolders tree folder =
     Folders
         tree
         Ui.DropdownMenu.init
+        Nothing
         Ui.Modal.init
         Nothing
         True
@@ -237,17 +237,19 @@ folderInfoDecoder =
         |> required "writableForStaff" Decode.bool
 
 
-postFolderInfo : NodeId -> FolderInfo -> Cmd Msg
-postFolderInfo folderId folderInfo =
-    poster (apiUrl ++ "Folders")
-        (encodeFolderInfo folderInfo)
-        foldersDecoder
-        (OnFoldersMsg << FolderInfoPostResponse << RemoteData.fromResult)
+saveFolderInfo : NodeId -> FolderInfo -> HttpMethod -> Cmd Msg
+saveFolderInfo folderId folderInfo method =
+    let
+        url =
+            case method of
+                Post ->
+                    (apiUrl ++ "Folders")
 
-
-putFolderInfo : NodeId -> FolderInfo -> Cmd Msg
-putFolderInfo folderId folderInfo =
-    putter (foldersUrl folderId)
-        (encodeFolderInfo folderInfo)
-        foldersDecoder
-        (OnFoldersMsg << FolderInfoPutResponse << RemoteData.fromResult)
+                Put ->
+                    (foldersUrl folderId)
+    in
+        requester url
+            method
+            (encodeFolderInfo folderInfo)
+            foldersDecoder
+            (OnFoldersMsg << FolderInfoSaveResponse << RemoteData.fromResult)
