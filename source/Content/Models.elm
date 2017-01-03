@@ -64,6 +64,7 @@ type alias Folders =
     , folderEditModal : Ui.Modal.Model
     , folderEditForm : Maybe (Form.Model Msg)
     , folderMoveModal : Ui.Modal.Model
+    , folderDeleteModal : Ui.Modal.Model
     , moveTree : Maybe Tree
     , selected : Bool
     , path : List Node

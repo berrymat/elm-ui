@@ -30,6 +30,26 @@ update message content =
             updateFolders foldersMsg content
 
 
+subscriptions : WebData Content -> Sub Msg
+subscriptions content =
+    let
+        subAction content =
+            case content of
+                FoldersContent folders ->
+                    Sub.map (OnFoldersMsg << ActionMenu) (Ui.DropdownMenu.subscriptions folders.folderActionMenu)
+
+                _ ->
+                    Sub.none
+
+        subActionMenu =
+            RemoteData.map subAction content
+                |> RemoteData.withDefault Sub.none
+    in
+        Sub.batch
+            [ subActionMenu
+            ]
+
+
 updateFolders : FoldersMsg -> WebData Content -> ( WebData Content, Cmd Msg )
 updateFolders foldersMsg webdataContent =
     let
@@ -166,10 +186,11 @@ updateFoldersContent foldersMsg content folders =
 
         -- DELETE FOLDER MODAL
         ModalAction DeleteFolder action ->
-            ( content, Cmd.none )
+            RemoteData.map (updateModalActionDeleteFolder folders action) folders.folder
+                |> RemoteData.withDefault ( content, Cmd.none )
 
         ModalMsg DeleteFolder modalMsg ->
-            ( content, Cmd.none )
+            updateModalMsgDeleteFolder folders modalMsg
 
 
 updatePathFromTree : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Content, Cmd Msg )
@@ -418,3 +439,73 @@ updateModalMsgMoveFolder folders modalMsg =
             Ui.Modal.update modalMsg folders.folderMoveModal
     in
         ( FoldersContent { folders | folderMoveModal = newFolderMoveModal }, Cmd.none )
+
+
+
+-- DELETE FOLDER
+
+
+updateModalActionDeleteFolder : Folders -> ModalAction -> Folder -> ( Content, Cmd Msg )
+updateModalActionDeleteFolder folders action folder =
+    let
+        ( newFolders, newCmd ) =
+            case action of
+                Open ->
+                    updateDeleteFolderModalOpen folders
+
+                Save ->
+                    updateDeleteFolderModalSave folders folder
+
+                Cancel ->
+                    ( { folders | folderDeleteModal = Ui.Modal.close folders.folderDeleteModal }, Cmd.none )
+    in
+        ( FoldersContent newFolders, newCmd )
+
+
+updateDeleteFolderModalOpen : Folders -> ( Folders, Cmd Msg )
+updateDeleteFolderModalOpen folders =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close folders.folderActionMenu
+    in
+        ( { folders
+            | folderActionMenu = newActionMenu
+            , folderDeleteModal = Ui.Modal.open folders.folderDeleteModal
+          }
+        , Cmd.none
+        )
+
+
+updateDeleteFolderModalSave : Folders -> Folder -> ( Folders, Cmd Msg )
+updateDeleteFolderModalSave folders folder =
+    let
+        newFolderDeleteModal =
+            Ui.Modal.close folders.folderDeleteModal
+
+        folderInfo =
+            folder.info
+
+        newFolderInfo =
+            { folderInfo | isDeleted = True }
+
+        newFolder =
+            { folder | info = newFolderInfo }
+
+        newEffect =
+            saveFolderInfo folders.folderId newFolderInfo Put
+    in
+        ( { folders
+            | folderDeleteModal = newFolderDeleteModal
+            , folder = Success newFolder
+          }
+        , newEffect
+        )
+
+
+updateModalMsgDeleteFolder : Folders -> Ui.Modal.Msg -> ( Content, Cmd Msg )
+updateModalMsgDeleteFolder folders modalMsg =
+    let
+        newFolderDeleteModal =
+            Ui.Modal.update modalMsg folders.folderDeleteModal
+    in
+        ( FoldersContent { folders | folderDeleteModal = newFolderDeleteModal }, Cmd.none )

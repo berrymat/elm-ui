@@ -103,6 +103,7 @@ createFolders tree folder =
         Ui.Modal.init
         Nothing
         Ui.Modal.init
+        Ui.Modal.init
         (createMoveTree tree)
         True
         []

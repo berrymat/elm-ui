@@ -142,6 +142,7 @@ subscriptions : Container -> Sub Msg
 subscriptions container =
     Sub.batch
         [ Sub.map ActionMenu (Ui.DropdownMenu.subscriptions container.headerUi.actionMenu)
+        , Sub.map ContentMsg (Content.Update.subscriptions container.content)
         ]
 
 

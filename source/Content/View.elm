@@ -145,9 +145,11 @@ contentFolders folders =
             { content =
                 case folders.moveTree of
                     Just tree ->
-                        [ Html.map
-                            (OnFoldersMsg << MoveTreeMsg)
-                            (Tree.View.view tree)
+                        [ div [ class "padded-modal-content" ]
+                            [ Html.map
+                                (OnFoldersMsg << MoveTreeMsg)
+                                (Tree.View.view tree)
+                            ]
                         ]
 
                     Nothing ->
@@ -157,6 +159,24 @@ contentFolders folders =
                 [ Ui.Container.rowEnd []
                     [ Ui.Button.primary "Move" (OnFoldersMsg (ModalAction MoveFolder Save))
                     , Ui.Button.secondary "Cancel" (OnFoldersMsg (ModalAction MoveFolder Cancel))
+                    ]
+                ]
+            }
+
+        folderName =
+            RemoteData.map (\f -> f.info.name) folders.folder
+                |> RemoteData.withDefault "No Folder"
+
+        folderDeleteModalViewModel =
+            { content =
+                [ div [ class "padded-modal-content" ]
+                    [ text ("Confirm deletion of folder '" ++ folderName ++ "'?") ]
+                ]
+            , title = "Delete Folder"
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.danger "Delete" (OnFoldersMsg (ModalAction DeleteFolder Save))
+                    , Ui.Button.secondary "Cancel" (OnFoldersMsg (ModalAction DeleteFolder Cancel))
                     ]
                 ]
             }
@@ -171,6 +191,7 @@ contentFolders folders =
                 [ Ui.DropdownMenu.view dropdownViewModel (OnFoldersMsg << ActionMenu) folders.folderActionMenu
                 , Ui.Modal.view (OnFoldersMsg << (ModalMsg modalType)) folderEditModalViewModel folders.folderEditModal
                 , Ui.Modal.view (OnFoldersMsg << (ModalMsg MoveFolder)) folderMoveModalViewModel folders.folderMoveModal
+                , Ui.Modal.view (OnFoldersMsg << (ModalMsg DeleteFolder)) folderDeleteModalViewModel folders.folderDeleteModal
                 ]
             ]
         , div [ class "body-content-content" ]

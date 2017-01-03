@@ -487,6 +487,10 @@ div.k-treeview {
     min-height: $footer-height;
 }
 
+.padded-modal-content {
+    padding: 20px;
+}
+
 abbr[title] {
     cursor: help;
     border-bottom: 1px dotted $color-10;
