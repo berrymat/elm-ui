@@ -50,12 +50,24 @@ updateFoldersContent foldersMsg content folders =
         FetchFolderResponse nodeId folder ->
             ( FoldersContent { folders | folderId = nodeId, folder = folder }, Cmd.none )
 
-        TreeMsg subMsg ->
+        MainTreeMsg subMsg ->
             let
                 ( updatedTree, cmdTree, maybePath, maybeRoot ) =
                     Tree.Update.update subMsg (Success folders.tree)
             in
                 updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree
+
+        MoveTreeMsg subMsg ->
+            case folders.moveTree of
+                Just tree ->
+                    let
+                        ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                            Tree.Update.update subMsg (Success tree)
+                    in
+                        updateMovePathFromTree content folders cmdTree maybePath maybeRoot updatedTree
+
+                Nothing ->
+                    ( content, Cmd.none )
 
         SetQuery newQuery ->
             let
@@ -146,10 +158,11 @@ updateFoldersContent foldersMsg content folders =
 
         -- MOVE FOLDER MODAL
         ModalAction MoveFolder action ->
-            ( content, Cmd.none )
+            RemoteData.map (updateModalActionMoveFolder folders action) folders.folder
+                |> RemoteData.withDefault ( content, Cmd.none )
 
         ModalMsg MoveFolder modalMsg ->
-            ( content, Cmd.none )
+            updateModalMsgMoveFolder folders modalMsg
 
         -- DELETE FOLDER MODAL
         ModalAction DeleteFolder action ->
@@ -189,11 +202,39 @@ updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTre
 
                 cmdBatch =
                     Cmd.batch
-                        [ Cmd.map (OnFoldersMsg << TreeMsg) cmdTree
+                        [ Cmd.map (OnFoldersMsg << MainTreeMsg) cmdTree
                         , cmdFolder
                         ]
             in
-                ( FoldersContent { newFolders | tree = updatedTree, path = path }, cmdBatch )
+                ( FoldersContent
+                    { newFolders
+                        | tree = updatedTree
+                        , moveTree = (createMoveTree updatedTree)
+                        , path = path
+                    }
+                , cmdBatch
+                )
+
+        Nothing ->
+            ( FoldersContent folders, Cmd.none )
+
+
+updateMovePathFromTree : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Content, Cmd Msg )
+updateMovePathFromTree content folders cmdTree maybePath maybeRoot updatedTree =
+    RemoteData.map (updateMovePathFromTreeSuccess content folders cmdTree maybePath maybeRoot) updatedTree
+        |> RemoteData.withDefault ( content, Cmd.none )
+
+
+updateMovePathFromTreeSuccess : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ( Content, Cmd Msg )
+updateMovePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTree =
+    case maybePath of
+        Just path ->
+            ( FoldersContent
+                { folders
+                    | moveTree = Just updatedTree
+                }
+            , Cmd.none
+            )
 
         Nothing ->
             ( FoldersContent folders, Cmd.none )
@@ -293,3 +334,87 @@ updateModalMsgFolder folders modalMsg =
             Ui.Modal.update modalMsg folders.folderEditModal
     in
         ( FoldersContent { folders | folderEditModal = newFolderEditModal }, Cmd.none )
+
+
+
+-- MOVE FOLDER
+
+
+updateModalActionMoveFolder : Folders -> ModalAction -> Folder -> ( Content, Cmd Msg )
+updateModalActionMoveFolder folders action folder =
+    let
+        ( newFolders, newCmd ) =
+            case action of
+                Open ->
+                    updateMoveFolderModalOpen folders
+
+                Save ->
+                    updateMoveFolderModalSave folders folder
+
+                Cancel ->
+                    ( { folders | folderMoveModal = Ui.Modal.close folders.folderMoveModal }, Cmd.none )
+    in
+        ( FoldersContent newFolders, newCmd )
+
+
+updateMoveFolderModalOpen : Folders -> ( Folders, Cmd Msg )
+updateMoveFolderModalOpen folders =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close folders.folderActionMenu
+    in
+        ( { folders
+            | folderActionMenu = newActionMenu
+            , folderMoveModal = Ui.Modal.open folders.folderMoveModal
+          }
+        , Cmd.none
+        )
+
+
+updateMoveFolderModalSave : Folders -> Folder -> ( Folders, Cmd Msg )
+updateMoveFolderModalSave folders folder =
+    let
+        newFolderMoveModal =
+            Ui.Modal.close folders.folderMoveModal
+
+        folderInfo =
+            folder.info
+
+        folderPrefix tree =
+            "/"
+                ++ (List.reverse tree.path
+                        |> List.map (\n -> n.name ++ "/")
+                        |> String.concat
+                   )
+
+        newPrefix =
+            Maybe.map folderPrefix folders.moveTree
+                |> Maybe.withDefault "/"
+
+        newFolderInfo =
+            { folderInfo | prefix = newPrefix }
+
+        newFolder =
+            { folder | info = newFolderInfo }
+
+        newEffect =
+            if newPrefix /= folderInfo.prefix then
+                saveFolderInfo folders.folderId newFolderInfo Put
+            else
+                Cmd.none
+    in
+        ( { folders
+            | folderMoveModal = newFolderMoveModal
+            , folder = Success newFolder
+          }
+        , newEffect
+        )
+
+
+updateModalMsgMoveFolder : Folders -> Ui.Modal.Msg -> ( Content, Cmd Msg )
+updateModalMsgMoveFolder folders modalMsg =
+    let
+        newFolderMoveModal =
+            Ui.Modal.update modalMsg folders.folderMoveModal
+    in
+        ( FoldersContent { folders | folderMoveModal = newFolderMoveModal }, Cmd.none )

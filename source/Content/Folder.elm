@@ -7,7 +7,7 @@ import Components.Form as Form
 
 initFolderInfo : NodeId -> FolderInfo
 initFolderInfo folderId =
-    FolderInfo folderId "" False True True True True True True
+    FolderInfo folderId "/" "" False False True True True True True True True True True
 
 
 readableForCustomersName : String

@@ -6,6 +6,7 @@ import Html.Events exposing (..)
 import Content.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
+import Tree.Models exposing (ChildrenState(..))
 import Tree.View
 import Table
 import Date
@@ -55,25 +56,41 @@ actionDropdownViewModel : Folders -> Ui.DropdownMenu.ViewModel Msg
 actionDropdownViewModel folders =
     let
         actions =
-            [ ( "var-plus", "New", NewFolder )
-            , ( "var-record", "Edit", EditFolder )
-            , ( "var-arrow-move", "Move", MoveFolder )
-            , ( "trash-b", "Delete", DeleteFolder )
+            [ ( "plus", "New Folder", NewFolder )
+            , ( "record", "Edit Folder", EditFolder )
+            , ( "arrow-move", "Move Folder", MoveFolder )
+            , ( "trash-b", "Delete Folder", DeleteFolder )
             ]
 
-        actionFilter ( _, _, type_ ) =
+        actionFilter action =
+            RemoteData.map (actionFilterSuccess action) folders.folder
+                |> RemoteData.withDefault False
+
+        actionFilterSuccess ( _, _, type_ ) folder =
             case type_ of
                 NewFolder ->
-                    True
+                    folder.info.isWritable
 
                 EditFolder ->
-                    True
+                    not folder.info.isShared
 
                 MoveFolder ->
-                    True
+                    folder.info.isMovable
 
                 DeleteFolder ->
-                    True
+                    let
+                        childrenState =
+                            List.head folders.tree.path
+                                |> Maybe.map (\n -> n.childrenState)
+                                |> Maybe.withDefault folders.tree.childrenState
+
+                        noChildren =
+                            childrenState == NoChildren
+
+                        noFiles =
+                            (List.length folder.files) == 0
+                    in
+                        (not folder.info.isShared) && noChildren && noFiles
 
         accessibleActions =
             List.filter actionFilter actions
@@ -102,20 +119,20 @@ contentFolders folders =
                 Nothing ->
                     [ text "Edit Modal" ]
 
-        ( saveText, modalType ) =
+        ( title, saveText, modalType ) =
             case folders.folderEditMethod of
                 Just Post ->
-                    ( "Create", NewFolder )
+                    ( "New Folder", "Create", NewFolder )
 
                 Just Put ->
-                    ( "Update", EditFolder )
+                    ( "Edit Folder", "Update", EditFolder )
 
                 Nothing ->
-                    ( "", NewFolder )
+                    ( "", "", NewFolder )
 
         folderEditModalViewModel =
             { content = modalContent
-            , title = "New Folder"
+            , title = title
             , footer =
                 [ Ui.Container.rowEnd []
                     [ Ui.Button.primary saveText (OnFoldersMsg (ModalAction modalType Save))
@@ -123,16 +140,37 @@ contentFolders folders =
                     ]
                 ]
             }
+
+        folderMoveModalViewModel =
+            { content =
+                case folders.moveTree of
+                    Just tree ->
+                        [ Html.map
+                            (OnFoldersMsg << MoveTreeMsg)
+                            (Tree.View.view tree)
+                        ]
+
+                    Nothing ->
+                        [ text "Can't Move" ]
+            , title = "Move Folder"
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.primary "Move" (OnFoldersMsg (ModalAction MoveFolder Save))
+                    , Ui.Button.secondary "Cancel" (OnFoldersMsg (ModalAction MoveFolder Cancel))
+                    ]
+                ]
+            }
     in
         [ div [ class "body-content-sidebar" ]
             [ div [ class "body-content-sidebar-content" ]
                 [ Html.map
-                    (OnFoldersMsg << TreeMsg)
+                    (OnFoldersMsg << MainTreeMsg)
                     (Tree.View.view folders.tree)
                 ]
             , div [ class "body-content-sidebar-footer" ]
                 [ Ui.DropdownMenu.view dropdownViewModel (OnFoldersMsg << ActionMenu) folders.folderActionMenu
-                , Ui.Modal.view (OnFoldersMsg << (ModalMsg NewFolder)) folderEditModalViewModel folders.folderEditModal
+                , Ui.Modal.view (OnFoldersMsg << (ModalMsg modalType)) folderEditModalViewModel folders.folderEditModal
+                , Ui.Modal.view (OnFoldersMsg << (ModalMsg MoveFolder)) folderMoveModalViewModel folders.folderMoveModal
                 ]
             ]
         , div [ class "body-content-content" ]

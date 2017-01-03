@@ -5,6 +5,7 @@ import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Content.Models exposing (..)
 import Helpers.Models exposing (..)
+import Tree.Update exposing (..)
 import Tree.Models exposing (..)
 import Table
 import RemoteData exposing (..)
@@ -101,10 +102,60 @@ createFolders tree folder =
         Nothing
         Ui.Modal.init
         Nothing
+        Ui.Modal.init
+        (createMoveTree tree)
         True
         []
         folder.info.id
         (Success folder)
+
+
+createMoveTree : Tree -> Maybe Tree
+createMoveTree tree =
+    if tree.selected then
+        Nothing
+    else
+        let
+            newTree =
+                { id = tree.id
+                , nodeType = tree.nodeType
+                , name = tree.name
+                , selected = False
+                , childrenState = tree.childrenState
+                , childNodes = (createMoveNodes tree.childNodes)
+                , path = []
+                }
+
+            maybeSelected =
+                List.tail tree.path
+                    |> Maybe.andThen List.head
+                    |> Maybe.map (\n -> n.id)
+
+            ( moveTree, _ ) =
+                selectSuccess maybeSelected newTree
+        in
+            Just moveTree
+
+
+createMoveNodes : ChildNodes -> ChildNodes
+createMoveNodes (ChildNodes childNodes) =
+    let
+        newChildNodes node =
+            RemoteData.map (\cn -> createMoveNodes cn) node.childNodes
+
+        createNode node =
+            { id = node.id
+            , nodeType = node.nodeType
+            , name = node.name
+            , selected = False
+            , childrenState = node.childrenState
+            , childNodes = (newChildNodes node)
+            , rootType = node.rootType
+            }
+    in
+        List.filter (\n -> not n.selected) childNodes
+            |> List.map createNode
+            |> ChildNodes
 
 
 folderDecoder : Decode.Decoder Node
@@ -212,8 +263,13 @@ encodeFolderInfo : FolderInfo -> Encode.Value
 encodeFolderInfo folderInfo =
     Encode.object
         [ ( "id", Encode.string folderInfo.id )
+        , ( "prefix", Encode.string folderInfo.prefix )
         , ( "name", Encode.string folderInfo.name )
         , ( "isShared", Encode.bool folderInfo.isShared )
+        , ( "isDeleted", Encode.bool folderInfo.isDeleted )
+        , ( "isWritable", Encode.bool folderInfo.isWritable )
+        , ( "isReadable", Encode.bool folderInfo.isReadable )
+        , ( "isMovable", Encode.bool folderInfo.isMovable )
         , ( "readableForCustomers", Encode.bool folderInfo.readableForCustomers )
         , ( "readableForClients", Encode.bool folderInfo.readableForClients )
         , ( "readableForStaff", Encode.bool folderInfo.readableForStaff )
@@ -227,8 +283,13 @@ folderInfoDecoder : Decode.Decoder FolderInfo
 folderInfoDecoder =
     decode FolderInfo
         |> required "id" Decode.string
+        |> required "prefix" Decode.string
         |> required "name" Decode.string
         |> required "isShared" Decode.bool
+        |> required "isDeleted" Decode.bool
+        |> required "isWritable" Decode.bool
+        |> required "isReadable" Decode.bool
+        |> required "isMovable" Decode.bool
         |> required "readableForCustomers" Decode.bool
         |> required "readableForClients" Decode.bool
         |> required "readableForStaff" Decode.bool

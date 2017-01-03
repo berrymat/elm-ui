@@ -106,7 +106,7 @@ fetchInitialData parentType nodeId childType container =
         ( newContainer, headerCmd ) =
             Header.Commands.fetchHeader container ( parentType, nodeId, True )
     in
-        ( newContainer, Cmd.batch [ treeCmd, headerCmd ] )
+        ( { newContainer | path = [] }, Cmd.batch [ treeCmd, headerCmd ] )
 
 
 fetchContent : Container -> Bool -> HeaderData -> ( Container, Cmd Msg )

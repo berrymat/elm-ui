@@ -1,6 +1,5 @@
 module Content.Models exposing (..)
 
-import Http
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
@@ -27,7 +26,8 @@ type ModalAction
 
 type FoldersMsg
     = FetchFolderResponse NodeId (WebData Folder)
-    | TreeMsg Tree.Messages.Msg
+    | MainTreeMsg Tree.Messages.Msg
+    | MoveTreeMsg Tree.Messages.Msg
     | SetQuery String
     | SetTableState Table.State
     | ToggleFile NodeId
@@ -63,6 +63,8 @@ type alias Folders =
     , folderEditMethod : Maybe HttpMethod
     , folderEditModal : Ui.Modal.Model
     , folderEditForm : Maybe (Form.Model Msg)
+    , folderMoveModal : Ui.Modal.Model
+    , moveTree : Maybe Tree
     , selected : Bool
     , path : List Node
     , folderId : NodeId
@@ -101,8 +103,13 @@ type alias Cases =
 
 type alias FolderInfo =
     { id : NodeId
+    , prefix : String
     , name : String
     , isShared : Bool
+    , isDeleted : Bool
+    , isWritable : Bool
+    , isReadable : Bool
+    , isMovable : Bool
     , readableForCustomers : Bool
     , readableForClients : Bool
     , readableForStaff : Bool
