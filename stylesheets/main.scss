@@ -426,7 +426,7 @@ div.k-treeview {
 .body-content {
     display: flex;
     flex: 1 1 auto;
-    background-color: #FFFFFF;
+    background-color: $bg-color-10;
     flex-direction: row;
     align-items: stretch;    
 }
@@ -470,6 +470,7 @@ div.k-treeview {
 
 .body-content-content-content {
     flex: 1 1 auto;
+    display: flex;
     background-color: $bg-color-10;
     color: $color-10;
     padding: 8px;
@@ -563,7 +564,12 @@ div.body-path {
 }
 
 .file-content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+
     table {
+        margin-top: 8px;
         border-collapse: separate;
         border-spacing: 0;
         width: 100%;
