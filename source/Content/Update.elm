@@ -12,6 +12,10 @@ import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
 import Content.Folder
+import Task exposing (..)
+import Ui.Native.FileManager
+import Http
+import Json.Decode as Decode
 
 
 update : Msg -> WebData Content -> ( WebData Content, Cmd Msg )
@@ -28,6 +32,9 @@ update message content =
 
         OnFoldersMsg foldersMsg ->
             updateFolders foldersMsg content
+
+        OnFilesMsg filesMsg ->
+            updateFiles filesMsg content
 
 
 subscriptions : WebData Content -> Sub Msg
@@ -509,3 +516,81 @@ updateModalMsgDeleteFolder folders modalMsg =
             Ui.Modal.update modalMsg folders.folderDeleteModal
     in
         ( FoldersContent { folders | folderDeleteModal = newFolderDeleteModal }, Cmd.none )
+
+
+
+-- UPDATE FILES
+
+
+updateFiles : FilesMsg -> WebData Content -> ( WebData Content, Cmd Msg )
+updateFiles filesMsg webdataContent =
+    let
+        updateFilesSuccess content =
+            case content of
+                FoldersContent folders ->
+                    updateFilesContent filesMsg content folders
+
+                _ ->
+                    ( content, Cmd.none )
+    in
+        RemoteData.update updateFilesSuccess webdataContent
+
+
+updateFilesContent : FilesMsg -> Content -> Folders -> ( Content, Cmd Msg )
+updateFilesContent filesMsg content folders =
+    case filesMsg of
+        UploadOpened task ->
+            ( content, Task.perform (OnFilesMsg << UploadGetFiles) task )
+
+        UploadGetFiles files ->
+            let
+                x =
+                    Debug.log "files" files
+            in
+                ( content, upload folders.folderId files filesDecoder )
+
+        UploadUploaded response ->
+            let
+                x =
+                    Debug.log "response" response
+            in
+                ( FoldersContent { folders | folder = response }, Cmd.none )
+
+
+upload : NodeId -> List Ui.Native.FileManager.File -> Decode.Decoder Folder -> Cmd Msg
+upload folderId files decoder =
+    let
+        part index file =
+            Ui.Native.FileManager.toFormData ("file" ++ (toString index)) file
+
+        parts =
+            [ (Http.stringPart "id" folderId) ]
+                ++ (List.indexedMap part files)
+
+        body =
+            Http.multipartBody <| parts
+
+        request =
+            Http.request
+                { method = "POST"
+                , url =
+                    (apiUrl ++ "Upload")
+                , headers = []
+                , body = body
+                , expect = (Http.expectJson decoder)
+                , timeout = Nothing
+                , withCredentials = True
+                }
+    in
+        request
+            |> Http.send ((OnFilesMsg << UploadUploaded) << RemoteData.fromResult)
+
+
+
+{-
+   HttpBuilder.post (apiUrl ++ "Upload")
+       |> withMultipartStringBody parts
+       |> withExpect (Http.expectJson decoder)
+       |> withCredentials
+       |> send ((OnFilesMsg << UploadUploaded) << RemoteData.fromResult)
+-}

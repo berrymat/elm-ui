@@ -221,7 +221,7 @@ var _gdotdesign$elm_ui$Native_FileManager = function() {
     return Json.andThen(function(_){
       var input = createInput()
       input.accept = accept
-      input.multiple = false
+      input.multiple = true
       input.click()
       var task = _elm_lang$core$Native_Scheduler.nativeBinding(function(callback){
         input.addEventListener('change', function(){

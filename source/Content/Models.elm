@@ -9,6 +9,8 @@ import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
 import RemoteData exposing (..)
+import Task exposing (Task)
+import Ui.Native.FileManager
 
 
 type ModalType
@@ -43,11 +45,18 @@ type FoldersMsg
     | FolderInfoSaveResponse (WebData Folders)
 
 
+type FilesMsg
+    = UploadOpened (Task Never (List Ui.Native.FileManager.File))
+    | UploadGetFiles (List Ui.Native.FileManager.File)
+    | UploadUploaded (WebData Folder)
+
+
 type Msg
     = FetchFoldersResponse NodeId (WebData Folders)
     | FetchUsersResponse NodeId (WebData Users)
     | FetchCasesResponse NodeId (WebData Cases)
     | OnFoldersMsg FoldersMsg
+    | OnFilesMsg FilesMsg
 
 
 type Content

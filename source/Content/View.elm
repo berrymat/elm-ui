@@ -18,8 +18,10 @@ import Ui.Container
 import Ui.DropdownMenu
 import Ui.IconButton
 import Ui.Modal
+import Ui.Native.FileManager
 import Components.Form as Form
 import RemoteData exposing (..)
+import Helpers.Button
 
 
 view : WebData Content -> Html Msg
@@ -198,7 +200,8 @@ contentFolders folders =
             [ div [ class "body-content-content-content" ]
                 [ contentFiles folders ]
             , div [ class "body-content-content-footer" ]
-                []
+                [ Helpers.Button.primary "Upload" (Ui.Native.FileManager.openMultipleDecoder "*/*" (OnFilesMsg << UploadOpened))
+                ]
             ]
         ]
 
