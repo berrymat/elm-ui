@@ -22,6 +22,8 @@ import Ui.Native.FileManager
 import Components.Form as Form
 import RemoteData exposing (..)
 import Helpers.Button
+import Helpers.Progress
+import Dict
 
 
 view : WebData Content -> Html Msg
@@ -65,8 +67,8 @@ actionDropdownViewModel folders =
             ]
 
         actionFilter action =
-            RemoteData.map (actionFilterSuccess action) folders.folder
-                |> RemoteData.withDefault False
+            Helpers.Progress.map (actionFilterSuccess action) folders.folder
+                |> Helpers.Progress.withDefault False
 
         actionFilterSuccess ( _, _, type_ ) folder =
             case type_ of
@@ -166,8 +168,8 @@ contentFolders folders =
             }
 
         folderName =
-            RemoteData.map (\f -> f.info.name) folders.folder
-                |> RemoteData.withDefault "No Folder"
+            Helpers.Progress.map (\f -> f.info.name) folders.folder
+                |> Helpers.Progress.withDefault "No Folder"
 
         folderDeleteModalViewModel =
             { content =
@@ -209,7 +211,7 @@ contentFolders folders =
 contentFiles : Folders -> Html Msg
 contentFiles folders =
     div [ class "file-content" ]
-        (viewWebData folders.folder contentFilesSuccess viewPendingDefault)
+        (Helpers.Progress.view folders.folder contentFilesSuccess viewPendingDefault)
 
 
 contentFilesSuccess : Folder -> List (Html Msg)
@@ -237,21 +239,21 @@ checkColumn name toCheck toId =
 
 viewCheck : Bool -> NodeId -> Table.HtmlDetails Msg
 viewCheck selected nodeId =
-    Table.HtmlDetails []
+    Table.HtmlDetails [ class "checkbox" ]
         [ input [ type_ "checkbox", checked selected, onClick (OnFoldersMsg (ToggleFile nodeId)) ] []
         ]
 
 
-datetimeColumn : String -> (data -> Float) -> Table.Column data msg
+datetimeColumn : String -> (data -> Float) -> Table.Column data Msg
 datetimeColumn name toDatetime =
-    Table.customColumn
+    Table.veryCustomColumn
         { name = name
         , viewData = \data -> viewDatetime (toDatetime data)
         , sorter = Table.increasingOrDecreasingBy toDatetime
         }
 
 
-viewDatetime : Float -> String
+viewDatetime : Float -> Table.HtmlDetails Msg
 viewDatetime datetime =
     let
         date =
@@ -260,7 +262,8 @@ viewDatetime datetime =
         cfg =
             Config.config
     in
-        format cfg cfg.format.dateTime date
+        Table.HtmlDetails [ class "datetime" ]
+            [ text (format cfg cfg.format.dateTime date) ]
 
 
 config : Table.Config File Msg
@@ -269,9 +272,9 @@ config =
         { toId = .id
         , toMsg = (OnFoldersMsg << SetTableState)
         , columns =
-            [ checkColumn "?" .checked .id
-            , Table.stringColumn "Name" .name
-            , datetimeColumn "Date/Time" .datetime
+            [ checkColumn "select" .checked .id
+            , Table.stringColumn "name" .name
+            , datetimeColumn "date" .datetime
             ]
         , customizations = customizations
         }
@@ -279,52 +282,61 @@ config =
 
 customizations : Table.Customizations File Msg
 customizations =
-    { tableAttrs = []
-    , caption = Nothing
-    , thead = simpleThead
-    , tfoot = Nothing
-    , tbodyAttrs = []
-    , rowAttrs = simpleRowAttrs
-    }
-
-
-simpleThead : List ( String, Table.Status, Attribute msg ) -> Table.HtmlDetails msg
-simpleThead headers =
-    Table.HtmlDetails [] (List.map simpleTheadHelp headers)
-
-
-simpleTheadHelp : ( String, Table.Status, Attribute msg ) -> Html msg
-simpleTheadHelp ( name, status, onClick ) =
     let
-        content =
-            case status of
-                Table.Unsortable ->
-                    [ Html.text name ]
+        columnInfo =
+            Dict.fromList
+                [ ( "select", ( "", "checkbox" ) )
+                , ( "name", ( "Name", "name" ) )
+                , ( "date", ( "Date/Time", "datetime" ) )
+                ]
 
-                Table.Sortable selected ->
-                    [ Html.text name
-                    , if selected then
-                        darkGrey "↓"
-                      else
-                        lightGrey "↓"
-                    ]
+        simpleThead : List ( String, Table.Status, Attribute msg ) -> Table.HtmlDetails msg
+        simpleThead headers =
+            Table.HtmlDetails [] (List.map simpleTheadHelp headers)
 
-                Table.Reversible Nothing ->
-                    [ Html.text name
-                    , lightGrey "↕"
-                    ]
+        simpleTheadHelp : ( String, Table.Status, Attribute msg ) -> Html msg
+        simpleTheadHelp ( name, status, onClick ) =
+            let
+                ( caption, className ) =
+                    (Dict.get name columnInfo) |> Maybe.withDefault ( "", "" )
 
-                Table.Reversible (Just isReversed) ->
-                    [ Html.text name
-                    , darkGrey
-                        (if isReversed then
-                            "↑"
-                         else
-                            "↓"
-                        )
-                    ]
+                content =
+                    case status of
+                        Table.Unsortable ->
+                            [ Html.text caption ]
+
+                        Table.Sortable selected ->
+                            [ Html.text caption
+                            , if selected then
+                                darkGrey "↓"
+                              else
+                                lightGrey "↓"
+                            ]
+
+                        Table.Reversible Nothing ->
+                            [ Html.text caption
+                            , lightGrey "↕"
+                            ]
+
+                        Table.Reversible (Just isReversed) ->
+                            [ Html.text caption
+                            , darkGrey
+                                (if isReversed then
+                                    "↑"
+                                 else
+                                    "↓"
+                                )
+                            ]
+            in
+                Html.th [ onClick, class className ] content
     in
-        Html.th [ onClick ] content
+        { tableAttrs = []
+        , caption = Nothing
+        , thead = simpleThead
+        , tfoot = Nothing
+        , tbodyAttrs = []
+        , rowAttrs = simpleRowAttrs
+        }
 
 
 darkGrey : String -> Html msg

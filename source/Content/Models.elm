@@ -11,6 +11,8 @@ import Components.Form as Form
 import RemoteData exposing (..)
 import Task exposing (Task)
 import Ui.Native.FileManager
+import Http exposing (..)
+import Http.Progress as Progress exposing (Progress(..))
 
 
 type ModalType
@@ -27,8 +29,7 @@ type ModalAction
 
 
 type FoldersMsg
-    = FetchFolderResponse NodeId (WebData Folder)
-    | MainTreeMsg Tree.Messages.Msg
+    = MainTreeMsg Tree.Messages.Msg
     | MoveTreeMsg Tree.Messages.Msg
     | SetQuery String
     | SetTableState Table.State
@@ -43,12 +44,13 @@ type FoldersMsg
       -- NEW FOLDER FORM
     | FolderFormMsg Form.Msg
     | FolderInfoSaveResponse (WebData Folders)
+    | GetFolder ( String, Request Folder )
+    | GetFolderProgress (Progress Folder)
 
 
 type FilesMsg
     = UploadOpened (Task Never (List Ui.Native.FileManager.File))
     | UploadGetFiles (List Ui.Native.FileManager.File)
-    | UploadUploaded (WebData Folder)
 
 
 type Msg
@@ -78,7 +80,8 @@ type alias Folders =
     , selected : Bool
     , path : List Node
     , folderId : NodeId
-    , folder : WebData Folder
+    , folder : Progress Folder
+    , folderRequest : Maybe ( String, Request Folder )
     }
 
 

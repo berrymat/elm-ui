@@ -4,6 +4,7 @@ import Content.Commands exposing (..)
 import Content.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
+import Helpers.Progress
 import Tree.Models exposing (..)
 import Tree.Messages
 import Tree.Update
@@ -15,7 +16,9 @@ import Content.Folder
 import Task exposing (..)
 import Ui.Native.FileManager
 import Http
+import Http.Progress as Progress exposing (Progress(..))
 import Json.Decode as Decode
+import HttpBuilder exposing (..)
 
 
 update : Msg -> WebData Content -> ( WebData Content, Cmd Msg )
@@ -37,20 +40,54 @@ update message content =
             updateFiles filesMsg content
 
 
+subscriptionsSuccessForFolders : Folders -> Sub FoldersMsg
+subscriptionsSuccessForFolders folders =
+    let
+        subActionMenu =
+            Sub.map ActionMenu (Ui.DropdownMenu.subscriptions folders.folderActionMenu)
+
+        subProgress =
+            case folders.folderRequest of
+                Just ( tag, request ) ->
+                    request
+                        |> Progress.track tag GetFolderProgress
+
+                Nothing ->
+                    Sub.none
+    in
+        Sub.batch
+            [ subActionMenu
+            , subProgress
+            ]
+
+
+subscriptionsSuccess : Content -> Sub Msg
+subscriptionsSuccess content =
+    case content of
+        FoldersContent folders ->
+            Sub.map OnFoldersMsg (subscriptionsSuccessForFolders folders)
+
+        _ ->
+            Sub.none
+
+
 subscriptions : WebData Content -> Sub Msg
 subscriptions content =
     let
-        subAction content =
-            case content of
-                FoldersContent folders ->
-                    Sub.map (OnFoldersMsg << ActionMenu) (Ui.DropdownMenu.subscriptions folders.folderActionMenu)
-
-                _ ->
-                    Sub.none
-
         subActionMenu =
-            RemoteData.map subAction content
+            RemoteData.map subscriptionsSuccess content
                 |> RemoteData.withDefault Sub.none
+
+        {-
+           subFolder content =
+               case model.bookUrl of
+                   Just bookUrl ->
+                   Http.getString bookUrl
+                       |> Progress.track bookUrl GetBookProgress
+
+                   Nothing ->
+                   Sub.none
+        -}
     in
         Sub.batch
             [ subActionMenu
@@ -74,9 +111,6 @@ updateFolders foldersMsg webdataContent =
 updateFoldersContent : FoldersMsg -> Content -> Folders -> ( Content, Cmd Msg )
 updateFoldersContent foldersMsg content folders =
     case foldersMsg of
-        FetchFolderResponse nodeId folder ->
-            ( FoldersContent { folders | folderId = nodeId, folder = folder }, Cmd.none )
-
         MainTreeMsg subMsg ->
             let
                 ( updatedTree, cmdTree, maybePath, maybeRoot ) =
@@ -99,14 +133,14 @@ updateFoldersContent foldersMsg content folders =
         SetQuery newQuery ->
             let
                 newFolder =
-                    RemoteData.map (\f -> { f | query = newQuery }) folders.folder
+                    Helpers.Progress.map (\f -> { f | query = newQuery }) folders.folder
             in
                 ( FoldersContent { folders | folder = newFolder }, Cmd.none )
 
         SetTableState newState ->
             let
                 newFolder =
-                    RemoteData.map (\f -> { f | tableState = newState }) folders.folder
+                    Helpers.Progress.map (\f -> { f | tableState = newState }) folders.folder
             in
                 ( FoldersContent { folders | folder = newFolder }, Cmd.none )
 
@@ -123,7 +157,7 @@ updateFoldersContent foldersMsg content folders =
                         folder.files
 
                 newFolder =
-                    RemoteData.map (\f -> { f | files = newFiles f }) folders.folder
+                    Helpers.Progress.map (\f -> { f | files = newFiles f }) folders.folder
             in
                 ( FoldersContent { folders | folder = newFolder }, Cmd.none )
 
@@ -150,8 +184,8 @@ updateFoldersContent foldersMsg content folders =
                 updateFolder folder =
                     updateModalActionFolder folders action (\id -> folder.info) Put
             in
-                RemoteData.map updateFolder folders.folder
-                    |> RemoteData.withDefault ( content, Cmd.none )
+                Helpers.Progress.map updateFolder folders.folder
+                    |> Helpers.Progress.withDefault ( content, Cmd.none )
 
         ModalMsg EditFolder modalMsg ->
             updateModalMsgFolder folders modalMsg
@@ -185,25 +219,59 @@ updateFoldersContent foldersMsg content folders =
 
         -- MOVE FOLDER MODAL
         ModalAction MoveFolder action ->
-            RemoteData.map (updateModalActionMoveFolder folders action) folders.folder
-                |> RemoteData.withDefault ( content, Cmd.none )
+            Helpers.Progress.map (updateModalActionMoveFolder folders action) folders.folder
+                |> Helpers.Progress.withDefault ( content, Cmd.none )
 
         ModalMsg MoveFolder modalMsg ->
             updateModalMsgMoveFolder folders modalMsg
 
         -- DELETE FOLDER MODAL
         ModalAction DeleteFolder action ->
-            RemoteData.map (updateModalActionDeleteFolder folders action) folders.folder
-                |> RemoteData.withDefault ( content, Cmd.none )
+            Helpers.Progress.map (updateModalActionDeleteFolder folders action) folders.folder
+                |> Helpers.Progress.withDefault ( content, Cmd.none )
 
         ModalMsg DeleteFolder modalMsg ->
             updateModalMsgDeleteFolder folders modalMsg
+
+        -- Folder request stuff
+        GetFolder request ->
+            ( FoldersContent { folders | folderRequest = Just request }, Cmd.none )
+
+        GetFolderProgress folder ->
+            let
+                folderRequest =
+                    case folder of
+                        Done _ ->
+                            Nothing
+
+                        _ ->
+                            folders.folderRequest
+
+                x =
+                    Debug.log "GetFolderProgress" folder
+            in
+                ( FoldersContent { folders | folder = folder, folderRequest = folderRequest }, Cmd.none )
 
 
 updatePathFromTree : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Content, Cmd Msg )
 updatePathFromTree content folders cmdTree maybePath maybeRoot updatedTree =
     RemoteData.map (updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot) updatedTree
         |> RemoteData.withDefault ( content, Cmd.none )
+
+
+requestFolder : Folders -> NodeId -> ( Folders, Cmd Msg )
+requestFolder folders folderId =
+    let
+        url =
+            (filesUrl folderId)
+
+        request =
+            HttpBuilder.get url
+                |> withExpect (Http.expectJson filesDecoder)
+                |> withCredentials
+                |> toRequest
+    in
+        ( { folders | folderId = folderId, folder = Progress.None, folderRequest = Just ( url, request ) }, Cmd.none )
 
 
 updatePathFromTreeSuccess : Content -> Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ( Content, Cmd Msg )
@@ -224,7 +292,7 @@ updatePathFromTreeSuccess content folders cmdTree maybePath maybeRoot updatedTre
 
                 ( newFolders, cmdFolder ) =
                     if folderId /= folders.folderId then
-                        ( { folders | folder = Loading }, fetchFolder folderId )
+                        requestFolder folders folderId
                     else
                         ( folders, Cmd.none )
 
@@ -422,9 +490,6 @@ updateMoveFolderModalSave folders folder =
         newFolderInfo =
             { folderInfo | prefix = newPrefix }
 
-        newFolder =
-            { folder | info = newFolderInfo }
-
         newEffect =
             if newPrefix /= folderInfo.prefix then
                 saveFolderInfo folders.folderId newFolderInfo Put
@@ -433,7 +498,7 @@ updateMoveFolderModalSave folders folder =
     in
         ( { folders
             | folderMoveModal = newFolderMoveModal
-            , folder = Success newFolder
+            , folder = Progress.None
           }
         , newEffect
         )
@@ -495,15 +560,12 @@ updateDeleteFolderModalSave folders folder =
         newFolderInfo =
             { folderInfo | isDeleted = True }
 
-        newFolder =
-            { folder | info = newFolderInfo }
-
         newEffect =
             saveFolderInfo folders.folderId newFolderInfo Put
     in
         ( { folders
             | folderDeleteModal = newFolderDeleteModal
-            , folder = Success newFolder
+            , folder = Progress.None
           }
         , newEffect
         )
@@ -544,21 +606,14 @@ updateFilesContent filesMsg content folders =
 
         UploadGetFiles files ->
             let
-                x =
-                    Debug.log "files" files
+                ( newFolders, effect ) =
+                    upload folders folders.folderId files filesDecoder
             in
-                ( content, upload folders.folderId files filesDecoder )
-
-        UploadUploaded response ->
-            let
-                x =
-                    Debug.log "response" response
-            in
-                ( FoldersContent { folders | folder = response }, Cmd.none )
+                ( FoldersContent newFolders, effect )
 
 
-upload : NodeId -> List Ui.Native.FileManager.File -> Decode.Decoder Folder -> Cmd Msg
-upload folderId files decoder =
+upload : Folders -> NodeId -> List Ui.Native.FileManager.File -> Decode.Decoder Folder -> ( Folders, Cmd Msg )
+upload folders folderId files decoder =
     let
         part index file =
             Ui.Native.FileManager.toFormData ("file" ++ (toString index)) file
@@ -570,11 +625,13 @@ upload folderId files decoder =
         body =
             Http.multipartBody <| parts
 
+        url =
+            (apiUrl ++ "Upload")
+
         request =
             Http.request
                 { method = "POST"
-                , url =
-                    (apiUrl ++ "Upload")
+                , url = url
                 , headers = []
                 , body = body
                 , expect = (Http.expectJson decoder)
@@ -582,15 +639,11 @@ upload folderId files decoder =
                 , withCredentials = True
                 }
     in
-        request
-            |> Http.send ((OnFilesMsg << UploadUploaded) << RemoteData.fromResult)
+        ( { folders | folder = Progress.None, folderRequest = Just ( url, request ) }, Cmd.none )
 
 
 
 {-
-   HttpBuilder.post (apiUrl ++ "Upload")
-       |> withMultipartStringBody parts
-       |> withExpect (Http.expectJson decoder)
-       |> withCredentials
-       |> send ((OnFilesMsg << UploadUploaded) << RemoteData.fromResult)
+   request
+       |> Http.send ((OnFilesMsg << UploadUploaded) << RemoteData.fromResult)
 -}

@@ -577,6 +577,13 @@ div.body-path {
     th,
     td {
         padding: 6px 15px;
+
+        &.checkbox {
+            width: 50px;
+        }
+        &.datetime {
+            width: 200px;
+        }
     }
     th {
         background: $bg-color-1;

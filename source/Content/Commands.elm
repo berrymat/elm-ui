@@ -13,6 +13,7 @@ import Ui.DropdownMenu
 import Ui.Modal
 import Helpers.Helpers exposing (..)
 import Debug exposing (..)
+import Http.Progress as Progress exposing (Progress(..))
 
 
 fetchContent : TabType -> NodeId -> Cmd Msg
@@ -37,11 +38,6 @@ fetchContent tabType nodeId =
 fetchFolders : NodeId -> Cmd Msg
 fetchFolders nodeId =
     fetcher (foldersUrl nodeId) foldersDecoder ((FetchFoldersResponse nodeId) << RemoteData.fromResult)
-
-
-fetchFolder : NodeId -> Cmd Msg
-fetchFolder nodeId =
-    fetcher (filesUrl nodeId) filesDecoder (OnFoldersMsg << FetchFolderResponse nodeId << RemoteData.fromResult)
 
 
 fetchUsers : NodeId -> Cmd Msg
@@ -108,7 +104,8 @@ createFolders tree folder =
         True
         []
         folder.info.id
-        (Success folder)
+        (Done folder)
+        Nothing
 
 
 createMoveTree : Tree -> Maybe Tree
