@@ -3,6 +3,7 @@ module Container.Messages exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Messages
 import Content.Models
+import Folders.Models
 import RemoteData exposing (WebData)
 import Ui.DropdownMenu
 import Ui.Modal
@@ -31,7 +32,7 @@ type Msg
     | ContentMsg Content.Models.Msg
     | HeaderResponse Bool (WebData HeaderData)
     | HeaderPutResponse (WebData HeaderData)
-    | FetchFoldersResponse NodeId (WebData Content.Models.Folders)
+    | FetchFoldersResponse NodeId (WebData Folders.Models.Folders)
     | FetchUsersResponse NodeId (WebData Content.Models.Users)
     | FetchCasesResponse NodeId (WebData Content.Models.Cases)
       -- ACTION MENU

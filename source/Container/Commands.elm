@@ -6,6 +6,7 @@ import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Header.Models exposing (isHeaderEmpty, getTabFromType)
 import Tree.Commands
+import Folders.Commands
 import Header.Commands exposing (..)
 import Content.Commands exposing (..)
 import Helpers.Helpers exposing (apiUrl)
@@ -130,7 +131,9 @@ fetchContent tabType nodeId =
 
 fetchFolders : NodeId -> Cmd Msg
 fetchFolders nodeId =
-    fetcher (foldersUrl nodeId) foldersDecoder ((FetchFoldersResponse nodeId) << RemoteData.fromResult)
+    fetcher (Folders.Commands.foldersUrl nodeId)
+        Folders.Commands.foldersDecoder
+        ((FetchFoldersResponse nodeId) << RemoteData.fromResult)
 
 
 fetchUsers : NodeId -> Cmd Msg

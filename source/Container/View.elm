@@ -76,7 +76,7 @@ lastPathItem item =
 viewPath : Container -> Html Msg
 viewPath container =
     RemoteData.map (viewPathSuccess container) container.tree
-        |> RemoteData.withDefault (div [] [])
+        |> RemoteData.withDefault (div [ class "breadcrumb" ] [])
 
 
 viewPathSuccess : Container -> Tree -> Html Msg

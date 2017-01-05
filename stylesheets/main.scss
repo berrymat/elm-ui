@@ -507,7 +507,8 @@ div.body-path {
     flex: 0 0 auto;
     background-color: $bg-color-3;
     color: $color-3;
-    border-bottom: 1px solid $bg-color-1;    
+    border-bottom: 1px solid $bg-color-1; 
+    min-height: 39px;   
 }
 
 .body-path div {
