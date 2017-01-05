@@ -237,8 +237,8 @@ $footer-height: 53px;
 div.k-treeview {
     border-width: 0;
     background: 0;
-    overflow: auto;
-    white-space: nowrap
+    white-space: nowrap;
+    padding: 8px;
 }
 
 .k-treeview .k-item {
@@ -361,11 +361,17 @@ div.k-treeview {
 
 .sidebar {
     width: 370px;
-    padding: 16px;
+    display: flex;
+    flex-direction: column;
     overflow: auto;
     background-color: $bg-color-2;
     color: $color-2;
     border-right: 1px solid $bg-color-1;
+}
+
+.flexer {
+    display: flex;
+    flex: 1 1 auto;
 }
 
 .body {
@@ -445,7 +451,6 @@ div.k-treeview {
     display: flex;
     background-color: $bg-color-9;
     color: $color-9;
-    padding: 8px;
     overflow: auto;
 }
 

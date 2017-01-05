@@ -31,6 +31,9 @@ type Msg
     | ContentMsg Content.Models.Msg
     | HeaderResponse Bool (WebData HeaderData)
     | HeaderPutResponse (WebData HeaderData)
+    | FetchFoldersResponse NodeId (WebData Content.Models.Folders)
+    | FetchUsersResponse NodeId (WebData Content.Models.Users)
+    | FetchCasesResponse NodeId (WebData Content.Models.Cases)
       -- ACTION MENU
     | ActionMenu Ui.DropdownMenu.Msg
     | CloseActionMenu

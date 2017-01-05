@@ -7,7 +7,7 @@ import Tree.Models exposing (..)
 import Header.Models exposing (isHeaderEmpty, getTabFromType)
 import Tree.Commands
 import Header.Commands exposing (..)
-import Content.Commands
+import Content.Commands exposing (..)
 import Helpers.Helpers exposing (apiUrl)
 import Erl
 import Http
@@ -109,42 +109,38 @@ fetchInitialData parentType nodeId childType container =
         ( { newContainer | path = [] }, Cmd.batch [ treeCmd, headerCmd ] )
 
 
-fetchContent : Container -> Bool -> HeaderData -> ( Container, Cmd Msg )
-fetchContent container isTree headerData =
-    let
-        ui =
-            container.headerUi
+fetchContent : TabType -> NodeId -> Cmd Msg
+fetchContent tabType nodeId =
+    if nodeId /= "" then
+        case tabType of
+            FoldersType ->
+                fetchFolders nodeId
 
-        childtypes =
-            if isTree then
-                headerData.childtypes
-            else
-                container.childtypes
+            UsersType ->
+                fetchUsers nodeId
 
-        newContainer =
-            { container | headerData = Success headerData, childtypes = childtypes }
+            CasesType ->
+                fetchCases nodeId
 
-        headerId =
-            Header.Models.headerId container.headerData
+            EmptyTab ->
+                Cmd.none
+    else
+        Cmd.none
 
-        updatedHeaderId =
-            Header.Models.headerId newContainer.headerData
 
-        updatedTab =
-            getTabFromType newContainer.headerData container.tab.tabType
+fetchFolders : NodeId -> Cmd Msg
+fetchFolders nodeId =
+    fetcher (foldersUrl nodeId) foldersDecoder ((FetchFoldersResponse nodeId) << RemoteData.fromResult)
 
-        ( updatedContent, cmdContent ) =
-            if (headerId /= updatedHeaderId) then
-                ( Loading, Content.Commands.fetchContent updatedTab.tabType updatedHeaderId )
-            else
-                ( newContainer.content, Cmd.none )
 
-        cmdBatch =
-            Cmd.batch
-                [ Cmd.map ContentMsg cmdContent
-                ]
-    in
-        ( { newContainer | tab = updatedTab, content = updatedContent }, cmdBatch )
+fetchUsers : NodeId -> Cmd Msg
+fetchUsers nodeId =
+    fetcher (usersUrl nodeId) usersDecoder ((FetchUsersResponse nodeId) << RemoteData.fromResult)
+
+
+fetchCases : NodeId -> Cmd Msg
+fetchCases nodeId =
+    fetcher (casesUrl nodeId) casesDecoder ((FetchCasesResponse nodeId) << RemoteData.fromResult)
 
 
 initEditForm : Container -> HeaderData -> Maybe (Form.Model Msg)

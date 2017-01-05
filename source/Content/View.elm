@@ -20,32 +20,27 @@ import Ui.IconButton
 import Ui.Modal
 import Ui.Native.FileManager
 import Components.Form as Form
-import RemoteData exposing (..)
 import Helpers.Button
 import Helpers.Progress
 import Dict
 
 
-view : WebData Content -> Html Msg
-view webdata =
+view : Content -> Html Msg
+view content =
     div [ class "body-content" ]
-        (viewWebData webdata viewSuccess viewPendingDefault)
+        (case content of
+            FoldersContent folders ->
+                contentFolders folders
 
+            UsersContent users ->
+                contentUsers users
 
-viewSuccess : Content -> List (Html Msg)
-viewSuccess content =
-    case content of
-        FoldersContent folders ->
-            contentFolders folders
+            CasesContent cases ->
+                contentCases cases
 
-        UsersContent users ->
-            contentUsers users
-
-        CasesContent cases ->
-            contentCases cases
-
-        EmptyContent ->
-            contentEmpty
+            EmptyContent ->
+                contentEmpty
+        )
 
 
 dropdownMenuItem : String -> String -> ModalType -> Html Msg

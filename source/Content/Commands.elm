@@ -16,61 +16,6 @@ import Debug exposing (..)
 import Http.Progress as Progress exposing (Progress(..))
 
 
-fetchContent : TabType -> NodeId -> Cmd Msg
-fetchContent tabType nodeId =
-    if nodeId /= "" then
-        case tabType of
-            FoldersType ->
-                fetchFolders nodeId
-
-            UsersType ->
-                fetchUsers nodeId
-
-            CasesType ->
-                fetchCases nodeId
-
-            EmptyTab ->
-                Cmd.none
-    else
-        Cmd.none
-
-
-fetchFolders : NodeId -> Cmd Msg
-fetchFolders nodeId =
-    fetcher (foldersUrl nodeId) foldersDecoder ((FetchFoldersResponse nodeId) << RemoteData.fromResult)
-
-
-fetchUsers : NodeId -> Cmd Msg
-fetchUsers nodeId =
-    fetcher (usersUrl nodeId) usersDecoder ((FetchUsersResponse nodeId) << RemoteData.fromResult)
-
-
-fetchCases : NodeId -> Cmd Msg
-fetchCases nodeId =
-    fetcher (casesUrl nodeId) casesDecoder ((FetchCasesResponse nodeId) << RemoteData.fromResult)
-
-
-foldersUrl : NodeId -> String
-foldersUrl nodeId =
-    apiUrl ++ "Folders/" ++ nodeId
-
-
-filesUrl : NodeId -> String
-filesUrl nodeId =
-    apiUrl ++ "Files/" ++ nodeId
-
-
-usersUrl : NodeId -> String
-usersUrl nodeId =
-    apiUrl ++ "Users/" ++ nodeId
-
-
-casesUrl : NodeId -> String
-casesUrl nodeId =
-    apiUrl ++ "Cases/" ++ nodeId
-
-
-
 -- DECODERS
 
 
@@ -305,10 +250,30 @@ saveFolderInfo folderId folderInfo method =
                     (apiUrl ++ "Folders")
 
                 Put ->
-                    (foldersUrl folderId)
+                    (apiUrl ++ "Folders/" ++ folderId)
     in
         requester url
             method
             (encodeFolderInfo folderInfo)
             foldersDecoder
             (OnFoldersMsg << FolderInfoSaveResponse << RemoteData.fromResult)
+
+
+foldersUrl : NodeId -> String
+foldersUrl nodeId =
+    apiUrl ++ "Folders/" ++ nodeId
+
+
+filesUrl : NodeId -> String
+filesUrl nodeId =
+    apiUrl ++ "Files/" ++ nodeId
+
+
+usersUrl : NodeId -> String
+usersUrl nodeId =
+    apiUrl ++ "Users/" ++ nodeId
+
+
+casesUrl : NodeId -> String
+casesUrl nodeId =
+    apiUrl ++ "Cases/" ++ nodeId

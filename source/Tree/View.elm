@@ -10,7 +10,7 @@ import RemoteData exposing (..)
 
 view : Tree -> Html Msg
 view tree =
-    div []
+    div [ class "flexer" ]
         [ viewTree tree
         ]
 

@@ -7,6 +7,7 @@ import Container.Messages exposing (..)
 import Container.Models exposing (..)
 import Tree.Models exposing (..)
 import Helpers.Models exposing (..)
+import Helpers.RemoteData
 import Tree.View
 import Header.View
 import Content.View
@@ -15,17 +16,9 @@ import RemoteData exposing (..)
 
 view : Container -> Html Msg
 view container =
-    RemoteData.map (viewSuccess container) container.tree
-        |> RemoteData.withDefault (div [] [])
-
-
-viewSuccess : Container -> Tree -> Html Msg
-viewSuccess container tree =
     div [ class "fullview" ]
         [ div [ class "sidebar" ]
-            [ Html.map
-                TreeMsg
-                (Tree.View.view tree)
+            [ viewTree container
             ]
         , div [ class "body" ]
             [ Header.View.view container
@@ -33,11 +26,33 @@ viewSuccess container tree =
                 [ viewPath container
                 , viewTabs container
                 ]
-            , Html.map
-                ContentMsg
-                (Content.View.view container.content)
+            , viewContent container
             ]
         ]
+
+
+viewTree : Container -> Html Msg
+viewTree container =
+    let
+        htmlTree =
+            Helpers.RemoteData.view
+                container.tree
+                Tree.View.view
+                (Helpers.RemoteData.viewPendingDefault "flexer")
+    in
+        Html.map TreeMsg htmlTree
+
+
+viewContent : Container -> Html Msg
+viewContent container =
+    let
+        htmlContent =
+            Helpers.RemoteData.view
+                container.content
+                Content.View.view
+                (Helpers.RemoteData.viewPendingDefault "body-content")
+    in
+        Html.map ContentMsg htmlContent
 
 
 clickablePathItem : PathItem -> Html Msg

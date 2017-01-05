@@ -21,18 +21,9 @@ import Json.Decode as Decode
 import HttpBuilder exposing (..)
 
 
-update : Msg -> WebData Content -> ( WebData Content, Cmd Msg )
+update : Msg -> Content -> ( Content, Cmd Msg )
 update message content =
     case message of
-        FetchFoldersResponse nodeId folders ->
-            ( RemoteData.map FoldersContent folders, Cmd.none )
-
-        FetchUsersResponse nodeId users ->
-            ( RemoteData.map UsersContent users, Cmd.none )
-
-        FetchCasesResponse nodeId cases ->
-            ( RemoteData.map CasesContent cases, Cmd.none )
-
         OnFoldersMsg foldersMsg ->
             updateFolders foldersMsg content
 
@@ -61,8 +52,8 @@ subscriptionsSuccessForFolders folders =
             ]
 
 
-subscriptionsSuccess : Content -> Sub Msg
-subscriptionsSuccess content =
+subscriptions : Content -> Sub Msg
+subscriptions content =
     case content of
         FoldersContent folders ->
             Sub.map OnFoldersMsg (subscriptionsSuccessForFolders folders)
@@ -71,41 +62,14 @@ subscriptionsSuccess content =
             Sub.none
 
 
-subscriptions : WebData Content -> Sub Msg
-subscriptions content =
-    let
-        subActionMenu =
-            RemoteData.map subscriptionsSuccess content
-                |> RemoteData.withDefault Sub.none
+updateFolders : FoldersMsg -> Content -> ( Content, Cmd Msg )
+updateFolders foldersMsg content =
+    case content of
+        FoldersContent folders ->
+            updateFoldersContent foldersMsg content folders
 
-        {-
-           subFolder content =
-               case model.bookUrl of
-                   Just bookUrl ->
-                   Http.getString bookUrl
-                       |> Progress.track bookUrl GetBookProgress
-
-                   Nothing ->
-                   Sub.none
-        -}
-    in
-        Sub.batch
-            [ subActionMenu
-            ]
-
-
-updateFolders : FoldersMsg -> WebData Content -> ( WebData Content, Cmd Msg )
-updateFolders foldersMsg webdataContent =
-    let
-        updateFoldersSuccess content =
-            case content of
-                FoldersContent folders ->
-                    updateFoldersContent foldersMsg content folders
-
-                _ ->
-                    ( content, Cmd.none )
-    in
-        RemoteData.update updateFoldersSuccess webdataContent
+        _ ->
+            ( content, Cmd.none )
 
 
 updateFoldersContent : FoldersMsg -> Content -> Folders -> ( Content, Cmd Msg )
@@ -584,18 +548,14 @@ updateModalMsgDeleteFolder folders modalMsg =
 -- UPDATE FILES
 
 
-updateFiles : FilesMsg -> WebData Content -> ( WebData Content, Cmd Msg )
-updateFiles filesMsg webdataContent =
-    let
-        updateFilesSuccess content =
-            case content of
-                FoldersContent folders ->
-                    updateFilesContent filesMsg content folders
+updateFiles : FilesMsg -> Content -> ( Content, Cmd Msg )
+updateFiles filesMsg content =
+    case content of
+        FoldersContent folders ->
+            updateFilesContent filesMsg content folders
 
-                _ ->
-                    ( content, Cmd.none )
-    in
-        RemoteData.update updateFilesSuccess webdataContent
+        _ ->
+            ( content, Cmd.none )
 
 
 updateFilesContent : FilesMsg -> Content -> Folders -> ( Content, Cmd Msg )

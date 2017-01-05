@@ -3,6 +3,7 @@ module Container.Update exposing (..)
 import Container.Messages exposing (..)
 import Container.Commands exposing (..)
 import Container.Models exposing (..)
+import Content.Models
 import Tree.Messages
 import Tree.Update
 import Tree.Models exposing (..)
@@ -55,9 +56,9 @@ update message container =
                         getTabFromType container.headerData tabType
 
                     cmdContent =
-                        Content.Commands.fetchContent tabType nodeId
+                        fetchContent tabType nodeId
                 in
-                    ( { container | tab = updatedTab, content = Loading }, Cmd.map ContentMsg cmdContent )
+                    ( { container | tab = updatedTab, content = Loading }, cmdContent )
 
             TreeMsg subMsg ->
                 let
@@ -66,15 +67,24 @@ update message container =
                 in
                     updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
 
+            FetchFoldersResponse nodeId folders ->
+                ( { container | content = RemoteData.map Content.Models.FoldersContent folders }, Cmd.none )
+
+            FetchUsersResponse nodeId users ->
+                ( { container | content = RemoteData.map Content.Models.UsersContent users }, Cmd.none )
+
+            FetchCasesResponse nodeId cases ->
+                ( { container | content = RemoteData.map Content.Models.CasesContent cases }, Cmd.none )
+
             ContentMsg subMsg ->
                 let
                     ( updatedContent, cmdContent ) =
-                        Content.Update.update subMsg container.content
+                        RemoteData.update (Content.Update.update subMsg) container.content
                 in
                     ( { container | content = updatedContent }, Cmd.map ContentMsg cmdContent )
 
             HeaderResponse isTree newHeaderData ->
-                RemoteData.map (fetchContent container isTree) newHeaderData
+                RemoteData.map (updateContent container isTree) newHeaderData
                     |> RemoteData.withDefault ( container, Cmd.none )
 
             HeaderPutResponse webdata ->
@@ -140,10 +150,15 @@ update message container =
 
 subscriptions : Container -> Sub Msg
 subscriptions container =
-    Sub.batch
-        [ Sub.map ActionMenu (Ui.DropdownMenu.subscriptions container.headerUi.actionMenu)
-        , Sub.map ContentMsg (Content.Update.subscriptions container.content)
-        ]
+    let
+        subContent =
+            RemoteData.map Content.Update.subscriptions container.content
+                |> RemoteData.withDefault Sub.none
+    in
+        Sub.batch
+            [ Sub.map ActionMenu (Ui.DropdownMenu.subscriptions container.headerUi.actionMenu)
+            , Sub.map ContentMsg subContent
+            ]
 
 
 updateGotoHome : Container -> ( Container, Cmd Msg )
@@ -260,6 +275,44 @@ updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
                 ]
     in
         ( { newContainer | tree = Success updatedTree }, cmdBatch )
+
+
+updateContent : Container -> Bool -> HeaderData -> ( Container, Cmd Msg )
+updateContent container isTree headerData =
+    let
+        ui =
+            container.headerUi
+
+        childtypes =
+            if isTree then
+                headerData.childtypes
+            else
+                container.childtypes
+
+        newContainer =
+            { container | headerData = Success headerData, childtypes = childtypes }
+
+        headerId =
+            Header.Models.headerId container.headerData
+
+        updatedHeaderId =
+            Header.Models.headerId newContainer.headerData
+
+        updatedTab =
+            getTabFromType newContainer.headerData container.tab.tabType
+
+        ( updatedContent, cmdContent ) =
+            if (headerId /= updatedHeaderId) then
+                ( Loading, fetchContent updatedTab.tabType updatedHeaderId )
+            else
+                ( newContainer.content, Cmd.none )
+
+        cmdBatch =
+            Cmd.batch
+                [ cmdContent
+                ]
+    in
+        ( { newContainer | tab = updatedTab, content = updatedContent }, cmdBatch )
 
 
 

@@ -54,10 +54,7 @@ type FilesMsg
 
 
 type Msg
-    = FetchFoldersResponse NodeId (WebData Folders)
-    | FetchUsersResponse NodeId (WebData Users)
-    | FetchCasesResponse NodeId (WebData Cases)
-    | OnFoldersMsg FoldersMsg
+    = OnFoldersMsg FoldersMsg
     | OnFilesMsg FilesMsg
 
 
