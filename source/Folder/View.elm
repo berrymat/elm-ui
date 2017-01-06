@@ -10,6 +10,12 @@ import Date
 import Date.Extra.Config.Config_en_us as Config
 import Date.Extra.Format as Format exposing (format)
 import Dict
+import Ui
+import Ui.Button
+import Ui.Container
+import Ui.DropdownMenu
+import Ui.IconButton
+import Ui.Modal
 
 
 view : Folder -> Html Msg
@@ -25,6 +31,56 @@ view folder =
             [ input [ placeholder "Search by Name", onInput SetQuery ] []
             , Table.view config folder.tableState acceptableFiles
             ]
+
+
+selectedCount : Folder -> Int
+selectedCount folder =
+    List.length (selectedFiles folder)
+
+
+selectedFiles : Folder -> List File
+selectedFiles folder =
+    List.filter (\f -> f.checked) folder.files
+
+
+viewFooter : Folder -> Html Msg
+viewFooter folder =
+    let
+        files =
+            selectedFiles folder
+
+        prompt =
+            case files of
+                [] ->
+                    ""
+
+                [ file ] ->
+                    "Confirm deletion of file '" ++ file.name ++ "'?"
+
+                _ ->
+                    "Confirm deletion of " ++ (toString (List.length files)) ++ " files?"
+
+        filesDeleteModalViewModel =
+            { content =
+                [ div [ class "padded-modal-content" ]
+                    [ text prompt ]
+                ]
+            , title = "Delete Folder"
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.danger "Delete" (ModalAction DeleteFiles Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction DeleteFiles Cancel)
+                    ]
+                ]
+            }
+    in
+        if (selectedCount folder) > 0 then
+            div []
+                [ Ui.DropdownMenu.view (actionDropdownViewModel folder) ActionMenu folder.filesActionMenu
+                , Ui.Modal.view (ModalMsg DeleteFiles) filesDeleteModalViewModel folder.filesDeleteModal
+                ]
+        else
+            text ""
 
 
 checkColumn : String -> (data -> Bool) -> (data -> NodeId) -> Table.Column data Msg
@@ -151,3 +207,52 @@ lightGrey symbol =
 simpleRowAttrs : data -> List (Attribute msg)
 simpleRowAttrs _ =
     []
+
+
+dropdownMenuItem : String -> String -> ModalType -> Html Msg
+dropdownMenuItem icon name type_ =
+    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open) ]
+        [ Ui.icon icon True []
+        , node "span" [] [ text name ]
+        ]
+
+
+actionDropdownViewModel : Folder -> Ui.DropdownMenu.ViewModel Msg
+actionDropdownViewModel folder =
+    let
+        actions =
+            [ ( "arrow-move", "Move", MoveFiles )
+            , ( "trash-b", "Delete", DeleteFiles )
+            , ( "ios-cloud-download", "Download", DownloadFiles )
+            ]
+
+        actionFilter ( _, _, type_ ) =
+            case type_ of
+                MoveFiles ->
+                    folder.info.isWritable
+
+                DeleteFiles ->
+                    folder.info.isWritable
+
+                DownloadFiles ->
+                    True
+
+        suffix =
+            " File"
+                ++ (if (selectedCount folder) > 1 then
+                        "s"
+                    else
+                        ""
+                   )
+
+        accessibleActions =
+            List.filter actionFilter actions
+    in
+        { element =
+            Ui.IconButton.secondary "File Actions"
+                "chevron-up"
+                "right"
+                NoAction
+        , items =
+            List.map (\( icon, name, type_ ) -> dropdownMenuItem icon (name ++ suffix) type_) accessibleActions
+        }

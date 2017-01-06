@@ -115,7 +115,9 @@ view folders =
                 [ div [ class "body-content-content-content" ]
                     [ viewFolder folders ]
                 , div [ class "body-content-content-footer" ]
-                    [ Helpers.Button.primary "Upload" (Ui.Native.FileManager.openMultipleDecoder "*/*" UploadOpened)
+                    [ viewFooter folders
+                    , div [ class "flexer" ] []
+                    , Helpers.Button.primary "Upload" (Ui.Native.FileManager.openMultipleDecoder "*/*" UploadOpened)
                     ]
                 ]
             ]
@@ -195,5 +197,22 @@ viewFolderDone folder =
     let
         htmlFolder =
             Folder.View.view folder
+    in
+        Html.map FolderMsg htmlFolder
+
+
+viewFooter : Folders -> Html Msg
+viewFooter folders =
+    Helpers.Progress.view
+        folders.folder
+        viewFooterDone
+        (\t -> text "")
+
+
+viewFooterDone : Folder.Models.Folder -> Html Msg
+viewFooterDone folder =
+    let
+        htmlFolder =
+            Folder.View.viewFooter folder
     in
         Html.map FolderMsg htmlFolder

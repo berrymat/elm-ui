@@ -2,6 +2,21 @@ module Folder.Models exposing (..)
 
 import Helpers.Models exposing (..)
 import Table
+import Ui.DropdownMenu
+import Ui.Modal
+import Tree.Models
+
+
+type ModalType
+    = MoveFiles
+    | DeleteFiles
+    | DownloadFiles
+
+
+type ModalAction
+    = Open
+    | Save
+    | Cancel
 
 
 type Msg
@@ -9,6 +24,13 @@ type Msg
     | SetQuery String
     | SetTableState Table.State
     | UpdateFolderInfo FolderInfo
+      -- ACTION MENU
+    | ActionMenu Ui.DropdownMenu.Msg
+    | CloseActionMenu
+    | NoAction
+      -- MODALS
+    | ModalAction ModalType ModalAction
+    | ModalMsg ModalType Ui.Modal.Msg
 
 
 type alias Folder =
@@ -16,6 +38,10 @@ type alias Folder =
     , files : List File
     , tableState : Table.State
     , query : String
+    , filesActionMenu : Ui.DropdownMenu.Model
+    , filesMoveModal : Ui.Modal.Model
+    , filesDeleteModal : Ui.Modal.Model
+    , moveTree : Maybe Tree.Models.Tree
     }
 
 

@@ -8,6 +8,8 @@ import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Table
+import Ui.DropdownMenu
+import Ui.Modal
 
 
 filesUrl : NodeId -> String
@@ -22,6 +24,10 @@ folderDecoder =
         |> required "files" (Decode.list fileDecoder)
         |> hardcoded (Table.initialSort "Name")
         |> hardcoded ""
+        |> hardcoded Ui.DropdownMenu.init
+        |> hardcoded Ui.Modal.init
+        |> hardcoded Ui.Modal.init
+        |> hardcoded Nothing
 
 
 fileDecoder : Decode.Decoder File
@@ -52,6 +58,21 @@ encodeFolderInfo folderInfo =
         , ( "writableForClients", Encode.bool folderInfo.writableForClients )
         , ( "writableForStaff", Encode.bool folderInfo.writableForStaff )
         ]
+
+
+encodeFile : File -> Encode.Value
+encodeFile file =
+    Encode.object
+        [ ( "id", Encode.string file.id )
+        , ( "name", Encode.string file.name )
+        , ( "datetime", Encode.float file.datetime )
+        , ( "writable", Encode.bool file.writable )
+        ]
+
+
+encodeFiles : List File -> Encode.Value
+encodeFiles files =
+    Encode.list (List.map encodeFile files)
 
 
 folderInfoDecoder : Decode.Decoder FolderInfo

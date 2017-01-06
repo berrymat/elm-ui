@@ -152,10 +152,15 @@ subscriptions folders =
 
                 Nothing ->
                     Sub.none
+
+        subFolder =
+            Helpers.Progress.subscriptions Folder.Update.subscriptions folders.folder
+                |> Sub.map FolderMsg
     in
         Sub.batch
             [ subActionMenu
             , subProgress
+            , subFolder
             ]
 
 
@@ -347,12 +352,11 @@ updateFolderModalSave folders folderInfo form method =
         newEffect =
             saveFolderInfo folders.folderId newFolderInfo method
 
-        ( newFolder, effect ) =
-            Helpers.Progress.update (Folder.Update.update (Folder.Models.UpdateFolderInfo newFolderInfo)) folders.folder
-                |> mapCmd FolderMsg
+        ( newFolders, effect ) =
+            updateFolder (Folder.Models.UpdateFolderInfo newFolderInfo) folders
                 |> command newEffect
     in
-        ( { folders | folderEditModal = newFolderEditModal, folder = newFolder }, effect )
+        ( { newFolders | folderEditModal = newFolderEditModal }, effect )
 
 
 updateModalMsgFolder : Folders -> Ui.Modal.Msg -> Return Msg Folders
@@ -428,14 +432,12 @@ updateMoveFolderModalSave folders folder =
             else
                 Cmd.none
 
-        ( newFolder, effect ) =
-            Helpers.Progress.update (Folder.Update.update (Folder.Models.UpdateFolderInfo newFolderInfo)) folders.folder
-                |> mapCmd FolderMsg
+        ( newFolders, effect ) =
+            updateFolder (Folder.Models.UpdateFolderInfo newFolderInfo) folders
                 |> command newEffect
     in
-        ( { folders
+        ( { newFolders
             | folderMoveModal = newFolderMoveModal
-            , folder = newFolder
           }
         , effect
         )
@@ -519,11 +521,29 @@ updateModalMsgDeleteFolder folders modalMsg =
 
 updateFolder : Folder.Models.Msg -> Folders -> Return Msg Folders
 updateFolder folderMsg folders =
-    let
-        ( newFolder, folderCmd ) =
-            Helpers.Progress.update (Folder.Update.update folderMsg) folders.folder
-    in
-        ( { folders | folder = newFolder }, Cmd.map FolderMsg folderCmd )
+    case folders.folder of
+        Done data ->
+            let
+                ( newFolder, folderCmd, folderRequest ) =
+                    Folder.Update.update folderMsg data
+
+                progressFolder =
+                    case folderRequest of
+                        Just _ ->
+                            Progress.None
+
+                        Nothing ->
+                            Done newFolder
+            in
+                ( { folders
+                    | folder = progressFolder
+                    , folderRequest = folderRequest
+                  }
+                , Cmd.map FolderMsg folderCmd
+                )
+
+        _ ->
+            ( folders, Cmd.none )
 
 
 upload : Folders -> NodeId -> List Ui.Native.FileManager.File -> Decode.Decoder Folder -> Return Msg Folders

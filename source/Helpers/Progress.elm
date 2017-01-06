@@ -77,3 +77,19 @@ update f progress =
 
         Fail error ->
             ( Fail error, Cmd.none )
+
+
+subscriptions : (a -> Sub b) -> Progress a -> Sub b
+subscriptions fn progress =
+    case progress of
+        Done data ->
+            fn data
+
+        None ->
+            Sub.none
+
+        Some info ->
+            Sub.none
+
+        Fail error ->
+            Sub.none
