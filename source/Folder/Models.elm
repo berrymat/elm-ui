@@ -34,6 +34,8 @@ type Msg
       -- MODALS
     | ModalAction ModalType ModalAction
     | ModalMsg ModalType Ui.Modal.Msg
+      -- PORTS
+    | DownloadResponse String
 
 
 type alias Folder =
@@ -54,6 +56,7 @@ type alias File =
     , datetime : Float
     , writable : Bool
     , checked : Bool
+    , url : String
     }
 
 
@@ -61,6 +64,7 @@ type alias FolderInfo =
     { id : NodeId
     , prefix : String
     , name : String
+    , downloadUrl : String
     , isShared : Bool
     , isDeleted : Bool
     , isWritable : Bool

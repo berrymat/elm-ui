@@ -3,6 +3,7 @@ module Folder.Update exposing (..)
 import Folder.Models exposing (..)
 import Folder.Commands exposing (..)
 import Helpers.Models exposing (..)
+import Helpers.Ports exposing (..)
 import Tree.Models exposing (Tree, Node)
 import Tree.Messages
 import Tree.Update
@@ -11,6 +12,8 @@ import Table
 import RemoteData exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
+import Ui.Helpers.Env
+import Json.Decode as Decode
 
 
 type alias ReturnFolder =
@@ -47,26 +50,34 @@ update message folder =
         NoAction ->
             ( folder, Cmd.none, Nothing )
 
-        -- MOVE FOLDER MODAL
+        -- MOVE FILES MODAL
         ModalAction MoveFiles action ->
             updateModalActionMoveFiles folder action
 
         ModalMsg MoveFiles modalMsg ->
             updateModalMsgMoveFiles folder modalMsg
 
-        -- DELETE FOLDER MODAL
+        -- DELETE FILES MODAL
         ModalAction DeleteFiles action ->
             updateModalActionDeleteFiles folder action
 
         ModalMsg DeleteFiles modalMsg ->
             updateModalMsgDeleteFiles folder modalMsg
 
-        -- MODALS
-        ModalAction modalType modalAction ->
-            ( folder, Cmd.none, Nothing )
+        -- DOWNLOAD FILES MODAL?
+        ModalAction DownloadFiles action ->
+            updateModalActionDownloadFiles folder action
 
-        ModalMsg modalType modalMsg ->
-            ( folder, Cmd.none, Nothing )
+        ModalMsg DownloadFiles modalMsg ->
+            updateModalMsgDownloadFiles folder modalMsg
+
+        -- PORTS
+        DownloadResponse response ->
+            let
+                x =
+                    Debug.log "downloadResponse" response
+            in
+                ( folder, Cmd.none, Nothing )
 
 
 subscriptions : Folder -> Sub Msg
@@ -77,6 +88,7 @@ subscriptions folder =
     in
         Sub.batch
             [ subActionMenu
+            , Helpers.Ports.downloadResponse DownloadResponse
             ]
 
 
@@ -327,3 +339,53 @@ updateModalMsgDeleteFiles folder modalMsg =
             Ui.Modal.update modalMsg folder.filesDeleteModal
     in
         ( { folder | filesDeleteModal = newFilesDeleteModal }, Cmd.none, Nothing )
+
+
+
+-- DOWNLOAD FILES
+
+
+updateModalActionDownloadFiles : Folder -> ModalAction -> ReturnFolder
+updateModalActionDownloadFiles folder action =
+    case action of
+        Open ->
+            updateDownloadFilesModalOpen folder
+
+        _ ->
+            ( folder, Cmd.none, Nothing )
+
+
+updateDownloadFilesModalOpen : Folder -> ReturnFolder
+updateDownloadFilesModalOpen folder =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close folder.filesActionMenu
+
+        endpoint =
+            Ui.Helpers.Env.get "endpoint" Decode.string
+                |> Result.withDefault "http://localhost"
+
+        url =
+            endpoint ++ folder.info.downloadUrl
+
+        selectedFiles =
+            List.filter (\f -> f.checked) folder.files
+    in
+        ( { folder
+            | filesActionMenu = newActionMenu
+          }
+        , Helpers.Ports.download
+            { url = url
+            , files = List.map (\f -> f.id) selectedFiles
+            }
+        , Nothing
+        )
+
+
+
+-- Dummy method - NOOP
+
+
+updateModalMsgDownloadFiles : Folder -> Ui.Modal.Msg -> ReturnFolder
+updateModalMsgDownloadFiles folder modalMsg =
+    ( folder, Cmd.none, Nothing )

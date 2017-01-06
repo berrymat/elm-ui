@@ -5,9 +5,26 @@
     <title>Elm-UI Fork</title>
   </head>
   <body>
+    <a id="downloadLink" style="display:none;"></a>
     <script src='Main.js' type='application/javascript'></script>
     <script type="text/javascript">
       var app = Elm.Main.fullscreen();
+
+      app.ports.download.subscribe(function(request) {
+        var response = performDownload(request.url, request.files);
+        app.ports.downloadResponse.send(response);
+      });
+
+      function performDownload(url, files) {
+          var anchor = document.getElementById('downloadLink');
+          var href = url.replace("REPLACE", files.join(","));
+          anchor.href = href;
+          anchor.click();
+
+          // have a real implementation!
+          return href;
+      }
+
     </script>
   </body>
 </html>

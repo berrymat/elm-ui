@@ -38,6 +38,7 @@ fileDecoder =
         |> required "datetime" Decode.float
         |> required "writable" Decode.bool
         |> hardcoded False
+        |> required "url" Decode.string
 
 
 encodeFolderInfo : FolderInfo -> Encode.Value
@@ -46,6 +47,7 @@ encodeFolderInfo folderInfo =
         [ ( "id", Encode.string folderInfo.id )
         , ( "prefix", Encode.string folderInfo.prefix )
         , ( "name", Encode.string folderInfo.name )
+        , ( "downloadUrl", Encode.string folderInfo.downloadUrl )
         , ( "isShared", Encode.bool folderInfo.isShared )
         , ( "isDeleted", Encode.bool folderInfo.isDeleted )
         , ( "isWritable", Encode.bool folderInfo.isWritable )
@@ -81,6 +83,7 @@ folderInfoDecoder =
         |> required "id" Decode.string
         |> required "prefix" Decode.string
         |> required "name" Decode.string
+        |> required "downloadUrl" Decode.string
         |> required "isShared" Decode.bool
         |> required "isDeleted" Decode.bool
         |> required "isWritable" Decode.bool
@@ -100,7 +103,7 @@ folderInfoDecoder =
 
 initFolderInfo : NodeId -> FolderInfo
 initFolderInfo folderId =
-    FolderInfo folderId "/" "" False False True True True True True True True True True
+    FolderInfo folderId "/" "" "" False False True True True True True True True True True
 
 
 readableForCustomersName : String

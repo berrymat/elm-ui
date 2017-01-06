@@ -17,6 +17,8 @@ import Ui.Container
 import Ui.DropdownMenu
 import Ui.IconButton
 import Ui.Modal
+import Ui.Helpers.Env
+import Json.Decode as Decode
 
 
 view : Folder -> Html Msg
@@ -123,6 +125,30 @@ viewCheck selected nodeId =
         ]
 
 
+nameColumn : String -> (data -> String) -> (data -> String) -> Table.Column data Msg
+nameColumn name toName toUrl =
+    Table.veryCustomColumn
+        { name = name
+        , viewData = \data -> viewName (toName data) (toUrl data)
+        , sorter = Table.increasingOrDecreasingBy toName
+        }
+
+
+viewName : String -> String -> Table.HtmlDetails Msg
+viewName name url =
+    let
+        endpoint =
+            Ui.Helpers.Env.get "endpoint" Decode.string
+                |> Result.withDefault "http://localhost"
+
+        fullurl =
+            endpoint ++ url
+    in
+        Table.HtmlDetails [ class "name" ]
+            [ a [ href fullurl, target "_blank" ] [ text name ]
+            ]
+
+
 datetimeColumn : String -> (data -> Float) -> Table.Column data Msg
 datetimeColumn name toDatetime =
     Table.veryCustomColumn
@@ -152,7 +178,7 @@ config =
         , toMsg = SetTableState
         , columns =
             [ checkColumn "select" .checked .id
-            , Table.stringColumn "name" .name
+            , nameColumn "name" .name .url
             , datetimeColumn "date" .datetime
             ]
         , customizations = customizations
