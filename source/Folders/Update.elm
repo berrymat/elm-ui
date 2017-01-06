@@ -111,18 +111,18 @@ update msg folders =
 
         GetFolderProgress folder ->
             let
-                folderRequest =
+                ( folderRequest, newFolder ) =
                     case folder of
-                        Done _ ->
-                            Nothing
+                        Done done ->
+                            ( Nothing, Done { done | moveTree = Just folders.tree } )
 
                         _ ->
-                            folders.folderRequest
+                            ( folders.folderRequest, folder )
 
                 x =
                     Debug.log "GetFolderProgress" folder
             in
-                ( { folders | folder = folder, folderRequest = folderRequest }, Cmd.none )
+                ( { folders | folder = newFolder, folderRequest = folderRequest }, Cmd.none )
 
         FolderMsg folderMsg ->
             updateFolder folderMsg folders

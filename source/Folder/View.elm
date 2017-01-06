@@ -5,6 +5,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Helpers.Models exposing (..)
 import Folder.Models exposing (..)
+import Tree.View
 import Table
 import Date
 import Date.Extra.Config.Config_en_us as Config
@@ -60,6 +61,28 @@ viewFooter folder =
                 _ ->
                     "Confirm deletion of " ++ (toString (List.length files)) ++ " files?"
 
+        filesMoveModalViewModel =
+            { content =
+                case folder.moveTree of
+                    Just tree ->
+                        [ div [ class "padded-modal-content" ]
+                            [ Html.map
+                                MoveTreeMsg
+                                (Tree.View.view tree)
+                            ]
+                        ]
+
+                    Nothing ->
+                        [ text "Can't Move" ]
+            , title = "Move Files"
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.primary "Move" (ModalAction MoveFiles Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction MoveFiles Cancel)
+                    ]
+                ]
+            }
+
         filesDeleteModalViewModel =
             { content =
                 [ div [ class "padded-modal-content" ]
@@ -77,6 +100,7 @@ viewFooter folder =
         if (selectedCount folder) > 0 then
             div []
                 [ Ui.DropdownMenu.view (actionDropdownViewModel folder) ActionMenu folder.filesActionMenu
+                , Ui.Modal.view (ModalMsg MoveFiles) filesMoveModalViewModel folder.filesMoveModal
                 , Ui.Modal.view (ModalMsg DeleteFiles) filesDeleteModalViewModel folder.filesDeleteModal
                 ]
         else

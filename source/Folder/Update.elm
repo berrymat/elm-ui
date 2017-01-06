@@ -3,9 +3,12 @@ module Folder.Update exposing (..)
 import Folder.Models exposing (..)
 import Folder.Commands exposing (..)
 import Helpers.Models exposing (..)
+import Tree.Models exposing (Tree, Node)
+import Tree.Messages
+import Tree.Update
 import Http exposing (..)
 import Table
-import Return exposing (..)
+import RemoteData exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
 
@@ -29,6 +32,12 @@ update message folder =
         UpdateFolderInfo folderInfo ->
             updateUpdateFolderInfo folder folderInfo
 
+        UpdateMoveTree tree ->
+            updateUpdateMoveTree folder tree
+
+        MoveTreeMsg subMsg ->
+            updateMoveTreeMsg folder subMsg
+
         ActionMenu action ->
             updateActionMenu folder action
 
@@ -37,6 +46,13 @@ update message folder =
 
         NoAction ->
             ( folder, Cmd.none, Nothing )
+
+        -- MOVE FOLDER MODAL
+        ModalAction MoveFiles action ->
+            updateModalActionMoveFiles folder action
+
+        ModalMsg MoveFiles modalMsg ->
+            updateModalMsgMoveFiles folder modalMsg
 
         -- DELETE FOLDER MODAL
         ModalAction DeleteFiles action ->
@@ -95,6 +111,46 @@ updateUpdateFolderInfo folder folderInfo =
     ( { folder | info = folderInfo }, Cmd.none, Nothing )
 
 
+updateUpdateMoveTree : Folder -> Tree -> ReturnFolder
+updateUpdateMoveTree folder tree =
+    ( { folder | moveTree = Just tree }, Cmd.none, Nothing )
+
+
+updateMoveTreeMsg : Folder -> Tree.Messages.Msg -> ReturnFolder
+updateMoveTreeMsg folder subMsg =
+    case folder.moveTree of
+        Just tree ->
+            let
+                ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                    Tree.Update.update subMsg (Success tree)
+            in
+                updateMovePathFromTree folder cmdTree maybePath maybeRoot updatedTree
+
+        Nothing ->
+            ( folder, Cmd.none, Nothing )
+
+
+updateMovePathFromTree : Folder -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ReturnFolder
+updateMovePathFromTree folder cmdTree maybePath maybeRoot updatedTree =
+    RemoteData.map (updateMovePathFromTreeSuccess folder cmdTree maybePath maybeRoot) updatedTree
+        |> RemoteData.withDefault ( folder, Cmd.none, Nothing )
+
+
+updateMovePathFromTreeSuccess : Folder -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ReturnFolder
+updateMovePathFromTreeSuccess folder cmdTree maybePath maybeRoot updatedTree =
+    case maybePath of
+        Just path ->
+            ( { folder
+                | moveTree = Just updatedTree
+              }
+            , Cmd.none
+            , Nothing
+            )
+
+        Nothing ->
+            ( folder, Cmd.none, Nothing )
+
+
 
 -- ACTION MENU UPDATES
 
@@ -120,6 +176,85 @@ updateCloseActionMenu folder =
             Ui.DropdownMenu.close folder.filesActionMenu
     in
         applyNewActionMenu folder newActionMenu
+
+
+
+-- MOVE FILES
+
+
+updateModalActionMoveFiles : Folder -> ModalAction -> ReturnFolder
+updateModalActionMoveFiles folder action =
+    case action of
+        Open ->
+            updateMoveFilesModalOpen folder
+
+        Save ->
+            updateMoveFilesModalSave folder
+
+        Cancel ->
+            ( { folder | filesMoveModal = Ui.Modal.close folder.filesMoveModal }, Cmd.none, Nothing )
+
+
+updateMoveFilesModalOpen : Folder -> ReturnFolder
+updateMoveFilesModalOpen folder =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close folder.filesActionMenu
+    in
+        ( { folder
+            | filesActionMenu = newActionMenu
+            , filesMoveModal = Ui.Modal.open folder.filesMoveModal
+          }
+        , Cmd.none
+        , Nothing
+        )
+
+
+updateMoveFilesModalSave : Folder -> ReturnFolder
+updateMoveFilesModalSave folder =
+    let
+        newFilesMoveModal =
+            Ui.Modal.close folder.filesMoveModal
+
+        selectedFiles =
+            List.filter (\f -> f.checked) folder.files
+
+        filesUrl tree =
+            List.head tree.path
+                |> Maybe.map (\node -> node.id)
+                |> Maybe.withDefault tree.id
+                |> Folder.Commands.filesUrl
+
+        request tree url =
+            Http.request
+                { method = "PUT"
+                , url = url
+                , headers = []
+                , body = (Http.jsonBody (encodeFiles selectedFiles))
+                , expect = (Http.expectJson folderDecoder)
+                , timeout = Nothing
+                , withCredentials = True
+                }
+
+        folderRequest =
+            Maybe.map (\tree -> ( filesUrl tree, tree )) folder.moveTree
+                |> Maybe.map (\( url, tree ) -> ( url, request tree url ))
+    in
+        ( { folder
+            | filesMoveModal = newFilesMoveModal
+          }
+        , Cmd.none
+        , folderRequest
+        )
+
+
+updateModalMsgMoveFiles : Folder -> Ui.Modal.Msg -> ReturnFolder
+updateModalMsgMoveFiles folder modalMsg =
+    let
+        newFilesMoveModal =
+            Ui.Modal.update modalMsg folder.filesMoveModal
+    in
+        ( { folder | filesMoveModal = newFilesMoveModal }, Cmd.none, Nothing )
 
 
 

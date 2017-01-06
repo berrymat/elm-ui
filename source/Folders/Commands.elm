@@ -50,7 +50,7 @@ createFolders tree folder =
         True
         []
         folder.info.id
-        (Done folder)
+        (Done { folder | moveTree = Just tree })
         Nothing
 
 

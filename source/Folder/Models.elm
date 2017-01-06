@@ -4,7 +4,8 @@ import Helpers.Models exposing (..)
 import Table
 import Ui.DropdownMenu
 import Ui.Modal
-import Tree.Models
+import Tree.Models exposing (Tree)
+import Tree.Messages
 
 
 type ModalType
@@ -24,6 +25,8 @@ type Msg
     | SetQuery String
     | SetTableState Table.State
     | UpdateFolderInfo FolderInfo
+    | UpdateMoveTree Tree
+    | MoveTreeMsg Tree.Messages.Msg
       -- ACTION MENU
     | ActionMenu Ui.DropdownMenu.Msg
     | CloseActionMenu
