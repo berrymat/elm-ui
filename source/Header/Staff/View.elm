@@ -38,15 +38,15 @@ initEditForm staff =
         Form.init
             { checkboxes = []
             , inputs =
-                [ ( "name", 0, "Name", (Maybe.withDefault "" values.name) )
-                , ( "address1", 1, "Address Line 1", (Maybe.withDefault "" values.address1) )
-                , ( "address2", 2, "Address Line 2", (Maybe.withDefault "" values.address2) )
-                , ( "address3", 3, "Address Line 3", (Maybe.withDefault "" values.address3) )
-                , ( "address4", 4, "Address Line 4", (Maybe.withDefault "" values.address4) )
-                , ( "postcode", 5, "Postcode", (Maybe.withDefault "" values.postcode) )
-                , ( "phone", 7, "Phone", (Maybe.withDefault "" values.tel) )
-                , ( "mobile", 6, "Mobile", (Maybe.withDefault "" values.mob) )
-                , ( "email", 8, "Email", (Maybe.withDefault "" values.email) )
+                [ ( "name", 0, "Name", (Maybe.withDefault "" values.name), Nothing )
+                , ( "address1", 1, "Address Line 1", (Maybe.withDefault "" values.address1), Nothing )
+                , ( "address2", 2, "Address Line 2", (Maybe.withDefault "" values.address2), Nothing )
+                , ( "address3", 3, "Address Line 3", (Maybe.withDefault "" values.address3), Nothing )
+                , ( "address4", 4, "Address Line 4", (Maybe.withDefault "" values.address4), Nothing )
+                , ( "postcode", 5, "Postcode", (Maybe.withDefault "" values.postcode), Nothing )
+                , ( "phone", 7, "Phone", (Maybe.withDefault "" values.tel), Nothing )
+                , ( "mobile", 6, "Mobile", (Maybe.withDefault "" values.mob), Nothing )
+                , ( "email", 8, "Email", (Maybe.withDefault "" values.email), Nothing )
                 ]
             , numberRanges = []
             , textareas = []

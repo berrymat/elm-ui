@@ -5,7 +5,8 @@ import UrlParser exposing (..)
 
 
 type Route
-    = HomeRoute
+    = LoginRoute
+    | HomeRoute
     | CustomerRoute String
     | ClientRoute String
     | StaffRoute String
@@ -15,7 +16,8 @@ type Route
 matchers : Parser (Route -> a) a
 matchers =
     oneOf
-        [ map HomeRoute (s "Home")
+        [ map LoginRoute (s "Login")
+        , map HomeRoute (s "Home")
         , map CustomerRoute (s "Customer" </> string)
         , map ClientRoute (s "Client" </> string)
         , map StaffRoute (s "Staff" </> string)

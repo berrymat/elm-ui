@@ -8,14 +8,16 @@ import Ui.Layout
 import Ui.Header
 import Messages exposing (Msg(..))
 import Models exposing (Model)
+import Login.Models
+import Login.View
 import Container.View
-import Container.Messages exposing (Msg(..))
+import Container.Messages
 import Routing exposing (Route(..))
 import Container.Models exposing (..)
 import RemoteData
 
 
-view : Model -> Html Messages.Msg
+view : Model -> Html Msg
 view model =
     Ui.App.view
         App
@@ -27,8 +29,8 @@ view model =
         ]
 
 
-nav : Model -> Html Messages.Msg
-nav model =
+containerNavItems : Model -> List (Html Msg)
+containerNavItems model =
     let
         container =
             model.container
@@ -48,7 +50,7 @@ nav model =
         headeritem entity =
             Ui.Header.item
                 { text = entity.name
-                , action = Just (ContainerMsg (Goto entity.nodeType headerId))
+                , action = Just (ContainerMsg (Container.Messages.Goto entity.nodeType headerId))
                 , link = Nothing
                 , target = ""
                 }
@@ -56,41 +58,67 @@ nav model =
         childitems =
             List.map headeritem container.childtypes
                 |> List.intersperse (Ui.Header.separator)
-
-        items =
-            [ Ui.Header.item
-                { text = "Home"
-                , action = Just (ContainerMsg GotoHome)
-                , link = Nothing
-                , target = ""
-                }
-            , Ui.Header.separator
-            ]
-                ++ childitems
-                ++ [ Ui.spacer
-                   , Ui.Header.separator
-                   , Ui.Header.icon
-                        { glyph = "navicon-round"
-                        , action = Nothing
-                        , link = Nothing
-                        , target = ""
-                        , size = 24
-                        }
-                   ]
     in
-        Ui.Header.view
-            items
+        [ Ui.Header.item
+            { text = "Home"
+            , action = Just (ContainerMsg Container.Messages.GotoHome)
+            , link = Nothing
+            , target = ""
+            }
+        , Ui.Header.separator
+        ]
+            ++ childitems
+            ++ [ Ui.spacer
+               , Ui.Header.separator
+               , Ui.Header.item
+                    { text = "Logout"
+                    , action = Just Logout
+                    , link = Nothing
+                    , target = ""
+                    }
+               ]
 
 
-footer : Model -> Html Messages.Msg
+navItems : Model -> List (Html Msg)
+navItems model =
+    case model.route of
+        LoginRoute ->
+            []
+
+        HomeRoute ->
+            containerNavItems model
+
+        CustomerRoute id ->
+            containerNavItems model
+
+        ClientRoute id ->
+            containerNavItems model
+
+        StaffRoute id ->
+            containerNavItems model
+
+        NotFoundRoute ->
+            []
+
+
+nav : Model -> Html Msg
+nav model =
+    Ui.Header.view
+        (navItems model)
+
+
+footer : Model -> Html Msg
 footer model =
     div [ class "footer clearfix p1" ]
         [ text "Elm prototype" ]
 
 
-page : Model -> Html Messages.Msg
+page : Model -> Html Msg
 page model =
     case model.route of
+        LoginRoute ->
+            loginPage model.login
+
         HomeRoute ->
             containerPage model.container
 
@@ -107,7 +135,12 @@ page model =
             notFoundView
 
 
-containerPage : Container -> Html Messages.Msg
+loginPage : Login.Models.Login -> Html Msg
+loginPage login =
+    Html.map LoginMsg (Login.View.view login)
+
+
+containerPage : Container -> Html Msg
 containerPage container =
     Html.map ContainerMsg (Container.View.view container)
 

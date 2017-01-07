@@ -5,22 +5,23 @@ import Container.Commands exposing (..)
 import Container.Models exposing (..)
 import Content.Models
 import Tree.Messages
+import Tree.Commands
 import Tree.Update
 import Tree.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (..)
 import Header.Commands
-import Content.Commands
 import Content.Update
 import Navigation
 import RemoteData exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
+import Return exposing (..)
 
 
-update : Msg -> Container -> ( Container, Cmd Msg )
+update : Msg -> Container -> Return Msg Container
 update message container =
     let
         ui =
@@ -35,10 +36,6 @@ update message container =
 
             LoadContainer parentType nodeId childType ->
                 updateLoadContainer parentType nodeId childType container
-
-            AuthenticateResponse result ->
-                RemoteData.map (fetchIfAuthorized container) result
-                    |> RemoteData.withDefault ( container, Cmd.none )
 
             SelectPath nodeId ->
                 let
@@ -161,12 +158,12 @@ subscriptions container =
             ]
 
 
-updateGotoHome : Container -> ( Container, Cmd Msg )
+updateGotoHome : Container -> Return Msg Container
 updateGotoHome container =
     ( container, Navigation.newUrl "#Home" )
 
 
-updateGoto : Container -> NodeType -> NodeId -> ( Container, Cmd Msg )
+updateGoto : Container -> NodeType -> NodeId -> Return Msg Container
 updateGoto container nodeType nodeId =
     ( container, goto nodeType nodeId )
 
@@ -180,66 +177,31 @@ goto nodeType nodeId =
         Navigation.newUrl ("#" ++ path ++ "/" ++ nodeId)
 
 
-updateLoadContainer : NodeType -> NodeId -> NodeType -> Container -> ( Container, Cmd Msg )
+updateLoadContainer : NodeType -> NodeId -> NodeType -> Container -> Return Msg Container
 updateLoadContainer parentType nodeId childType container =
-    case container.authResult of
-        NotAsked ->
-            let
-                cmd =
-                    authenticate
-                        "berry.matthew@me.com"
-                        "Cirrus8914!"
-            in
-                ( { container | authResult = Loading }, cmd )
+    let
+        x =
+            Debug.log "updateLoadContainer" ( parentType, nodeId, childType )
 
-        Loading ->
-            ( container, Cmd.none )
+        treeId =
+            nodeId ++ "-" ++ (nodeTypeToPath childType)
 
-        Failure err ->
-            ( container, Cmd.none )
+        treeCmd =
+            Cmd.map TreeMsg (Tree.Commands.fetchRoot treeId)
 
-        Success result ->
-            let
-                maybeTypes =
-                    maybeAuthResultTypes result
-            in
-                case maybeTypes of
-                    Just ( resultParentType, resultNodeId, resultChildType ) ->
-                        let
-                            parentType_ =
-                                if nodeId == "" then
-                                    resultParentType
-                                else
-                                    parentType
-
-                            nodeId_ =
-                                if nodeId == "" then
-                                    resultNodeId
-                                else
-                                    nodeId
-
-                            childType_ =
-                                if nodeId == "" then
-                                    resultChildType
-                                else
-                                    childType
-                        in
-                            fetchInitialData parentType_
-                                nodeId_
-                                childType_
-                                container
-
-                    Nothing ->
-                        ( container, Cmd.none )
+        ( newContainer, headerCmd ) =
+            Header.Commands.fetchHeader container ( parentType, nodeId, True )
+    in
+        ( { newContainer | path = [] }, Cmd.batch [ treeCmd, headerCmd ] )
 
 
-updatePathFromTree : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ( Container, Cmd Msg )
+updatePathFromTree : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> Return Msg Container
 updatePathFromTree container cmdTree maybePath maybeRoot updatedTree =
     RemoteData.map (updatePathFromTreeSuccess container cmdTree maybePath maybeRoot) updatedTree
         |> RemoteData.withDefault ( container, Cmd.none )
 
 
-updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ( Container, Cmd Msg )
+updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> Return Msg Container
 updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
     let
         x =
@@ -277,7 +239,7 @@ updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
         ( { newContainer | tree = Success updatedTree }, cmdBatch )
 
 
-updateContent : Container -> Bool -> HeaderData -> ( Container, Cmd Msg )
+updateContent : Container -> Bool -> HeaderData -> Return Msg Container
 updateContent container isTree headerData =
     let
         ui =
@@ -319,7 +281,7 @@ updateContent container isTree headerData =
 -- ACTION MENU UPDATES
 
 
-applyNewActionMenu : Container -> Ui.DropdownMenu.Model -> ( Container, Cmd Msg )
+applyNewActionMenu : Container -> Ui.DropdownMenu.Model -> Return Msg Container
 applyNewActionMenu container newMenu =
     let
         headerUi =
@@ -328,7 +290,7 @@ applyNewActionMenu container newMenu =
         ( { container | headerUi = { headerUi | actionMenu = newMenu } }, Cmd.none )
 
 
-updateActionMenu : Container -> Ui.DropdownMenu.Msg -> ( Container, Cmd Msg )
+updateActionMenu : Container -> Ui.DropdownMenu.Msg -> Return Msg Container
 updateActionMenu container action =
     let
         newActionMenu =
@@ -337,7 +299,7 @@ updateActionMenu container action =
         applyNewActionMenu container newActionMenu
 
 
-updateCloseActionMenu : Container -> ( Container, Cmd Msg )
+updateCloseActionMenu : Container -> Return Msg Container
 updateCloseActionMenu container =
     let
         newActionMenu =
@@ -374,7 +336,7 @@ applyEditForm newForm headerUi =
     { headerUi | editForm = newForm }
 
 
-applyNewEditModal : Container -> Ui.Modal.Model -> Maybe (Form.Model Msg) -> Ui.DropdownMenu.Model -> ( Container, Cmd Msg )
+applyNewEditModal : Container -> Ui.Modal.Model -> Maybe (Form.Model Msg) -> Ui.DropdownMenu.Model -> Return Msg Container
 applyNewEditModal container newModal newForm newMenu =
     ( applyHeaderUi
         (container.headerUi
@@ -387,7 +349,7 @@ applyNewEditModal container newModal newForm newMenu =
     )
 
 
-updateEditModalAction : Container -> ModalAction -> ( Container, Cmd Msg )
+updateEditModalAction : Container -> ModalAction -> Return Msg Container
 updateEditModalAction container action =
     case action of
         Open ->
@@ -400,7 +362,7 @@ updateEditModalAction container action =
             updateEditModalCancel container
 
 
-updateEditModalOpen : Container -> ( Container, Cmd Msg )
+updateEditModalOpen : Container -> Return Msg Container
 updateEditModalOpen container =
     let
         newEditForm =
@@ -416,7 +378,7 @@ updateEditModalOpen container =
         applyNewEditModal container newEditModal newEditForm newActionMenu
 
 
-updateEditModalSave : Container -> ( Container, Cmd Msg )
+updateEditModalSave : Container -> Return Msg Container
 updateEditModalSave container =
     case container.headerUi.editForm of
         Just form ->
@@ -438,7 +400,7 @@ updateEditModalSave container =
             ( container, Cmd.none )
 
 
-updateEditModalCancel : Container -> ( Container, Cmd Msg )
+updateEditModalCancel : Container -> Return Msg Container
 updateEditModalCancel container =
     let
         ui =
@@ -450,7 +412,7 @@ updateEditModalCancel container =
         applyNewEditModal container newEditModal ui.editForm ui.actionMenu
 
 
-updateEditModalMsg : Container -> Ui.Modal.Msg -> ( Container, Cmd Msg )
+updateEditModalMsg : Container -> Ui.Modal.Msg -> Return Msg Container
 updateEditModalMsg container msg =
     let
         ui =
@@ -471,7 +433,7 @@ applyDeleteModal newModal headerUi =
     { headerUi | deleteModal = newModal }
 
 
-applyNewDeleteModal : Container -> Ui.Modal.Model -> Ui.DropdownMenu.Model -> ( Container, Cmd Msg )
+applyNewDeleteModal : Container -> Ui.Modal.Model -> Ui.DropdownMenu.Model -> Return Msg Container
 applyNewDeleteModal container newModal newMenu =
     ( applyHeaderUi
         (container.headerUi
@@ -483,7 +445,7 @@ applyNewDeleteModal container newModal newMenu =
     )
 
 
-updateDeleteModalAction : Container -> ModalAction -> ( Container, Cmd Msg )
+updateDeleteModalAction : Container -> ModalAction -> Return Msg Container
 updateDeleteModalAction container action =
     case action of
         Open ->
@@ -496,7 +458,7 @@ updateDeleteModalAction container action =
             updateDeleteModalCancel container
 
 
-updateDeleteModalOpen : Container -> ( Container, Cmd Msg )
+updateDeleteModalOpen : Container -> Return Msg Container
 updateDeleteModalOpen container =
     let
         ui =
@@ -511,7 +473,7 @@ updateDeleteModalOpen container =
         applyNewDeleteModal container newDeleteModal newActionMenu
 
 
-updateDeleteModalSave : Container -> ( Container, Cmd Msg )
+updateDeleteModalSave : Container -> Return Msg Container
 updateDeleteModalSave container =
     let
         ui =
@@ -523,7 +485,7 @@ updateDeleteModalSave container =
         applyNewDeleteModal container newDeleteModal ui.actionMenu
 
 
-updateDeleteModalCancel : Container -> ( Container, Cmd Msg )
+updateDeleteModalCancel : Container -> Return Msg Container
 updateDeleteModalCancel container =
     let
         ui =
@@ -535,7 +497,7 @@ updateDeleteModalCancel container =
         applyNewDeleteModal container newDeleteModal ui.actionMenu
 
 
-updateDeleteModalMsg : Container -> Ui.Modal.Msg -> ( Container, Cmd Msg )
+updateDeleteModalMsg : Container -> Ui.Modal.Msg -> Return Msg Container
 updateDeleteModalMsg container msg =
     let
         ui =
@@ -551,7 +513,7 @@ updateDeleteModalMsg container msg =
 -- EDIT FORM UPDATES
 
 
-updateEditFormMsg : Container -> Form.Msg -> ( Container, Cmd Msg )
+updateEditFormMsg : Container -> Form.Msg -> Return Msg Container
 updateEditFormMsg container msg =
     case container.headerUi.editForm of
         Just form ->

@@ -25,7 +25,6 @@ type Msg
     = GotoHome
     | Goto NodeType NodeId
     | LoadContainer NodeType NodeId NodeType
-    | AuthenticateResponse (WebData AuthResult)
     | SelectPath NodeId
     | SelectTab TabType
     | TreeMsg Tree.Messages.Msg

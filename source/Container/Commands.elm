@@ -3,18 +3,9 @@ module Container.Commands exposing (..)
 import Container.Messages exposing (..)
 import Container.Models exposing (..)
 import Helpers.Models exposing (..)
-import Tree.Models exposing (..)
-import Header.Models exposing (isHeaderEmpty, getTabFromType)
-import Tree.Commands
 import Folders.Commands
-import Header.Commands exposing (..)
 import Content.Commands exposing (..)
 import Helpers.Helpers exposing (apiUrl)
-import Erl
-import Http
-import Json.Decode as Decode exposing (field)
-import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
-import HttpBuilder exposing (..)
 import RemoteData exposing (..)
 import Components.Form as Form
 import Header.Root.View
@@ -23,91 +14,6 @@ import Header.Client.View
 import Header.Site.View
 import Header.Staff.View
 import Helpers.Helpers exposing (..)
-
-
-authenticate : String -> String -> Cmd Msg
-authenticate username password =
-    HttpBuilder.get (authenticateUrl username password)
-        |> withExpect (Http.expectJson authenticateDecoder)
-        |> withCredentials
-        |> send (AuthenticateResponse << RemoteData.fromResult)
-
-
-authenticateUrl : String -> String -> String
-authenticateUrl username password =
-    let
-        erl =
-            Erl.parse (apiUrl ++ "Login")
-                |> Erl.addQuery "username" username
-                |> Erl.addQuery "password" password
-    in
-        Erl.toString erl
-
-
-authenticateDecoder : Decode.Decoder AuthResult
-authenticateDecoder =
-    decode makeAuthResult
-        |> required "type" Decode.string
-        |> required "id" Decode.string
-        |> required "result" Decode.string
-        |> required "childtypes" (Decode.list entityDecoder)
-
-
-makeAuthResult : String -> String -> String -> List Entity -> AuthResult
-makeAuthResult resultTypeString resultId result childtypes =
-    let
-        resultType =
-            Maybe.withDefault RootType (convertNodeType resultTypeString)
-    in
-        AuthResult
-            resultType
-            resultId
-            result
-            childtypes
-
-
-maybeAuthResultTypes : AuthResult -> Maybe ( NodeType, NodeId, NodeType )
-maybeAuthResultTypes authResult =
-    if authResult.result == "OK" then
-        List.head authResult.childtypes
-            |> Maybe.map (\r -> ( authResult.nodeType, authResult.nodeId, r.nodeType ))
-    else
-        Nothing
-
-
-fetchIfAuthorized : Container -> AuthResult -> ( Container, Cmd Msg )
-fetchIfAuthorized container authResult =
-    let
-        maybeTypes =
-            maybeAuthResultTypes authResult
-    in
-        case maybeTypes of
-            Just ( parentType, nodeId, childType ) ->
-                fetchInitialData parentType
-                    nodeId
-                    childType
-                    { container | authResult = Success authResult }
-
-            Nothing ->
-                ( container, Cmd.none )
-
-
-fetchInitialData : NodeType -> NodeId -> NodeType -> Container -> ( Container, Cmd Msg )
-fetchInitialData parentType nodeId childType container =
-    let
-        x =
-            Debug.log "fetchInitialData" ( parentType, nodeId, childType )
-
-        treeId =
-            nodeId ++ "-" ++ (nodeTypeToPath childType)
-
-        treeCmd =
-            Cmd.map TreeMsg (Tree.Commands.fetchRoot treeId)
-
-        ( newContainer, headerCmd ) =
-            Header.Commands.fetchHeader container ( parentType, nodeId, True )
-    in
-        ( { newContainer | path = [] }, Cmd.batch [ treeCmd, headerCmd ] )
 
 
 fetchContent : TabType -> NodeId -> Cmd Msg

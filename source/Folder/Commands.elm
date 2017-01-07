@@ -148,7 +148,7 @@ folderForm folderInfo =
             , ( writableForStaffName, 23, folderInfo.writableForStaff )
             ]
         , inputs =
-            [ ( "name", 1, "Name", folderInfo.name )
+            [ ( "name", 1, "Name", folderInfo.name, Nothing )
             ]
         , numberRanges = []
         , textareas = []

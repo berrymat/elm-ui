@@ -50,7 +50,7 @@ type alias TempModel =
     { numberRanges : List ( String, Int, Float, String, Float, Float, Int, Float )
     , choosers : List ( String, Int, List Ui.Chooser.Item, String, String )
     , textareas : List ( String, Int, String, String )
-    , inputs : List ( String, Int, String, String )
+    , inputs : List ( String, Int, String, String, Maybe String )
     , colors : List ( String, Int, Color.Color )
     , checkboxes : List ( String, Int, Bool )
     , dates : List ( String, Int, Date.Date )
@@ -70,8 +70,17 @@ init data =
         initChooser ( name, index, data, placeholder, value ) =
             ( name, ( index, Ui.Chooser.init data placeholder value ) )
 
-        initInput ( name, index, placeholder, value ) =
-            ( name, ( index, Ui.Input.init value placeholder ) )
+        initInput ( name, index, placeholder, value, maybeKind ) =
+            let
+                initInput =
+                    Ui.Input.init value placeholder
+
+                input =
+                    maybeKind
+                        |> Maybe.map (\kind -> { initInput | kind = kind })
+                        |> Maybe.withDefault initInput
+            in
+                ( name, ( index, input ) )
 
         initColors ( name, index, value ) =
             ( name, ( index, Ui.ColorPicker.init value ) )

@@ -4,14 +4,32 @@ import Ui.App
 import Messages exposing (Msg(..))
 import Models exposing (Model)
 import Helpers.Models exposing (..)
+import Container.Models exposing (initialContainer)
+import Login.Models
+import Login.Update
 import Container.Messages
 import Container.Update
 import Routing exposing (Route(..), parseLocation)
+import Return exposing (..)
+import HttpBuilder exposing (..)
+import Helpers.Helpers exposing (..)
+import Http
+import Json.Decode as Decode
+import RemoteData exposing (..)
+import Navigation
 
 
-fetchData : Model -> ( Model, Cmd Msg )
+fetchData : Model -> Return Msg Model
 fetchData model =
     case model.route of
+        LoginRoute ->
+            let
+                ( newLogin, loginMsg ) =
+                    Login.Update.update Login.Models.LoadLogin
+                        model.login
+            in
+                ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
+
         HomeRoute ->
             let
                 ( newContainer, containerMsg ) =
@@ -58,6 +76,21 @@ update msg model =
             in
                 ( { model | app = app }, Cmd.map App effect )
 
+        Logout ->
+            updateLogout model
+
+        LogoutResponse response ->
+            updateLogoutResponse model response
+
+        LoginMsg subMsg ->
+            let
+                ( updatedLogin, cmd ) =
+                    Login.Update.update
+                        subMsg
+                        model.login
+            in
+                ( { model | login = updatedLogin }, Cmd.map LoginMsg cmd )
+
         ContainerMsg subMsg ->
             let
                 ( updatedContainer, cmd ) =
@@ -76,3 +109,34 @@ update msg model =
                     { model | route = newRoute }
             in
                 fetchData newModel
+
+
+updateLogout : Model -> Return Msg Model
+updateLogout model =
+    let
+        cmd =
+            HttpBuilder.post (apiUrl ++ "Logout")
+                |> withExpect (Http.expectJson Decode.bool)
+                |> withCredentials
+                |> send (LogoutResponse << RemoteData.fromResult)
+    in
+        ( model, cmd )
+
+
+updateLogoutResponse : Model -> WebData Bool -> Return Msg Model
+updateLogoutResponse model response =
+    let
+        ( newModel, cmd ) =
+            RemoteData.map
+                (\signedOut ->
+                    if signedOut then
+                        ( { model | container = initialContainer }
+                        , (Navigation.newUrl "#Login")
+                        )
+                    else
+                        ( model, Cmd.none )
+                )
+                response
+                |> RemoteData.withDefault ( model, Cmd.none )
+    in
+        ( { newModel | signedIn = RemoteData.map not response }, cmd )
