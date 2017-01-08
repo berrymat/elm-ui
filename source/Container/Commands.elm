@@ -4,6 +4,7 @@ import Container.Messages exposing (..)
 import Container.Models exposing (..)
 import Helpers.Models exposing (..)
 import Folders.Commands
+import Users.Models
 import Content.Commands exposing (..)
 import Helpers.Helpers exposing (apiUrl)
 import RemoteData exposing (..)
@@ -44,7 +45,9 @@ fetchFolders nodeId =
 
 fetchUsers : NodeId -> Cmd Msg
 fetchUsers nodeId =
-    fetcher (usersUrl nodeId) usersDecoder ((FetchUsersResponse nodeId) << RemoteData.fromResult)
+    fetcher (Users.Models.usersUrl nodeId)
+        Users.Models.modelDecoder
+        ((FetchUsersResponse nodeId) << RemoteData.fromResult)
 
 
 fetchCases : NodeId -> Cmd Msg

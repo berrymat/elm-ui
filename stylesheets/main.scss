@@ -585,7 +585,7 @@ div.body-path {
     td {
         padding: 6px 15px;
 
-        &.checkbox {
+        &.checkbox, &.radio {
             width: 50px;
         }
         &.datetime {

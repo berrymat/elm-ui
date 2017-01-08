@@ -9,23 +9,11 @@ import Helpers.Helpers exposing (..)
 -- DECODERS
 
 
-usersDecoder : Decode.Decoder Users
-usersDecoder =
-    Decode.map2 Users
-        (field "id" Decode.string)
-        (field "name" Decode.string)
-
-
 casesDecoder : Decode.Decoder Cases
 casesDecoder =
     Decode.map2 Cases
         (field "id" Decode.string)
         (field "name" Decode.string)
-
-
-usersUrl : NodeId -> String
-usersUrl nodeId =
-    apiUrl ++ "Users/" ++ nodeId
 
 
 casesUrl : NodeId -> String

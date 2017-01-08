@@ -5,6 +5,8 @@ import Html.Attributes exposing (..)
 import Content.Models exposing (..)
 import Folders.Models
 import Folders.View
+import Users.Models
+import Users.View
 
 
 view : Content -> Html Msg
@@ -13,9 +15,8 @@ view content =
         FoldersContent folders ->
             viewFolders folders
 
-        UsersContent users ->
-            div [ class "body-content" ]
-                (contentUsers users)
+        UsersContent model ->
+            viewUsers model
 
         CasesContent cases ->
             div [ class "body-content" ]
@@ -35,11 +36,13 @@ viewFolders folders =
         Html.map FoldersMsg htmlFolders
 
 
-contentUsers : Users -> List (Html Msg)
-contentUsers users =
-    [ div [ class "body-content-content" ]
-        [ text "Users" ]
-    ]
+viewUsers : Users.Models.Model -> Html Msg
+viewUsers model =
+    let
+        htmlUsers =
+            Users.View.view model
+    in
+        Html.map UsersMsg htmlUsers
 
 
 contentCases : Cases -> List (Html Msg)
