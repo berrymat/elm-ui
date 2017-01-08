@@ -7,12 +7,13 @@ import Helpers.Models exposing (..)
 
 
 type Msg
-    = LoadLogin
-    | AuthenticateResponse (WebData AuthResult)
+    = AuthenticateResponse (WebData AuthResult)
     | LoginFormMsg Form.Msg
     | LoginModalMsg Ui.Modal.Msg
+    | OpenLoginModal
     | SaveLoginModal
     | CancelLoginModal
+    | GotoHome
 
 
 type alias Login =

@@ -133,7 +133,7 @@ updateMoveTreeMsg folder subMsg =
     case folder.moveTree of
         Just tree ->
             let
-                ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
                     Tree.Update.update subMsg (Success tree)
             in
                 updateMovePathFromTree folder cmdTree maybePath maybeRoot updatedTree

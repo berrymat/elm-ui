@@ -26,6 +26,23 @@ import Return exposing (..)
 
 update : Msg -> Folders -> Return Msg Folders
 update msg folders =
+    let
+        errorCmd =
+            case msg of
+                FolderInfoSaveResponse webdata ->
+                    Helpers.Helpers.errorCmd webdata
+
+                _ ->
+                    Cmd.none
+
+        return =
+            updateInner msg folders
+    in
+        (return |> Return.command errorCmd)
+
+
+updateInner : Msg -> Folders -> Return Msg Folders
+updateInner msg folders =
     case msg of
         MainTreeMsg subMsg ->
             updateMainTreeMsg folders subMsg
@@ -84,7 +101,7 @@ update msg folders =
 
                 Success newFolders ->
                     let
-                        ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                        ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
                             Tree.Update.update (Tree.Messages.SelectNode folders.folderId) (Success newFolders.tree)
                     in
                         updateMainPathFromTree folders cmdTree maybePath maybeRoot updatedTree
@@ -167,7 +184,7 @@ subscriptions folders =
 updateMainTreeMsg : Folders -> Tree.Messages.Msg -> Return Msg Folders
 updateMainTreeMsg folders subMsg =
     let
-        ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+        ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
             Tree.Update.update subMsg (Success folders.tree)
     in
         updateMainPathFromTree folders cmdTree maybePath maybeRoot updatedTree
@@ -239,7 +256,7 @@ updateMoveTreeMsg folders subMsg =
     case folders.moveTree of
         Just tree ->
             let
-                ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
                     Tree.Update.update subMsg (Success tree)
             in
                 updateMovePathFromTree folders cmdTree maybePath maybeRoot updatedTree

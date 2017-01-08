@@ -27,11 +27,8 @@ updateFolders : Folders.Models.Msg -> Content -> Return Msg Content
 updateFolders foldersMsg content =
     case content of
         FoldersContent folders ->
-            let
-                ( newFolders, foldersCmd ) =
-                    Folders.Update.update foldersMsg folders
-            in
-                ( FoldersContent newFolders, Cmd.map FoldersMsg foldersCmd )
+            Folders.Update.update foldersMsg folders
+                |> Return.mapBoth FoldersMsg FoldersContent
 
         _ ->
-            ( content, Cmd.none )
+            singleton content

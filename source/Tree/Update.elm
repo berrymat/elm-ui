@@ -5,47 +5,69 @@ import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Tree.Commands exposing (..)
 import RemoteData exposing (..)
+import Helpers.Helpers
+import Return exposing (..)
 
 
-update : Msg -> WebData Tree -> ( WebData Tree, Cmd Msg, Maybe (List Node), Maybe ( NodeType, NodeId ) )
-update message tree =
+update : Msg -> WebData Tree -> ( Return Msg (WebData Tree), Maybe (List Node), Maybe ( NodeType, NodeId ) )
+update msg tree =
+    let
+        errorCmd =
+            case msg of
+                OnFetchRoot tempRoot ->
+                    Helpers.Helpers.errorCmd tempRoot
+
+                OnFetchNode nodeId tempChildren ->
+                    Helpers.Helpers.errorCmd tempChildren
+
+                _ ->
+                    Cmd.none
+
+        ( return, path, root ) =
+            updateInner msg tree
+    in
+        ( return |> Return.command errorCmd, path, root )
+
+
+updateInner : Msg -> WebData Tree -> ( Return Msg (WebData Tree), Maybe (List Node), Maybe ( NodeType, NodeId ) )
+updateInner message tree =
     case message of
         OnFetchRoot tempRoot ->
-            ( fetchedRoot tempRoot tree, Cmd.none, Nothing, Nothing )
+            ( fetchedRoot tempRoot tree |> singleton, Nothing, Nothing )
 
         OnFetchNode nodeId tempChildren ->
-            ( fetchedNode nodeId tempChildren tree, Cmd.none, Nothing, Nothing )
+            ( fetchedNode nodeId tempChildren tree |> singleton, Nothing, Nothing )
 
         ToggleNode nodeId ->
             let
                 ( newTree, cmds ) =
                     toggle nodeId tree
             in
-                ( newTree, cmds, Nothing, Nothing )
+                ( ( newTree, cmds ), Nothing, Nothing )
 
         SelectRoot ->
             let
                 ( newTree, newPath ) =
                     select Nothing tree
             in
-                ( newTree, Cmd.none, newPath, Nothing )
+                ( newTree |> singleton, newPath, Nothing )
 
         SelectNode nodeId ->
             let
                 ( newTree, newPath ) =
                     select (Just nodeId) tree
             in
-                ( newTree, Cmd.none, newPath, Nothing )
+                ( newTree |> singleton, newPath, Nothing )
 
         OpenNewRoot nodeType nodeId ->
             let
                 ( newTree, newPath ) =
                     select (Just nodeId) tree
             in
-                ( newTree, Cmd.none, Nothing, Just ( nodeType, nodeId ) )
+                ( newTree |> singleton, Nothing, Just ( nodeType, nodeId ) )
 
         NoAction ->
-            ( tree, Cmd.none, Nothing, Nothing )
+            ( tree |> singleton, Nothing, Nothing )
 
 
 selectNode : NodeId -> List Node -> Node -> ( Node, List Node )

@@ -79,11 +79,24 @@ containerNavItems model =
                ]
 
 
+loginNavItems : Model -> List (Html Msg)
+loginNavItems model =
+    [ Ui.spacer
+    , Ui.Header.separator
+    , Ui.Header.item
+        { text = "Login"
+        , action = Just (LoginMsg Login.Models.OpenLoginModal)
+        , link = Nothing
+        , target = ""
+        }
+    ]
+
+
 navItems : Model -> List (Html Msg)
 navItems model =
     case model.route of
         LoginRoute ->
-            []
+            loginNavItems model
 
         HomeRoute ->
             containerNavItems model

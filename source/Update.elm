@@ -19,48 +19,39 @@ import RemoteData exposing (..)
 import Navigation
 
 
+updateContainer : Model -> Container.Messages.Msg -> Return Msg Model
+updateContainer model subMsg =
+    Container.Update.update subMsg model.container
+        |> Return.mapBoth ContainerMsg (\new -> { model | container = new })
+
+
 fetchData : Model -> Return Msg Model
 fetchData model =
     case model.route of
         LoginRoute ->
             let
                 ( newLogin, loginMsg ) =
-                    Login.Update.update Login.Models.LoadLogin
+                    Login.Update.update Login.Models.OpenLoginModal
                         model.login
             in
                 ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
 
         HomeRoute ->
             let
-                ( newContainer, containerMsg ) =
-                    Container.Update.update (Container.Messages.LoadContainer RootType "" RootType)
-                        model.container
+                ( newLogin, loginMsg ) =
+                    Login.Update.update Login.Models.GotoHome
+                        model.login
             in
-                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
+                ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
 
         CustomerRoute id ->
-            let
-                ( newContainer, containerMsg ) =
-                    Container.Update.update (Container.Messages.LoadContainer RootType id CustomerType)
-                        model.container
-            in
-                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
+            updateContainer model (Container.Messages.LoadContainer RootType id CustomerType)
 
         ClientRoute id ->
-            let
-                ( newContainer, containerMsg ) =
-                    Container.Update.update (Container.Messages.LoadContainer CustomerType id ClientType)
-                        model.container
-            in
-                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
+            updateContainer model (Container.Messages.LoadContainer CustomerType id ClientType)
 
         StaffRoute id ->
-            let
-                ( newContainer, containerMsg ) =
-                    Container.Update.update (Container.Messages.LoadContainer CustomerType id StaffType)
-                        model.container
-            in
-                ( { model | container = newContainer }, Cmd.map ContainerMsg containerMsg )
+            updateContainer model (Container.Messages.LoadContainer CustomerType id StaffType)
 
         NotFoundRoute ->
             ( model, Cmd.none )
@@ -92,13 +83,7 @@ update msg model =
                 ( { model | login = updatedLogin }, Cmd.map LoginMsg cmd )
 
         ContainerMsg subMsg ->
-            let
-                ( updatedContainer, cmd ) =
-                    Container.Update.update
-                        subMsg
-                        model.container
-            in
-                ( { model | container = updatedContainer }, Cmd.map ContainerMsg cmd )
+            updateContainer model subMsg
 
         OnLocationChange location ->
             let

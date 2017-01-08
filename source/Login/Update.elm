@@ -19,10 +19,24 @@ import Navigation
 
 update : Msg -> Login -> Return Msg Login
 update msg login =
-    case msg of
-        LoadLogin ->
-            updateLoadLogin login
+    let
+        errorCmd =
+            case msg of
+                AuthenticateResponse response ->
+                    Helpers.Helpers.errorCmd response
 
+                _ ->
+                    Cmd.none
+
+        return =
+            updateInner msg login
+    in
+        (return |> Return.command errorCmd)
+
+
+updateInner : Msg -> Login -> Return Msg Login
+updateInner msg login =
+    case msg of
         LoginFormMsg formMsg ->
             Form.update formMsg login.loginForm
                 |> Return.map (\nf -> { login | loginForm = nf })
@@ -33,6 +47,9 @@ update msg login =
             , Cmd.none
             )
 
+        OpenLoginModal ->
+            updateOpenLoginModal login
+
         SaveLoginModal ->
             updateSaveLoginModal login
 
@@ -42,9 +59,12 @@ update msg login =
         AuthenticateResponse response ->
             updateAuthenticateResponse login response
 
+        GotoHome ->
+            updateGotoHome login
 
-updateLoadLogin : Login -> Return Msg Login
-updateLoadLogin login =
+
+updateOpenLoginModal : Login -> Return Msg Login
+updateOpenLoginModal login =
     let
         newLoginModal =
             Ui.Modal.open login.loginModal
@@ -136,8 +156,34 @@ updateAuthenticateResponseSuccess login authResult =
                     path =
                         nodeTypeToPath childType
                 in
-                    singleton login
+                    singleton authResult
+                        |> Return.map (\new -> { login | authResult = Success new })
                         |> Return.command (Navigation.newUrl ("#" ++ path ++ "/" ++ nodeId))
 
             Nothing ->
                 singleton login
+
+
+fetchAuthResult : Cmd Msg
+fetchAuthResult =
+    HttpBuilder.get (apiUrl ++ "User")
+        |> withExpect (Http.expectJson authenticateDecoder)
+        |> withCredentials
+        |> send (AuthenticateResponse << RemoteData.fromResult)
+
+
+updateGotoHome : Login -> Return Msg Login
+updateGotoHome login =
+    case login.authResult of
+        NotAsked ->
+            singleton login
+                |> command fetchAuthResult
+
+        Loading ->
+            singleton login
+
+        Failure error ->
+            singleton login
+
+        Success result ->
+            updateAuthenticateResponseSuccess login result

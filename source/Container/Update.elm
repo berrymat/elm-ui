@@ -22,12 +22,41 @@ import Return exposing (..)
 
 
 update : Msg -> Container -> Return Msg Container
-update message container =
+update msg container =
+    let
+        errorCmd =
+            case msg of
+                FetchFoldersResponse nodeId folders ->
+                    Helpers.Helpers.errorCmd folders
+
+                FetchUsersResponse nodeId users ->
+                    Helpers.Helpers.errorCmd users
+
+                FetchCasesResponse nodeId cases ->
+                    Helpers.Helpers.errorCmd cases
+
+                HeaderResponse isTree newHeaderData ->
+                    Helpers.Helpers.errorCmd newHeaderData
+
+                HeaderPutResponse webdata ->
+                    Helpers.Helpers.errorCmd webdata
+
+                _ ->
+                    Cmd.none
+
+        return =
+            updateInner msg container
+    in
+        (return |> Return.command errorCmd)
+
+
+updateInner : Msg -> Container -> Return Msg Container
+updateInner msg container =
     let
         ui =
             container.headerUi
     in
-        case message of
+        case msg of
             GotoHome ->
                 updateGotoHome container
 
@@ -39,7 +68,7 @@ update message container =
 
             SelectPath nodeId ->
                 let
-                    ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                    ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
                         Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
                 in
                     updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
@@ -59,7 +88,7 @@ update message container =
 
             TreeMsg subMsg ->
                 let
-                    ( updatedTree, cmdTree, maybePath, maybeRoot ) =
+                    ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
                         Tree.Update.update subMsg container.tree
                 in
                     updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
@@ -74,15 +103,12 @@ update message container =
                 ( { container | content = RemoteData.map Content.Models.CasesContent cases }, Cmd.none )
 
             ContentMsg subMsg ->
-                let
-                    ( updatedContent, cmdContent ) =
-                        RemoteData.update (Content.Update.update subMsg) container.content
-                in
-                    ( { container | content = updatedContent }, Cmd.map ContentMsg cmdContent )
+                RemoteData.update (Content.Update.update subMsg) container.content
+                    |> Return.mapBoth ContentMsg (\new -> { container | content = new })
 
             HeaderResponse isTree newHeaderData ->
                 RemoteData.map (updateContent container isTree) newHeaderData
-                    |> RemoteData.withDefault ( container, Cmd.none )
+                    |> RemoteData.withDefault (singleton container)
 
             HeaderPutResponse webdata ->
                 let
