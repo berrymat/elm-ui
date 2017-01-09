@@ -25,6 +25,26 @@ updateContainer model subMsg =
         |> Return.mapBoth ContainerMsg (\new -> { model | container = new })
 
 
+tryUpdateContainer : Model -> NodeType -> NodeId -> NodeType -> Return Msg Model
+tryUpdateContainer model parentType id childType =
+    case model.login.authResult of
+        NotAsked ->
+            let
+                ( newLogin, loginMsg ) =
+                    Login.Update.update Login.Models.LoadToken model.login
+            in
+                ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
+
+        Loading ->
+            singleton model
+
+        Failure error ->
+            singleton model
+
+        Success result ->
+            updateContainer model (Container.Messages.LoadContainer parentType id childType)
+
+
 fetchData : Model -> Return Msg Model
 fetchData model =
     case model.route of
@@ -45,13 +65,13 @@ fetchData model =
                 ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
 
         CustomerRoute id ->
-            updateContainer model (Container.Messages.LoadContainer RootType id CustomerType)
+            tryUpdateContainer model RootType id CustomerType
 
         ClientRoute id ->
-            updateContainer model (Container.Messages.LoadContainer CustomerType id ClientType)
+            tryUpdateContainer model CustomerType id ClientType
 
         StaffRoute id ->
-            updateContainer model (Container.Messages.LoadContainer CustomerType id StaffType)
+            tryUpdateContainer model CustomerType id StaffType
 
         NotFoundRoute ->
             ( model, Cmd.none )

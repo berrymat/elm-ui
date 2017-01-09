@@ -4,16 +4,21 @@ import Users.Models exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Helpers.Helpers exposing (..)
 import Table exposing (..)
 import Helpers.Models exposing (..)
 import Dict
 import Ui
+import Ui.Button
+import Ui.Container
 import Ui.DropdownMenu
 import Ui.IconButton
+import Ui.Modal
+import Components.Form as Form
 
 
-view : Model -> Html Msg
-view model =
+view : Model -> AuthToken -> Html Msg
+view model token =
     let
         lowerQuery =
             String.toLower model.query
@@ -30,7 +35,7 @@ view model =
                         ]
                     ]
                 , div [ class "body-content-content-footer" ]
-                    [ viewActionMenu model
+                    [ viewActionMenu model token
                     , div [ class "flexer" ] []
                     ]
                 ]
@@ -147,9 +152,9 @@ simpleRowAttrs _ =
 -- ACTION DROPDOWN
 
 
-dropdownMenuItem : String -> String -> ModalType -> Html Msg
-dropdownMenuItem icon name type_ =
-    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open) ]
+dropdownMenuItem : String -> String -> ModalType -> AuthToken -> Html Msg
+dropdownMenuItem icon name type_ token =
+    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open token) ]
         [ Ui.icon icon True []
         , node "span" [] [ text name ]
         ]
@@ -198,29 +203,82 @@ accessibleActions model =
         List.filter actionFilter actions
 
 
-actionDropdownViewModel : List ( String, String, ModalType ) -> Ui.DropdownMenu.ViewModel Msg
-actionDropdownViewModel actions =
+actionDropdownViewModel : List ( String, String, ModalType ) -> AuthToken -> Ui.DropdownMenu.ViewModel Msg
+actionDropdownViewModel actions token =
     { element =
         Ui.IconButton.secondary "User Actions"
             "chevron-up"
             "right"
             NoAction
     , items =
-        List.map (\( icon, name, type_ ) -> dropdownMenuItem icon name type_) actions
+        List.map (\( icon, name, type_ ) -> dropdownMenuItem icon name type_ token) actions
     }
 
 
-viewActionMenu : Model -> Html Msg
-viewActionMenu model =
+viewActionMenu : Model -> AuthToken -> Html Msg
+viewActionMenu model token =
     let
         actions =
             accessibleActions model
+
+        user =
+            List.filter .checked model.users
+                |> List.head
+                |> Maybe.withDefault (initUser model.id)
+
+        modalContent =
+            case model.userEditForm of
+                Just form ->
+                    [ Form.view UserFormMsg form ]
+
+                Nothing ->
+                    [ text "Edit Modal" ]
+
+        ( title, saveText, modalType ) =
+            case model.userEditMethod of
+                Just Post ->
+                    ( "New User", "Create", NewUser )
+
+                Just Put ->
+                    ( "Edit User", "Update", EditUser )
+
+                Nothing ->
+                    ( "", "", NewUser )
+
+        userEditModalViewModel =
+            { content = modalContent
+            , title = title
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.primary saveText (ModalAction modalType Save token)
+                    , Ui.Button.secondary "Cancel" (ModalAction modalType Cancel token)
+                    ]
+                ]
+            }
+
+        userDeleteModalViewModel =
+            { content =
+                [ div [ class "padded-modal-content" ]
+                    [ text ("Confirm deletion of user '" ++ user.email ++ "'?") ]
+                ]
+            , title = "Delete User"
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.danger "Delete" (ModalAction DeleteUser Save token)
+                    , Ui.Button.secondary "Cancel" (ModalAction DeleteUser Cancel token)
+                    ]
+                ]
+            }
     in
         case actions of
             [] ->
                 div [] []
 
             _ ->
-                Ui.DropdownMenu.view (actionDropdownViewModel actions)
-                    ActionMenu
-                    model.usersActionMenu
+                div []
+                    [ Ui.DropdownMenu.view (actionDropdownViewModel actions token)
+                        ActionMenu
+                        model.usersActionMenu
+                    , Ui.Modal.view (ModalMsg modalType) userEditModalViewModel model.userEditModal
+                    , Ui.Modal.view (ModalMsg DeleteUser) userDeleteModalViewModel model.userDeleteModal
+                    ]

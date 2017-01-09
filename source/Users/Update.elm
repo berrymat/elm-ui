@@ -9,6 +9,7 @@ import Return exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Components.Form as Form
+import Http
 
 
 update : Msg -> Model -> Return Msg Model
@@ -56,15 +57,15 @@ updateInner msg model =
                 ( model, Cmd.none )
 
             -- NEW USER MODAL
-            ModalAction NewUser action ->
-                updateModalActionUser model action (initUser model.id) Post
+            ModalAction NewUser action token ->
+                updateModalActionUser model action token (initUser model.id) Post
 
             ModalMsg NewUser modalMsg ->
                 updateModalMsgUser model modalMsg
 
             -- EDIT USER MODAL
-            ModalAction EditUser action ->
-                updateModalActionUser model action user Put
+            ModalAction EditUser action token ->
+                updateModalActionUser model action token user Put
 
             ModalMsg EditUser modalMsg ->
                 updateModalMsgUser model modalMsg
@@ -92,8 +93,15 @@ updateInner msg model =
                     Success newModel ->
                         ( newModel, Cmd.none )
 
+            -- DELETE USER MODAL
+            ModalAction DeleteUser action token ->
+                updateModalActionDeleteUser model action token
+
+            ModalMsg DeleteUser modalMsg ->
+                updateModalMsgDeleteUser model modalMsg
+
             -- OTHER MODALS - TEMP - TODO
-            ModalAction _ _ ->
+            ModalAction _ _ _ ->
                 singleton model
 
             ModalMsg _ _ ->
@@ -168,8 +176,8 @@ updateCloseActionMenu model =
 -- NEW FOLDER UPDATES
 
 
-updateModalActionUser : Model -> ModalAction -> User -> HttpMethod -> Return Msg Model
-updateModalActionUser model action user method =
+updateModalActionUser : Model -> ModalAction -> AuthToken -> User -> HttpMethod -> Return Msg Model
+updateModalActionUser model action token user method =
     let
         ( newModel, newCmd ) =
             case action of
@@ -179,7 +187,7 @@ updateModalActionUser model action user method =
                 Save ->
                     case model.userEditForm of
                         Just form ->
-                            updateUserModalSave model user form method
+                            updateUserModalSave model token user form method
 
                         Nothing ->
                             ( model, Cmd.none )
@@ -209,8 +217,8 @@ updateUserModalOpen model user method =
         )
 
 
-updateUserModalSave : Model -> User -> Form.Model Msg -> HttpMethod -> Return Msg Model
-updateUserModalSave model user form method =
+updateUserModalSave : Model -> AuthToken -> User -> Form.Model Msg -> HttpMethod -> Return Msg Model
+updateUserModalSave model token user form method =
     let
         newUserEditModal =
             Ui.Modal.close model.userEditModal
@@ -229,7 +237,7 @@ updateUserModalSave model user form method =
                 model.users
 
         newEffect =
-            saveUser newUser method
+            saveUser token newUser method
     in
         ( { model | userEditModal = newUserEditModal, users = newUsers }, newEffect )
 
@@ -241,3 +249,81 @@ updateModalMsgUser model modalMsg =
             Ui.Modal.update modalMsg model.userEditModal
     in
         ( { model | userEditModal = newUserEditModal }, Cmd.none )
+
+
+
+-- DELETE USER
+
+
+updateModalActionDeleteUser : Model -> ModalAction -> AuthToken -> Return Msg Model
+updateModalActionDeleteUser model action token =
+    let
+        maybeUser =
+            List.filter .checked model.users
+                |> List.head
+
+        dispatch user =
+            case action of
+                Open ->
+                    updateDeleteUserModalOpen model user
+
+                Save ->
+                    updateDeleteUserModalSave model token user
+
+                Cancel ->
+                    ( { model | userDeleteModal = Ui.Modal.close model.userDeleteModal }, Cmd.none )
+    in
+        maybeUser
+            |> Maybe.map dispatch
+            |> Maybe.withDefault (singleton model)
+
+
+updateDeleteUserModalOpen : Model -> User -> Return Msg Model
+updateDeleteUserModalOpen model user =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close model.usersActionMenu
+    in
+        ( { model
+            | usersActionMenu = newActionMenu
+            , userDeleteModal = Ui.Modal.open model.userDeleteModal
+          }
+        , Cmd.none
+        )
+
+
+updateDeleteUserModalSave : Model -> AuthToken -> User -> Return Msg Model
+updateDeleteUserModalSave model token user =
+    let
+        newUserDeleteModal =
+            Ui.Modal.close model.userDeleteModal
+
+        url =
+            Users.Models.usersUrl user.id
+
+        newEffect =
+            Http.request
+                { method = "DELETE"
+                , url = url
+                , headers = [ Http.header "X-CSRF-Token" token ]
+                , body = (Http.jsonBody (encodeUser user))
+                , expect = (Http.expectJson modelDecoder)
+                , timeout = Nothing
+                , withCredentials = True
+                }
+                |> Http.send (UserSaveResponse << RemoteData.fromResult)
+    in
+        ( { model
+            | userDeleteModal = newUserDeleteModal
+          }
+        , newEffect
+        )
+
+
+updateModalMsgDeleteUser : Model -> Ui.Modal.Msg -> Return Msg Model
+updateModalMsgDeleteUser model modalMsg =
+    let
+        newUserDeleteModal =
+            Ui.Modal.update modalMsg model.userDeleteModal
+    in
+        ( { model | userDeleteModal = newUserDeleteModal }, Cmd.none )

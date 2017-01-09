@@ -15,6 +15,7 @@ import Container.Messages
 import Routing exposing (Route(..))
 import Container.Models exposing (..)
 import RemoteData
+import Helpers.Models exposing (..)
 
 
 view : Model -> Html Msg
@@ -126,6 +127,12 @@ footer model =
         [ text "Elm prototype" ]
 
 
+authToken : Model -> AuthToken
+authToken model =
+    RemoteData.map .authToken model.login.authResult
+        |> RemoteData.withDefault ""
+
+
 page : Model -> Html Msg
 page model =
     case model.route of
@@ -133,16 +140,16 @@ page model =
             loginPage model.login
 
         HomeRoute ->
-            containerPage model.container
+            containerPage model.container (authToken model)
 
         CustomerRoute id ->
-            containerPage model.container
+            containerPage model.container (authToken model)
 
         ClientRoute id ->
-            containerPage model.container
+            containerPage model.container (authToken model)
 
         StaffRoute id ->
-            containerPage model.container
+            containerPage model.container (authToken model)
 
         NotFoundRoute ->
             notFoundView
@@ -153,9 +160,9 @@ loginPage login =
     Html.map LoginMsg (Login.View.view login)
 
 
-containerPage : Container -> Html Msg
-containerPage container =
-    Html.map ContainerMsg (Container.View.view container)
+containerPage : Container -> AuthToken -> Html Msg
+containerPage container token =
+    Html.map ContainerMsg (Container.View.view container token)
 
 
 notFoundView : Html msg

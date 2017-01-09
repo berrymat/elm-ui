@@ -14,6 +14,7 @@ type Msg
     | SaveLoginModal
     | CancelLoginModal
     | GotoHome
+    | LoadToken
 
 
 type alias Login =

@@ -7,16 +7,17 @@ import Folders.Models
 import Folders.View
 import Users.Models
 import Users.View
+import Helpers.Models exposing (..)
 
 
-view : Content -> Html Msg
-view content =
+view : Content -> AuthToken -> Html Msg
+view content token =
     case content of
         FoldersContent folders ->
             viewFolders folders
 
         UsersContent model ->
-            viewUsers model
+            viewUsers model token
 
         CasesContent cases ->
             div [ class "body-content" ]
@@ -36,11 +37,11 @@ viewFolders folders =
         Html.map FoldersMsg htmlFolders
 
 
-viewUsers : Users.Models.Model -> Html Msg
-viewUsers model =
+viewUsers : Users.Models.Model -> AuthToken -> Html Msg
+viewUsers model token =
     let
         htmlUsers =
-            Users.View.view model
+            Users.View.view model token
     in
         Html.map UsersMsg htmlUsers
 

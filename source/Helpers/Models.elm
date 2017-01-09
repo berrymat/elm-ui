@@ -5,6 +5,10 @@ type alias NodeId =
     String
 
 
+type alias AuthToken =
+    String
+
+
 type NodeType
     = RootType
     | CustomerType
@@ -18,6 +22,7 @@ type alias AuthResult =
     { nodeType : NodeType
     , nodeId : NodeId
     , result : String
+    , authToken : String
     , childtypes : List Entity
     }
 

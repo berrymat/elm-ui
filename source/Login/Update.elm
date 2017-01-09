@@ -62,6 +62,9 @@ updateInner msg login =
         GotoHome ->
             updateGotoHome login
 
+        LoadToken ->
+            updateLoadToken login
+
 
 updateOpenLoginModal : Login -> Return Msg Login
 updateOpenLoginModal login =
@@ -113,11 +116,12 @@ authenticateDecoder =
         |> required "type" Decode.string
         |> required "id" Decode.string
         |> required "result" Decode.string
+        |> required "authToken" Decode.string
         |> required "childtypes" (Decode.list entityDecoder)
 
 
-makeAuthResult : String -> String -> String -> List Entity -> AuthResult
-makeAuthResult resultTypeString resultId result childtypes =
+makeAuthResult : String -> String -> String -> AuthToken -> List Entity -> AuthResult
+makeAuthResult resultTypeString resultId result token childtypes =
     let
         resultType =
             Maybe.withDefault RootType (convertNodeType resultTypeString)
@@ -126,6 +130,7 @@ makeAuthResult resultTypeString resultId result childtypes =
             resultType
             resultId
             result
+            token
             childtypes
 
 
@@ -187,3 +192,21 @@ updateGotoHome login =
 
         Success result ->
             updateAuthenticateResponseSuccess login result
+
+
+updateLoadToken : Login -> Return Msg Login
+updateLoadToken login =
+    case login.authResult of
+        NotAsked ->
+            singleton login
+                |> command fetchAuthResult
+
+        Loading ->
+            singleton login
+
+        Failure error ->
+            singleton login
+
+        Success result ->
+            singleton result
+                |> Return.map (\new -> { login | authResult = Success new })

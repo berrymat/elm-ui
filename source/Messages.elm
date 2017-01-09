@@ -5,6 +5,7 @@ import Navigation exposing (Location)
 import Login.Models
 import Container.Messages
 import RemoteData exposing (..)
+import Helpers.Models exposing (..)
 
 
 type Msg
