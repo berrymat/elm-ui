@@ -110,6 +110,7 @@ updateInner msg container =
                 RemoteData.map (updateContent container isTree) newHeaderData
                     |> RemoteData.withDefault (singleton container)
 
+            -- TODO - CHANGE TO USE handleWebDataResponse
             HeaderPutResponse webdata ->
                 let
                     x =

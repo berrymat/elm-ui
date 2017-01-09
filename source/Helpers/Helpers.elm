@@ -2,6 +2,7 @@ module Helpers.Helpers exposing (..)
 
 import Ui.Helpers.Env
 import Json.Decode as Decode
+import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -11,6 +12,8 @@ import Helpers.Models exposing (..)
 import RemoteData exposing (..)
 import Http exposing (..)
 import Navigation
+import Return exposing (..)
+import Ui.Helpers.Emitter
 
 
 apiUrl : String
@@ -99,6 +102,21 @@ requester token baseurl urlid method value decoder msg =
     in
         req
             |> Http.send msg
+
+
+notificationDecoder : Decode.Decoder Notification
+notificationDecoder =
+    decode Notification
+        |> Json.Decode.Pipeline.required "notificationType" Decode.string
+        |> Json.Decode.Pipeline.required "message" Decode.string
+
+
+encodeNotification : Notification -> Encode.Value
+encodeNotification notification =
+    Encode.object
+        [ ( "notificationType", Encode.string notification.notificationType )
+        , ( "message", Encode.string notification.message )
+        ]
 
 
 fullAddress : Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String
@@ -192,3 +210,48 @@ errorCmd webdata =
 
             _ ->
                 Cmd.none
+
+
+handleWebDataResponse : model -> WebData model -> String -> (model -> Return msg model) -> Return msg model
+handleWebDataResponse model webdata successText successFn =
+    case webdata of
+        NotAsked ->
+            singleton model
+
+        Loading ->
+            ( model, Cmd.none )
+
+        Failure err ->
+            let
+                error message =
+                    Notification "error" message
+
+                notification =
+                    case err of
+                        BadUrl message ->
+                            error ("Bad url: " ++ message)
+
+                        Timeout ->
+                            error "Timed out"
+
+                        NetworkError ->
+                            error "Network error"
+
+                        BadStatus response ->
+                            error response.status.message
+
+                        BadPayload message response ->
+                            error ("Bad result: " ++ message)
+            in
+                ( model, Ui.Helpers.Emitter.send "notificationChannel" (encodeNotification notification) )
+
+        Success newModel ->
+            let
+                success message =
+                    Notification "success" message
+
+                notification =
+                    success successText
+            in
+                successFn newModel
+                    |> command (Ui.Helpers.Emitter.send "notificationChannel" (encodeNotification notification))

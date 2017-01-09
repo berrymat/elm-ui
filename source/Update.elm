@@ -1,8 +1,7 @@
 module Update exposing (..)
 
 import Ui.App
-import Messages exposing (Msg(..))
-import Models exposing (Model)
+import Models exposing (..)
 import Helpers.Models exposing (..)
 import Container.Models exposing (initialContainer)
 import Login.Models
@@ -14,35 +13,11 @@ import Return exposing (..)
 import HttpBuilder exposing (..)
 import Helpers.Helpers exposing (..)
 import Http
-import Json.Decode as Decode
 import RemoteData exposing (..)
 import Navigation
-
-
-updateContainer : Model -> Container.Messages.Msg -> Return Msg Model
-updateContainer model subMsg =
-    Container.Update.update subMsg model.container
-        |> Return.mapBoth ContainerMsg (\new -> { model | container = new })
-
-
-tryUpdateContainer : Model -> NodeType -> NodeId -> NodeType -> Return Msg Model
-tryUpdateContainer model parentType id childType =
-    case model.login.authResult of
-        NotAsked ->
-            let
-                ( newLogin, loginMsg ) =
-                    Login.Update.update Login.Models.LoadToken model.login
-            in
-                ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
-
-        Loading ->
-            singleton model
-
-        Failure error ->
-            singleton model
-
-        Success result ->
-            updateContainer model (Container.Messages.LoadContainer parentType id childType)
+import Ui.NotificationCenter
+import View exposing (..)
+import Json.Decode as Decode exposing (field, at)
 
 
 fetchData : Model -> Return Msg Model
@@ -115,6 +90,38 @@ update msg model =
             in
                 fetchData newModel
 
+        HandleNotification value ->
+            updateHandleNotification model value
+
+        NotificationMsg subMsg ->
+            updateNotification model subMsg
+
+
+updateContainer : Model -> Container.Messages.Msg -> Return Msg Model
+updateContainer model subMsg =
+    Container.Update.update subMsg model.container
+        |> Return.mapBoth ContainerMsg (\new -> { model | container = new })
+
+
+tryUpdateContainer : Model -> NodeType -> NodeId -> NodeType -> Return Msg Model
+tryUpdateContainer model parentType id childType =
+    case model.login.authResult of
+        NotAsked ->
+            let
+                ( newLogin, loginMsg ) =
+                    Login.Update.update Login.Models.LoadToken model.login
+            in
+                ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
+
+        Loading ->
+            singleton model
+
+        Failure error ->
+            singleton model
+
+        Success result ->
+            updateContainer model (Container.Messages.LoadContainer parentType id childType)
+
 
 updateLogout : Model -> Return Msg Model
 updateLogout model =
@@ -145,3 +152,26 @@ updateLogoutResponse model response =
                 |> RemoteData.withDefault ( model, Cmd.none )
     in
         ( { newModel | signedIn = RemoteData.map not response }, cmd )
+
+
+updateHandleNotification : Model -> Decode.Value -> Return Msg Model
+updateHandleNotification model value =
+    let
+        result =
+            Decode.decodeValue notificationDecoder value
+    in
+        case result of
+            Ok notification ->
+                Ui.NotificationCenter.notify
+                    (viewNotification notification)
+                    model.notificationCenter
+                    |> Return.mapBoth NotificationMsg (\new -> { model | notificationCenter = new })
+
+            Err error ->
+                singleton model
+
+
+updateNotification : Model -> Ui.NotificationCenter.Msg -> Return Msg Model
+updateNotification model subMsg =
+    Ui.NotificationCenter.update subMsg model.notificationCenter
+        |> Return.mapBoth NotificationMsg (\new -> { model | notificationCenter = new })

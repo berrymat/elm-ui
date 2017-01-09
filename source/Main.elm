@@ -1,12 +1,12 @@
 module Main exposing (..)
 
-import Messages exposing (Msg(..))
-import Models exposing (Model, initialModel)
+import Models exposing (..)
 import Navigation exposing (Location)
 import Routing exposing (Route)
 import Update exposing (update, fetchData)
 import View exposing (view)
 import Container.Update
+import Ui.Helpers.Emitter
 
 
 init : Location -> ( Model, Cmd Msg )
@@ -28,6 +28,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Sub.map ContainerMsg (Container.Update.subscriptions model.container)
+        , Ui.Helpers.Emitter.listen "notificationChannel" HandleNotification
         ]
 
 

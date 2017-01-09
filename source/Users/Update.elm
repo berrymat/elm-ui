@@ -9,7 +9,8 @@ import Return exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Components.Form as Form
-import Http
+import Ui.Helpers.Emitter
+import Http exposing (..)
 
 
 update : Msg -> Model -> Return Msg Model
@@ -80,18 +81,7 @@ updateInner msg model =
                     )
 
             UserSaveResponse webdata ->
-                case webdata of
-                    NotAsked ->
-                        ( model, Cmd.none )
-
-                    Loading ->
-                        ( model, Cmd.none )
-
-                    Failure err ->
-                        ( model, Cmd.none )
-
-                    Success newModel ->
-                        ( newModel, Cmd.none )
+                handleWebDataResponse model webdata "Users updated" singleton
 
             -- DELETE USER MODAL
             ModalAction token DeleteUser action ->

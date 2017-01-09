@@ -89,22 +89,15 @@ updateInner msg folders =
                 )
 
         FolderInfoSaveResponse webdata ->
-            case webdata of
-                NotAsked ->
-                    ( folders, Cmd.none )
-
-                Loading ->
-                    ( folders, Cmd.none )
-
-                Failure err ->
-                    ( folders, Cmd.none )
-
-                Success newFolders ->
+            let
+                handleNewFolders newFolders =
                     let
                         ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
                             Tree.Update.update (Tree.Messages.SelectNode folders.folderId) (Success newFolders.tree)
                     in
                         updateMainPathFromTree folders cmdTree maybePath maybeRoot updatedTree
+            in
+                handleWebDataResponse folders webdata "Folders updated" handleNewFolders
 
         -- MOVE FOLDER MODAL
         ModalAction token MoveFolder action ->

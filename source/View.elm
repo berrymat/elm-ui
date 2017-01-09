@@ -6,8 +6,7 @@ import Ui.App
 import Ui
 import Ui.Layout
 import Ui.Header
-import Messages exposing (Msg(..))
-import Models exposing (Model)
+import Models exposing (..)
 import Login.Models
 import Login.View
 import Container.View
@@ -16,6 +15,7 @@ import Routing exposing (Route(..))
 import Container.Models exposing (..)
 import RemoteData
 import Helpers.Models exposing (..)
+import Ui.NotificationCenter
 
 
 view : Model -> Html Msg
@@ -124,7 +124,9 @@ nav model =
 footer : Model -> Html Msg
 footer model =
     div [ class "footer clearfix p1" ]
-        [ text "Elm prototype" ]
+        [ text "Elm prototype"
+        , Ui.NotificationCenter.view NotificationMsg model.notificationCenter
+        ]
 
 
 authToken : Model -> AuthToken
@@ -170,3 +172,10 @@ notFoundView =
     div []
         [ text "Not found"
         ]
+
+
+viewNotification : Notification -> Html Msg
+viewNotification notification =
+    div
+        [ class ("notification-" ++ notification.notificationType) ]
+        [ text notification.message ]

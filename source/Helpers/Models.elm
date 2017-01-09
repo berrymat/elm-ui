@@ -27,6 +27,12 @@ type alias AuthResult =
     }
 
 
+type alias Notification =
+    { notificationType : String
+    , message : String
+    }
+
+
 type TabType
     = FoldersType
     | UsersType
