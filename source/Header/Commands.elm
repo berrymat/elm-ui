@@ -8,7 +8,7 @@ import Container.Models exposing (..)
 import Tree.Models exposing (..)
 import Header.Models exposing (..)
 import Helpers.Models exposing (..)
-import Helpers.Helpers exposing (apiUrl, fetcher, putter)
+import Helpers.Helpers exposing (fetcher, putter)
 import RemoteData exposing (..)
 
 
@@ -47,23 +47,23 @@ fetchHeader container ( nodeType, nodeId, isTree ) =
         ( { container | headerData = newData }, cmd )
 
 
-putHeader : NodeId -> HeaderData -> Cmd Msg
-putHeader nodeId data =
+putHeader : AuthToken -> NodeId -> HeaderData -> Cmd Msg
+putHeader token nodeId data =
     case data.header of
         RootHeader root ->
-            putRoot nodeId root
+            putRoot token nodeId root
 
         CustomerHeader customer ->
-            putCustomer nodeId customer
+            putCustomer token nodeId customer
 
         ClientHeader client ->
-            putClient nodeId client
+            putClient token nodeId client
 
         SiteHeader site ->
-            putSite nodeId site
+            putSite token nodeId site
 
         StaffHeader staff ->
-            putStaff nodeId staff
+            putStaff token nodeId staff
 
         Empty ->
             Cmd.none
@@ -71,77 +71,52 @@ putHeader nodeId data =
 
 fetchRoot : NodeId -> Bool -> Cmd Msg
 fetchRoot nodeId isTree =
-    fetcher (rootUrl nodeId) rootDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
+    fetcher "Roots" nodeId rootDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
-putRoot : NodeId -> Root -> Cmd Msg
-putRoot nodeId root =
-    putter (rootUrl nodeId) (encodeRoot root) rootDecoder (HeaderPutResponse << RemoteData.fromResult)
+putRoot : AuthToken -> NodeId -> Root -> Cmd Msg
+putRoot token nodeId root =
+    putter token "Roots" nodeId (encodeRoot root) rootDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 fetchCustomer : NodeId -> Bool -> Cmd Msg
 fetchCustomer nodeId isTree =
-    fetcher (customerUrl nodeId) customerDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
+    fetcher "Customers" nodeId customerDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
-putCustomer : NodeId -> Customer -> Cmd Msg
-putCustomer nodeId customer =
-    putter (customerUrl nodeId) (encodeCustomer customer) customerDecoder (HeaderPutResponse << RemoteData.fromResult)
+putCustomer : AuthToken -> NodeId -> Customer -> Cmd Msg
+putCustomer token nodeId customer =
+    putter token "Customers" nodeId (encodeCustomer customer) customerDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 fetchClient : NodeId -> Bool -> Cmd Msg
 fetchClient nodeId isTree =
-    fetcher (clientUrl nodeId) clientDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
+    fetcher "Clients" nodeId clientDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
-putClient : NodeId -> Client -> Cmd Msg
-putClient nodeId client =
-    putter (clientUrl nodeId) (encodeClient client) clientDecoder (HeaderPutResponse << RemoteData.fromResult)
+putClient : AuthToken -> NodeId -> Client -> Cmd Msg
+putClient token nodeId client =
+    putter token "Clients" nodeId (encodeClient client) clientDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 fetchSite : NodeId -> Bool -> Cmd Msg
 fetchSite nodeId isTree =
-    fetcher (siteUrl nodeId) siteDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
+    fetcher "Sites" nodeId siteDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
-putSite : NodeId -> Site -> Cmd Msg
-putSite nodeId site =
-    putter (siteUrl nodeId) (encodeSite site) siteDecoder (HeaderPutResponse << RemoteData.fromResult)
+putSite : AuthToken -> NodeId -> Site -> Cmd Msg
+putSite token nodeId site =
+    putter token "Sites" nodeId (encodeSite site) siteDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 fetchStaff : NodeId -> Bool -> Cmd Msg
 fetchStaff nodeId isTree =
-    fetcher (staffUrl nodeId) staffDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
+    fetcher "Staff" nodeId staffDecoder ((HeaderResponse isTree) << RemoteData.fromResult)
 
 
-putStaff : NodeId -> Staff -> Cmd Msg
-putStaff nodeId staff =
-    putter (staffUrl nodeId) (encodeStaff staff) staffDecoder (HeaderPutResponse << RemoteData.fromResult)
-
-
-rootUrl : NodeId -> String
-rootUrl nodeId =
-    apiUrl ++ "Roots/" ++ nodeId
-
-
-customerUrl : NodeId -> String
-customerUrl nodeId =
-    apiUrl ++ "Customers/" ++ nodeId
-
-
-clientUrl : NodeId -> String
-clientUrl nodeId =
-    apiUrl ++ "Clients/" ++ nodeId
-
-
-siteUrl : NodeId -> String
-siteUrl nodeId =
-    apiUrl ++ "Sites/" ++ nodeId
-
-
-staffUrl : NodeId -> String
-staffUrl nodeId =
-    apiUrl ++ "Staff/" ++ nodeId
+putStaff : AuthToken -> NodeId -> Staff -> Cmd Msg
+putStaff token nodeId staff =
+    putter token "Staff" nodeId (encodeStaff staff) staffDecoder (HeaderPutResponse << RemoteData.fromResult)
 
 
 

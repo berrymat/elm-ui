@@ -140,16 +140,16 @@ page model =
             loginPage model.login
 
         HomeRoute ->
-            containerPage model.container (authToken model)
+            containerPage (authToken model) model.container
 
         CustomerRoute id ->
-            containerPage model.container (authToken model)
+            containerPage (authToken model) model.container
 
         ClientRoute id ->
-            containerPage model.container (authToken model)
+            containerPage (authToken model) model.container
 
         StaffRoute id ->
-            containerPage model.container (authToken model)
+            containerPage (authToken model) model.container
 
         NotFoundRoute ->
             notFoundView
@@ -160,9 +160,9 @@ loginPage login =
     Html.map LoginMsg (Login.View.view login)
 
 
-containerPage : Container -> AuthToken -> Html Msg
-containerPage container token =
-    Html.map ContainerMsg (Container.View.view container token)
+containerPage : AuthToken -> Container -> Html Msg
+containerPage token container =
+    Html.map ContainerMsg (Container.View.view token container)
 
 
 notFoundView : Html msg

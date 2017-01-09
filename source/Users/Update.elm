@@ -57,15 +57,15 @@ updateInner msg model =
                 ( model, Cmd.none )
 
             -- NEW USER MODAL
-            ModalAction NewUser action token ->
-                updateModalActionUser model action token (initUser model.id) Post
+            ModalAction token NewUser action ->
+                updateModalActionUser token model action (initUser model.id) Post
 
             ModalMsg NewUser modalMsg ->
                 updateModalMsgUser model modalMsg
 
             -- EDIT USER MODAL
-            ModalAction EditUser action token ->
-                updateModalActionUser model action token user Put
+            ModalAction token EditUser action ->
+                updateModalActionUser token model action user Put
 
             ModalMsg EditUser modalMsg ->
                 updateModalMsgUser model modalMsg
@@ -94,8 +94,8 @@ updateInner msg model =
                         ( newModel, Cmd.none )
 
             -- DELETE USER MODAL
-            ModalAction DeleteUser action token ->
-                updateModalActionDeleteUser model action token
+            ModalAction token DeleteUser action ->
+                updateModalActionDeleteUser token model action
 
             ModalMsg DeleteUser modalMsg ->
                 updateModalMsgDeleteUser model modalMsg
@@ -176,8 +176,8 @@ updateCloseActionMenu model =
 -- NEW FOLDER UPDATES
 
 
-updateModalActionUser : Model -> ModalAction -> AuthToken -> User -> HttpMethod -> Return Msg Model
-updateModalActionUser model action token user method =
+updateModalActionUser : AuthToken -> Model -> ModalAction -> User -> HttpMethod -> Return Msg Model
+updateModalActionUser token model action user method =
     let
         ( newModel, newCmd ) =
             case action of
@@ -187,7 +187,7 @@ updateModalActionUser model action token user method =
                 Save ->
                     case model.userEditForm of
                         Just form ->
-                            updateUserModalSave model token user form method
+                            updateUserModalSave token model user form method
 
                         Nothing ->
                             ( model, Cmd.none )
@@ -217,8 +217,8 @@ updateUserModalOpen model user method =
         )
 
 
-updateUserModalSave : Model -> AuthToken -> User -> Form.Model Msg -> HttpMethod -> Return Msg Model
-updateUserModalSave model token user form method =
+updateUserModalSave : AuthToken -> Model -> User -> Form.Model Msg -> HttpMethod -> Return Msg Model
+updateUserModalSave token model user form method =
     let
         newUserEditModal =
             Ui.Modal.close model.userEditModal
@@ -255,8 +255,8 @@ updateModalMsgUser model modalMsg =
 -- DELETE USER
 
 
-updateModalActionDeleteUser : Model -> ModalAction -> AuthToken -> Return Msg Model
-updateModalActionDeleteUser model action token =
+updateModalActionDeleteUser : AuthToken -> Model -> ModalAction -> Return Msg Model
+updateModalActionDeleteUser token model action =
     let
         maybeUser =
             List.filter .checked model.users
@@ -268,7 +268,7 @@ updateModalActionDeleteUser model action token =
                     updateDeleteUserModalOpen model user
 
                 Save ->
-                    updateDeleteUserModalSave model token user
+                    updateDeleteUserModalSave token model user
 
                 Cancel ->
                     ( { model | userDeleteModal = Ui.Modal.close model.userDeleteModal }, Cmd.none )
@@ -292,26 +292,14 @@ updateDeleteUserModalOpen model user =
         )
 
 
-updateDeleteUserModalSave : Model -> AuthToken -> User -> Return Msg Model
-updateDeleteUserModalSave model token user =
+updateDeleteUserModalSave : AuthToken -> Model -> User -> Return Msg Model
+updateDeleteUserModalSave token model user =
     let
         newUserDeleteModal =
             Ui.Modal.close model.userDeleteModal
 
-        url =
-            Users.Models.usersUrl user.id
-
         newEffect =
-            Http.request
-                { method = "DELETE"
-                , url = url
-                , headers = [ Http.header "X-CSRF-Token" token ]
-                , body = (Http.jsonBody (encodeUser user))
-                , expect = (Http.expectJson modelDecoder)
-                , timeout = Nothing
-                , withCredentials = True
-                }
-                |> Http.send (UserSaveResponse << RemoteData.fromResult)
+            Helpers.Helpers.requester token "Users" user.id Delete (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)
     in
         ( { model
             | userDeleteModal = newUserDeleteModal

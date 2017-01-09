@@ -24,10 +24,10 @@ import Ui.Helpers.Env
 import Json.Decode as Decode
 
 
-view : Container -> Html Msg
-view container =
+view : AuthToken -> Container -> Html Msg
+view token container =
     div [ class "body-header" ]
-        (viewWebData container.headerData (header container.headerUi) headerPending)
+        (viewWebData container.headerData (header token container.headerUi) headerPending)
 
 
 headerPending : String -> List (Html Msg)
@@ -38,10 +38,10 @@ headerPending iconClass =
     ]
 
 
-header : HeaderUi -> HeaderData -> List (Html Msg)
-header ui data =
+header : AuthToken -> HeaderUi -> HeaderData -> List (Html Msg)
+header token ui data =
     [ headerImage data.header
-    , headerContent data.header data.useraccess ui
+    , headerContent token data.header data.useraccess ui
     , div [ class "body-header-extra" ]
         [ text "Extra" ]
     ]
@@ -86,28 +86,28 @@ headerImage header =
             []
 
 
-dropdownMenuItem : String -> String -> ModalType -> Html Msg
-dropdownMenuItem icon name type_ =
-    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open) ]
+dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
+dropdownMenuItem token icon name type_ =
+    Ui.DropdownMenu.item [ onClick (ModalAction token type_ Open) ]
         [ Ui.icon icon True []
         , node "span" [] [ text name ]
         ]
 
 
-actionDropdownViewModel : Header -> UserAccess -> HeaderUi -> Ui.DropdownMenu.ViewModel Msg
-actionDropdownViewModel header useraccess ui =
+actionDropdownViewModel : AuthToken -> Header -> UserAccess -> HeaderUi -> Ui.DropdownMenu.ViewModel Msg
+actionDropdownViewModel token header useraccess ui =
     let
         actions =
-            [ ( "android-download", "Edit", Edit )
-            , ( "trash-b", "Delete", Delete )
+            [ ( "android-download", "Edit", EditHeader )
+            , ( "trash-b", "Delete", DeleteHeader )
             ]
 
         actionFilter ( _, _, type_ ) =
             case type_ of
-                Edit ->
+                EditHeader ->
                     useraccess.admin || useraccess.owner
 
-                Delete ->
+                DeleteHeader ->
                     case header of
                         CustomerHeader _ ->
                             useraccess.admin && useraccess.root
@@ -124,15 +124,15 @@ actionDropdownViewModel header useraccess ui =
                 "right"
                 NoAction
         , items =
-            List.map (\( icon, name, type_ ) -> dropdownMenuItem icon name type_) accessibleActions
+            List.map (\( icon, name, type_ ) -> dropdownMenuItem token icon name type_) accessibleActions
         }
 
 
-headerActions : Header -> UserAccess -> HeaderUi -> List (Html Msg)
-headerActions header useraccess ui =
+headerActions : AuthToken -> Header -> UserAccess -> HeaderUi -> List (Html Msg)
+headerActions token header useraccess ui =
     let
         dropdownViewModel =
-            actionDropdownViewModel header useraccess ui
+            actionDropdownViewModel token header useraccess ui
 
         modalContent =
             case ui.editForm of
@@ -147,8 +147,8 @@ headerActions header useraccess ui =
             , title = "Edit Details"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Save" (ModalAction Edit Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction Edit Cancel)
+                    [ Ui.Button.primary "Save" (ModalAction token EditHeader Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token EditHeader Cancel)
                     ]
                 ]
             }
@@ -158,20 +158,20 @@ headerActions header useraccess ui =
             , title = "Delete Details"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Delete" (ModalAction Delete Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction Delete Cancel)
+                    [ Ui.Button.primary "Delete" (ModalAction token DeleteHeader Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token DeleteHeader Cancel)
                     ]
                 ]
             }
     in
         [ Ui.DropdownMenu.view dropdownViewModel ActionMenu ui.actionMenu
-        , Ui.Modal.view (ModalMsg Edit) editModalViewModel ui.editModal
-        , Ui.Modal.view (ModalMsg Delete) deleteModalViewModel ui.deleteModal
+        , Ui.Modal.view (ModalMsg EditHeader) editModalViewModel ui.editModal
+        , Ui.Modal.view (ModalMsg DeleteHeader) deleteModalViewModel ui.deleteModal
         ]
 
 
-headerContent : Header -> UserAccess -> HeaderUi -> Html Msg
-headerContent header useraccess ui =
+headerContent : AuthToken -> Header -> UserAccess -> HeaderUi -> Html Msg
+headerContent token header useraccess ui =
     let
         headerItems =
             case header of
@@ -196,7 +196,7 @@ headerContent header useraccess ui =
         headerContent =
             List.append
                 headerItems
-                (headerActions header useraccess ui)
+                (headerActions token header useraccess ui)
     in
         div [ class "body-header-content" ]
             headerContent

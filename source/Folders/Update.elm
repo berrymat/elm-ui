@@ -61,17 +61,17 @@ updateInner msg folders =
             ( folders, Cmd.none )
 
         -- NEW FOLDER MODAL
-        ModalAction NewFolder action ->
-            updateModalActionFolder folders action Folder.Commands.initFolderInfo Post
+        ModalAction token NewFolder action ->
+            updateModalActionFolder token folders action Folder.Commands.initFolderInfo Post
 
         ModalMsg NewFolder modalMsg ->
             updateModalMsgFolder folders modalMsg
 
         -- EDIT FOLDER MODAL
-        ModalAction EditFolder action ->
+        ModalAction token EditFolder action ->
             let
                 updateFolder folder =
-                    updateModalActionFolder folders action (\id -> folder.info) Put
+                    updateModalActionFolder token folders action (\id -> folder.info) Put
             in
                 Helpers.Progress.map updateFolder folders.folder
                     |> Helpers.Progress.withDefault ( folders, Cmd.none )
@@ -107,16 +107,16 @@ updateInner msg folders =
                         updateMainPathFromTree folders cmdTree maybePath maybeRoot updatedTree
 
         -- MOVE FOLDER MODAL
-        ModalAction MoveFolder action ->
-            Helpers.Progress.map (updateModalActionMoveFolder folders action) folders.folder
+        ModalAction token MoveFolder action ->
+            Helpers.Progress.map (updateModalActionMoveFolder token folders action) folders.folder
                 |> Helpers.Progress.withDefault ( folders, Cmd.none )
 
         ModalMsg MoveFolder modalMsg ->
             updateModalMsgMoveFolder folders modalMsg
 
         -- DELETE FOLDER MODAL
-        ModalAction DeleteFolder action ->
-            Helpers.Progress.map (updateModalActionDeleteFolder folders action) folders.folder
+        ModalAction token DeleteFolder action ->
+            Helpers.Progress.map (updateModalActionDeleteFolder token folders action) folders.folder
                 |> Helpers.Progress.withDefault ( folders, Cmd.none )
 
         ModalMsg DeleteFolder modalMsg ->
@@ -144,13 +144,13 @@ updateInner msg folders =
         FolderMsg folderMsg ->
             updateFolder folderMsg folders
 
-        UploadOpened task ->
-            ( folders, Task.perform UploadGetFiles task )
+        UploadOpened token task ->
+            ( folders, Task.perform (UploadGetFiles token) task )
 
-        UploadGetFiles files ->
+        UploadGetFiles token files ->
             let
                 ( newFolders, effect ) =
-                    upload folders folders.folderId files Folder.Commands.folderDecoder
+                    upload token folders folders.folderId files Folder.Commands.folderDecoder
             in
                 ( newFolders, effect )
 
@@ -316,8 +316,8 @@ updateCloseActionMenu folders =
 -- NEW FOLDER UPDATES
 
 
-updateModalActionFolder : Folders -> ModalAction -> (NodeId -> FolderInfo) -> HttpMethod -> Return Msg Folders
-updateModalActionFolder folders action folderInfo method =
+updateModalActionFolder : AuthToken -> Folders -> ModalAction -> (NodeId -> FolderInfo) -> HttpMethod -> Return Msg Folders
+updateModalActionFolder token folders action folderInfo method =
     let
         ( newFolders, newCmd ) =
             case action of
@@ -327,7 +327,7 @@ updateModalActionFolder folders action folderInfo method =
                 Save ->
                     case folders.folderEditForm of
                         Just form ->
-                            updateFolderModalSave folders folderInfo form method
+                            updateFolderModalSave token folders folderInfo form method
 
                         Nothing ->
                             ( folders, Cmd.none )
@@ -357,8 +357,8 @@ updateFolderModalOpen folders folderInfo method =
         )
 
 
-updateFolderModalSave : Folders -> (NodeId -> FolderInfo) -> Form.Model Msg -> HttpMethod -> Return Msg Folders
-updateFolderModalSave folders folderInfo form method =
+updateFolderModalSave : AuthToken -> Folders -> (NodeId -> FolderInfo) -> Form.Model Msg -> HttpMethod -> Return Msg Folders
+updateFolderModalSave token folders folderInfo form method =
     let
         newFolderEditModal =
             Ui.Modal.close folders.folderEditModal
@@ -367,7 +367,7 @@ updateFolderModalSave folders folderInfo form method =
             Folder.Commands.updateFolder form (folderInfo folders.folderId)
 
         newEffect =
-            saveFolderInfo folders.folderId newFolderInfo method
+            saveFolderInfo token folders.folderId newFolderInfo method
 
         ( newFolders, effect ) =
             updateFolder (Folder.Models.UpdateFolderInfo newFolderInfo) folders
@@ -389,8 +389,8 @@ updateModalMsgFolder folders modalMsg =
 -- MOVE FOLDER
 
 
-updateModalActionMoveFolder : Folders -> ModalAction -> Folder -> Return Msg Folders
-updateModalActionMoveFolder folders action folder =
+updateModalActionMoveFolder : AuthToken -> Folders -> ModalAction -> Folder -> Return Msg Folders
+updateModalActionMoveFolder token folders action folder =
     let
         ( newFolders, newCmd ) =
             case action of
@@ -398,7 +398,7 @@ updateModalActionMoveFolder folders action folder =
                     updateMoveFolderModalOpen folders
 
                 Save ->
-                    updateMoveFolderModalSave folders folder
+                    updateMoveFolderModalSave token folders folder
 
                 Cancel ->
                     ( { folders | folderMoveModal = Ui.Modal.close folders.folderMoveModal }, Cmd.none )
@@ -420,8 +420,8 @@ updateMoveFolderModalOpen folders =
         )
 
 
-updateMoveFolderModalSave : Folders -> Folder -> Return Msg Folders
-updateMoveFolderModalSave folders folder =
+updateMoveFolderModalSave : AuthToken -> Folders -> Folder -> Return Msg Folders
+updateMoveFolderModalSave token folders folder =
     let
         newFolderMoveModal =
             Ui.Modal.close folders.folderMoveModal
@@ -445,7 +445,7 @@ updateMoveFolderModalSave folders folder =
 
         newEffect =
             if newPrefix /= folderInfo.prefix then
-                saveFolderInfo folders.folderId newFolderInfo Put
+                saveFolderInfo token folders.folderId newFolderInfo Put
             else
                 Cmd.none
 
@@ -473,8 +473,8 @@ updateModalMsgMoveFolder folders modalMsg =
 -- DELETE FOLDER
 
 
-updateModalActionDeleteFolder : Folders -> ModalAction -> Folder -> Return Msg Folders
-updateModalActionDeleteFolder folders action folder =
+updateModalActionDeleteFolder : AuthToken -> Folders -> ModalAction -> Folder -> Return Msg Folders
+updateModalActionDeleteFolder token folders action folder =
     let
         ( newFolders, newCmd ) =
             case action of
@@ -482,7 +482,7 @@ updateModalActionDeleteFolder folders action folder =
                     updateDeleteFolderModalOpen folders
 
                 Save ->
-                    updateDeleteFolderModalSave folders folder
+                    updateDeleteFolderModalSave token folders folder
 
                 Cancel ->
                     ( { folders | folderDeleteModal = Ui.Modal.close folders.folderDeleteModal }, Cmd.none )
@@ -504,8 +504,8 @@ updateDeleteFolderModalOpen folders =
         )
 
 
-updateDeleteFolderModalSave : Folders -> Folder -> Return Msg Folders
-updateDeleteFolderModalSave folders folder =
+updateDeleteFolderModalSave : AuthToken -> Folders -> Folder -> Return Msg Folders
+updateDeleteFolderModalSave token folders folder =
     let
         newFolderDeleteModal =
             Ui.Modal.close folders.folderDeleteModal
@@ -517,7 +517,7 @@ updateDeleteFolderModalSave folders folder =
             { folderInfo | isDeleted = True }
 
         newEffect =
-            saveFolderInfo folders.folderId newFolderInfo Put
+            saveFolderInfo token folders.folderId newFolderInfo Put
     in
         ( { folders
             | folderDeleteModal = newFolderDeleteModal
@@ -563,8 +563,8 @@ updateFolder folderMsg folders =
             ( folders, Cmd.none )
 
 
-upload : Folders -> NodeId -> List Ui.Native.FileManager.File -> Decode.Decoder Folder -> Return Msg Folders
-upload folders folderId files decoder =
+upload : AuthToken -> Folders -> NodeId -> List Ui.Native.FileManager.File -> Decode.Decoder Folder -> Return Msg Folders
+upload token folders folderId files decoder =
     let
         part index file =
             Ui.Native.FileManager.toFormData ("file" ++ (toString index)) file
@@ -573,21 +573,7 @@ upload folders folderId files decoder =
             [ (Http.stringPart "id" folderId) ]
                 ++ (List.indexedMap part files)
 
-        body =
-            Http.multipartBody <| parts
-
-        url =
-            (apiUrl ++ "Upload")
-
         request =
-            Http.request
-                { method = "POST"
-                , url = url
-                , headers = []
-                , body = body
-                , expect = (Http.expectJson decoder)
-                , timeout = Nothing
-                , withCredentials = True
-                }
+            Helpers.Helpers.multipartRequest token "Upload" parts decoder
     in
-        ( { folders | folder = Progress.None, folderRequest = Just ( url, request ) }, Cmd.none )
+        ( { folders | folder = Progress.None, folderRequest = Just request }, Cmd.none )

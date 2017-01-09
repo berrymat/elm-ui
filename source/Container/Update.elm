@@ -153,17 +153,17 @@ updateInner msg container =
                 ( container, Cmd.none )
 
             -- EDIT MODAL
-            ModalAction Edit action ->
-                updateEditModalAction container action
+            ModalAction token EditHeader action ->
+                updateEditModalAction token container action
 
-            ModalMsg Edit msg ->
+            ModalMsg EditHeader msg ->
                 updateEditModalMsg container msg
 
             -- DELETE MODAL
-            ModalAction Delete action ->
-                updateDeleteModalAction container action
+            ModalAction token DeleteHeader action ->
+                updateDeleteModalAction token container action
 
-            ModalMsg Delete msg ->
+            ModalMsg DeleteHeader msg ->
                 updateDeleteModalMsg container msg
 
             -- FORM
@@ -375,14 +375,14 @@ applyNewEditModal container newModal newForm newMenu =
     )
 
 
-updateEditModalAction : Container -> ModalAction -> Return Msg Container
-updateEditModalAction container action =
+updateEditModalAction : AuthToken -> Container -> ModalAction -> Return Msg Container
+updateEditModalAction token container action =
     case action of
         Open ->
             updateEditModalOpen container
 
         Save ->
-            updateEditModalSave container
+            updateEditModalSave token container
 
         Cancel ->
             updateEditModalCancel container
@@ -404,8 +404,8 @@ updateEditModalOpen container =
         applyNewEditModal container newEditModal newEditForm newActionMenu
 
 
-updateEditModalSave : Container -> Return Msg Container
-updateEditModalSave container =
+updateEditModalSave : AuthToken -> Container -> Return Msg Container
+updateEditModalSave token container =
     case container.headerUi.editForm of
         Just form ->
             let
@@ -417,7 +417,7 @@ updateEditModalSave container =
                         |> RemoteData.withDefault container
 
                 newEffect =
-                    RemoteData.map (Header.Commands.putHeader nodeId) newContainer.headerData
+                    RemoteData.map (Header.Commands.putHeader token nodeId) newContainer.headerData
                         |> RemoteData.withDefault Cmd.none
             in
                 ( newContainer, newEffect )
@@ -471,14 +471,14 @@ applyNewDeleteModal container newModal newMenu =
     )
 
 
-updateDeleteModalAction : Container -> ModalAction -> Return Msg Container
-updateDeleteModalAction container action =
+updateDeleteModalAction : AuthToken -> Container -> ModalAction -> Return Msg Container
+updateDeleteModalAction token container action =
     case action of
         Open ->
             updateDeleteModalOpen container
 
         Save ->
-            updateDeleteModalSave container
+            updateDeleteModalSave token container
 
         Cancel ->
             updateDeleteModalCancel container
@@ -499,8 +499,8 @@ updateDeleteModalOpen container =
         applyNewDeleteModal container newDeleteModal newActionMenu
 
 
-updateDeleteModalSave : Container -> Return Msg Container
-updateDeleteModalSave container =
+updateDeleteModalSave : AuthToken -> Container -> Return Msg Container
+updateDeleteModalSave token container =
     let
         ui =
             container.headerUi

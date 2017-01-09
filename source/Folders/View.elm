@@ -1,6 +1,7 @@
 module Folders.View exposing (..)
 
 import Helpers.Helpers exposing (..)
+import Helpers.Models exposing (..)
 import Helpers.Button
 import Helpers.Progress
 import Html exposing (..)
@@ -21,11 +22,11 @@ import Ui.Modal
 import Ui.Native.FileManager
 
 
-view : Folders -> Html Msg
-view folders =
+view : AuthToken -> Folders -> Html Msg
+view token folders =
     let
         dropdownViewModel =
-            actionDropdownViewModel folders
+            actionDropdownViewModel token folders
 
         modalContent =
             case folders.folderEditForm of
@@ -43,6 +44,9 @@ view folders =
                 Just Put ->
                     ( "Edit Folder", "Update", EditFolder )
 
+                Just Delete ->
+                    ( "", "", NewFolder )
+
                 Nothing ->
                     ( "", "", NewFolder )
 
@@ -51,8 +55,8 @@ view folders =
             , title = title
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary saveText (ModalAction modalType Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction modalType Cancel)
+                    [ Ui.Button.primary saveText (ModalAction token modalType Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token modalType Cancel)
                     ]
                 ]
             }
@@ -73,8 +77,8 @@ view folders =
             , title = "Move Folder"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Move" (ModalAction MoveFolder Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction MoveFolder Cancel)
+                    [ Ui.Button.primary "Move" (ModalAction token MoveFolder Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token MoveFolder Cancel)
                     ]
                 ]
             }
@@ -91,8 +95,8 @@ view folders =
             , title = "Delete Folder"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.danger "Delete" (ModalAction DeleteFolder Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction DeleteFolder Cancel)
+                    [ Ui.Button.danger "Delete" (ModalAction token DeleteFolder Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token DeleteFolder Cancel)
                     ]
                 ]
             }
@@ -113,26 +117,26 @@ view folders =
                 ]
             , div [ class "body-content-content" ]
                 [ div [ class "body-content-content-content" ]
-                    [ viewFolder folders ]
+                    [ viewFolder token folders ]
                 , div [ class "body-content-content-footer" ]
-                    [ viewFooter folders
+                    [ viewFooter token folders
                     , div [ class "flexer" ] []
-                    , Helpers.Button.primary "Upload" (Ui.Native.FileManager.openMultipleDecoder "*/*" UploadOpened)
+                    , Helpers.Button.primary "Upload" (Ui.Native.FileManager.openMultipleDecoder "*/*" (UploadOpened token))
                     ]
                 ]
             ]
 
 
-dropdownMenuItem : String -> String -> ModalType -> Html Msg
-dropdownMenuItem icon name type_ =
-    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open) ]
+dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
+dropdownMenuItem token icon name type_ =
+    Ui.DropdownMenu.item [ onClick (ModalAction token type_ Open) ]
         [ Ui.icon icon True []
         , node "span" [] [ text name ]
         ]
 
 
-actionDropdownViewModel : Folders -> Ui.DropdownMenu.ViewModel Msg
-actionDropdownViewModel folders =
+actionDropdownViewModel : AuthToken -> Folders -> Ui.DropdownMenu.ViewModel Msg
+actionDropdownViewModel token folders =
     let
         actions =
             [ ( "plus", "New Folder", NewFolder )
@@ -180,39 +184,39 @@ actionDropdownViewModel folders =
                 "right"
                 NoAction
         , items =
-            List.map (\( icon, name, type_ ) -> dropdownMenuItem icon name type_) accessibleActions
+            List.map (\( icon, name, type_ ) -> dropdownMenuItem token icon name type_) accessibleActions
         }
 
 
-viewFolder : Folders -> Html Msg
-viewFolder folders =
+viewFolder : AuthToken -> Folders -> Html Msg
+viewFolder token folders =
     Helpers.Progress.view
         folders.folder
-        viewFolderDone
+        (viewFolderDone token)
         (Helpers.Progress.viewPendingDefault "file-content")
 
 
-viewFolderDone : Folder.Models.Folder -> Html Msg
-viewFolderDone folder =
+viewFolderDone : AuthToken -> Folder.Models.Folder -> Html Msg
+viewFolderDone token folder =
     let
         htmlFolder =
-            Folder.View.view folder
+            Folder.View.view token folder
     in
         Html.map FolderMsg htmlFolder
 
 
-viewFooter : Folders -> Html Msg
-viewFooter folders =
+viewFooter : AuthToken -> Folders -> Html Msg
+viewFooter token folders =
     Helpers.Progress.view
         folders.folder
-        viewFooterDone
+        (viewFooterDone token)
         (\t -> text "")
 
 
-viewFooterDone : Folder.Models.Folder -> Html Msg
-viewFooterDone folder =
+viewFooterDone : AuthToken -> Folder.Models.Folder -> Html Msg
+viewFooterDone token folder =
     let
         htmlFolder =
-            Folder.View.viewFooter folder
+            Folder.View.viewFooter token folder
     in
         Html.map FolderMsg htmlFolder

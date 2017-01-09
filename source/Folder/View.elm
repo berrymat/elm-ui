@@ -21,8 +21,8 @@ import Ui.Helpers.Env
 import Json.Decode as Decode
 
 
-view : Folder -> Html Msg
-view folder =
+view : AuthToken -> Folder -> Html Msg
+view token folder =
     let
         lowerQuery =
             String.toLower folder.query
@@ -46,8 +46,8 @@ selectedFiles folder =
     List.filter (\f -> f.checked) folder.files
 
 
-viewFooter : Folder -> Html Msg
-viewFooter folder =
+viewFooter : AuthToken -> Folder -> Html Msg
+viewFooter token folder =
     let
         files =
             selectedFiles folder
@@ -79,8 +79,8 @@ viewFooter folder =
             , title = "Move Files"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Move" (ModalAction MoveFiles Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction MoveFiles Cancel)
+                    [ Ui.Button.primary "Move" (ModalAction token MoveFiles Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token MoveFiles Cancel)
                     ]
                 ]
             }
@@ -93,15 +93,15 @@ viewFooter folder =
             , title = "Delete Folder"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.danger "Delete" (ModalAction DeleteFiles Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction DeleteFiles Cancel)
+                    [ Ui.Button.danger "Delete" (ModalAction token DeleteFiles Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token DeleteFiles Cancel)
                     ]
                 ]
             }
     in
         if (selectedCount folder) > 0 then
             div []
-                [ Ui.DropdownMenu.view (actionDropdownViewModel folder) ActionMenu folder.filesActionMenu
+                [ Ui.DropdownMenu.view (actionDropdownViewModel token folder) ActionMenu folder.filesActionMenu
                 , Ui.Modal.view (ModalMsg MoveFiles) filesMoveModalViewModel folder.filesMoveModal
                 , Ui.Modal.view (ModalMsg DeleteFiles) filesDeleteModalViewModel folder.filesDeleteModal
                 ]
@@ -259,16 +259,16 @@ simpleRowAttrs _ =
     []
 
 
-dropdownMenuItem : String -> String -> ModalType -> Html Msg
-dropdownMenuItem icon name type_ =
-    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open) ]
+dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
+dropdownMenuItem token icon name type_ =
+    Ui.DropdownMenu.item [ onClick (ModalAction token type_ Open) ]
         [ Ui.icon icon True []
         , node "span" [] [ text name ]
         ]
 
 
-actionDropdownViewModel : Folder -> Ui.DropdownMenu.ViewModel Msg
-actionDropdownViewModel folder =
+actionDropdownViewModel : AuthToken -> Folder -> Ui.DropdownMenu.ViewModel Msg
+actionDropdownViewModel token folder =
     let
         actions =
             [ ( "arrow-move", "Move", MoveFiles )
@@ -304,5 +304,5 @@ actionDropdownViewModel folder =
                 "right"
                 NoAction
         , items =
-            List.map (\( icon, name, type_ ) -> dropdownMenuItem icon (name ++ suffix) type_) accessibleActions
+            List.map (\( icon, name, type_ ) -> dropdownMenuItem token icon (name ++ suffix) type_) accessibleActions
         }

@@ -17,8 +17,8 @@ import Ui.Modal
 import Components.Form as Form
 
 
-view : Model -> AuthToken -> Html Msg
-view model token =
+view : AuthToken -> Model -> Html Msg
+view token model =
     let
         lowerQuery =
             String.toLower model.query
@@ -35,7 +35,7 @@ view model token =
                         ]
                     ]
                 , div [ class "body-content-content-footer" ]
-                    [ viewActionMenu model token
+                    [ viewActionMenu token model
                     , div [ class "flexer" ] []
                     ]
                 ]
@@ -152,9 +152,9 @@ simpleRowAttrs _ =
 -- ACTION DROPDOWN
 
 
-dropdownMenuItem : String -> String -> ModalType -> AuthToken -> Html Msg
-dropdownMenuItem icon name type_ token =
-    Ui.DropdownMenu.item [ onClick (ModalAction type_ Open token) ]
+dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
+dropdownMenuItem token icon name type_ =
+    Ui.DropdownMenu.item [ onClick (ModalAction token type_ Open) ]
         [ Ui.icon icon True []
         , node "span" [] [ text name ]
         ]
@@ -211,12 +211,12 @@ actionDropdownViewModel actions token =
             "right"
             NoAction
     , items =
-        List.map (\( icon, name, type_ ) -> dropdownMenuItem icon name type_ token) actions
+        List.map (\( icon, name, type_ ) -> dropdownMenuItem token icon name type_) actions
     }
 
 
-viewActionMenu : Model -> AuthToken -> Html Msg
-viewActionMenu model token =
+viewActionMenu : AuthToken -> Model -> Html Msg
+viewActionMenu token model =
     let
         actions =
             accessibleActions model
@@ -242,6 +242,9 @@ viewActionMenu model token =
                 Just Put ->
                     ( "Edit User", "Update", EditUser )
 
+                Just Delete ->
+                    ( "", "", NewUser )
+
                 Nothing ->
                     ( "", "", NewUser )
 
@@ -250,8 +253,8 @@ viewActionMenu model token =
             , title = title
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary saveText (ModalAction modalType Save token)
-                    , Ui.Button.secondary "Cancel" (ModalAction modalType Cancel token)
+                    [ Ui.Button.primary saveText (ModalAction token modalType Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token modalType Cancel)
                     ]
                 ]
             }
@@ -264,8 +267,8 @@ viewActionMenu model token =
             , title = "Delete User"
             , footer =
                 [ Ui.Container.rowEnd []
-                    [ Ui.Button.danger "Delete" (ModalAction DeleteUser Save token)
-                    , Ui.Button.secondary "Cancel" (ModalAction DeleteUser Cancel token)
+                    [ Ui.Button.danger "Delete" (ModalAction token DeleteUser Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token DeleteUser Cancel)
                     ]
                 ]
             }

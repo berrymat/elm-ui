@@ -14,19 +14,19 @@ import Content.View
 import RemoteData exposing (..)
 
 
-view : Container -> AuthToken -> Html Msg
-view container token =
+view : AuthToken -> Container -> Html Msg
+view token container =
     div [ class "fullview" ]
         [ div [ class "sidebar" ]
             [ viewTree container
             ]
         , div [ class "body" ]
-            [ Header.View.view container
+            [ Header.View.view token container
             , div [ class "body-path" ]
                 [ viewPath container
                 , viewTabs container
                 ]
-            , viewContent container token
+            , viewContent token container
             ]
         ]
 
@@ -43,14 +43,13 @@ viewTree container =
         Html.map TreeMsg htmlTree
 
 
-viewContent : Container -> AuthToken -> Html Msg
-viewContent container token =
+viewContent : AuthToken -> Container -> Html Msg
+viewContent token container =
     let
         htmlContent =
-            Helpers.RemoteData.viewToken
+            Helpers.RemoteData.view
                 container.content
-                token
-                Content.View.view
+                (Content.View.view token)
                 (Helpers.RemoteData.viewPendingDefault "body-content")
     in
         Html.map ContentMsg htmlContent

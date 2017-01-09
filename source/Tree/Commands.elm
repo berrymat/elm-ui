@@ -4,23 +4,18 @@ import Json.Decode as Decode exposing (field)
 import Tree.Messages exposing (..)
 import Tree.Models exposing (..)
 import Helpers.Models exposing (..)
-import Helpers.Helpers exposing (apiUrl, fetcher)
+import Helpers.Helpers exposing (fetcher)
 import RemoteData exposing (..)
 
 
 fetchRoot : NodeId -> Cmd Msg
 fetchRoot nodeId =
-    fetcher (fetchNodeUrl nodeId) tempRootDecoder (OnFetchRoot << RemoteData.fromResult)
+    fetcher "Node" nodeId tempRootDecoder (OnFetchRoot << RemoteData.fromResult)
 
 
 fetchNode : NodeId -> Cmd Msg
 fetchNode nodeId =
-    fetcher (fetchNodeUrl nodeId) tempChildrenDecoder ((OnFetchNode nodeId) << RemoteData.fromResult)
-
-
-fetchNodeUrl : NodeId -> String
-fetchNodeUrl nodeId =
-    apiUrl ++ "Node/" ++ nodeId
+    fetcher "Node" nodeId tempChildrenDecoder ((OnFetchNode nodeId) << RemoteData.fromResult)
 
 
 

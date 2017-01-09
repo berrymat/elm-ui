@@ -12,8 +12,8 @@ import Components.Form as Form
 
 
 type ModalType
-    = Edit
-    | Delete
+    = EditHeader
+    | DeleteHeader
 
 
 type ModalAction
@@ -40,7 +40,7 @@ type Msg
     | CloseActionMenu
     | NoAction
       -- MODALS
-    | ModalAction ModalType ModalAction
+    | ModalAction AuthToken ModalType ModalAction
     | ModalMsg ModalType Ui.Modal.Msg
       -- EDIT FORM
     | EditFormMsg Form.Msg

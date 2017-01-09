@@ -23,53 +23,82 @@ apiUrl =
         endpoint ++ "api/"
 
 
-fetcher : String -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
-fetcher url decoder msg =
-    HttpBuilder.get url
+fetcher : String -> String -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
+fetcher collection id decoder msg =
+    HttpBuilder.get (apiUrl ++ collection ++ "/" ++ id)
         |> withExpect (Http.expectJson decoder)
         |> withCredentials
         |> HttpBuilder.send msg
 
 
-poster : String -> Encode.Value -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
-poster url value decoder msg =
-    HttpBuilder.post url
-        |> withJsonBody value
-        |> withExpect (Http.expectJson decoder)
-        |> withCredentials
-        |> HttpBuilder.send msg
+poster : AuthToken -> String -> Encode.Value -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
+poster token collection value decoder msg =
+    requester token collection "" Post value decoder msg
 
 
-putter : String -> Encode.Value -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
-putter url value decoder msg =
-    HttpBuilder.put url
-        |> withJsonBody value
-        |> withExpect (Http.expectJson decoder)
-        |> withCredentials
-        |> HttpBuilder.send msg
+putter : AuthToken -> String -> String -> Encode.Value -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
+putter token collection id value decoder msg =
+    requester token collection id Put value decoder msg
 
 
 type HttpMethod
     = Post
     | Put
+    | Delete
 
 
-requester : String -> HttpMethod -> Encode.Value -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
-requester url method value decoder msg =
+request : AuthToken -> String -> String -> HttpMethod -> Encode.Value -> Decode.Decoder a -> ( String, Http.Request a )
+request token collection id method value decoder =
     let
-        requestBuilder =
+        ( requestBuilder, url ) =
             case method of
                 Post ->
-                    HttpBuilder.post
+                    ( HttpBuilder.post, apiUrl ++ collection )
 
                 Put ->
-                    HttpBuilder.put
+                    ( HttpBuilder.put, apiUrl ++ collection ++ "/" ++ id )
+
+                Delete ->
+                    ( HttpBuilder.delete, apiUrl ++ collection ++ "/" ++ id )
     in
-        requestBuilder url
+        ( url
+        , requestBuilder url
+            |> withHeaders [ ( "X-CSRF-Token", token ) ]
             |> withJsonBody value
             |> withExpect (Http.expectJson decoder)
             |> withCredentials
-            |> HttpBuilder.send msg
+            |> toRequest
+        )
+
+
+multipartRequest : AuthToken -> String -> List Http.Part -> Decode.Decoder a -> ( String, Http.Request a )
+multipartRequest token collection parts decoder =
+    let
+        url =
+            apiUrl ++ collection
+
+        request =
+            Http.request
+                { method = "POST"
+                , url = apiUrl ++ collection
+                , headers = [ Http.header "X-CSRF-Token" token ]
+                , body = Http.multipartBody <| parts
+                , expect = (Http.expectJson decoder)
+                , timeout = Nothing
+                , withCredentials = True
+                }
+    in
+        ( url, request )
+
+
+requester : AuthToken -> String -> String -> HttpMethod -> Encode.Value -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
+requester token baseurl urlid method value decoder msg =
+    let
+        ( _, req ) =
+            request token baseurl urlid method value decoder
+    in
+        req
+            |> Http.send msg
 
 
 fullAddress : Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String

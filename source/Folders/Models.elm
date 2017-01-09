@@ -36,7 +36,7 @@ type Msg
     | CloseActionMenu
     | NoAction
       -- MODALS
-    | ModalAction ModalType ModalAction
+    | ModalAction AuthToken ModalType ModalAction
     | ModalMsg ModalType Ui.Modal.Msg
       -- NEW FOLDER FORM
     | FolderFormMsg Form.Msg
@@ -45,8 +45,8 @@ type Msg
     | GetFolderProgress (Progress Folder.Models.Folder)
       -- FOLDER MESSAGE
     | FolderMsg Folder.Models.Msg
-    | UploadOpened (Task Never (List Ui.Native.FileManager.File))
-    | UploadGetFiles (List Ui.Native.FileManager.File)
+    | UploadOpened AuthToken (Task Never (List Ui.Native.FileManager.File))
+    | UploadGetFiles AuthToken (List Ui.Native.FileManager.File)
 
 
 type alias Folders =

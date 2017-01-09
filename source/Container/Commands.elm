@@ -6,7 +6,7 @@ import Helpers.Models exposing (..)
 import Folders.Commands
 import Users.Models
 import Content.Commands exposing (..)
-import Helpers.Helpers exposing (apiUrl)
+import Helpers.Helpers exposing (..)
 import RemoteData exposing (..)
 import Components.Form as Form
 import Header.Root.View
@@ -14,7 +14,6 @@ import Header.Customer.View
 import Header.Client.View
 import Header.Site.View
 import Header.Staff.View
-import Helpers.Helpers exposing (..)
 
 
 fetchContent : TabType -> NodeId -> Cmd Msg
@@ -38,21 +37,23 @@ fetchContent tabType nodeId =
 
 fetchFolders : NodeId -> Cmd Msg
 fetchFolders nodeId =
-    fetcher (Folders.Commands.foldersUrl nodeId)
+    fetcher "Folders"
+        nodeId
         Folders.Commands.foldersDecoder
         ((FetchFoldersResponse nodeId) << RemoteData.fromResult)
 
 
 fetchUsers : NodeId -> Cmd Msg
 fetchUsers nodeId =
-    fetcher (Users.Models.usersUrl nodeId)
+    fetcher "Users"
+        nodeId
         Users.Models.modelDecoder
         ((FetchUsersResponse nodeId) << RemoteData.fromResult)
 
 
 fetchCases : NodeId -> Cmd Msg
 fetchCases nodeId =
-    fetcher (casesUrl nodeId) casesDecoder ((FetchCasesResponse nodeId) << RemoteData.fromResult)
+    fetcher "Cases" nodeId casesDecoder ((FetchCasesResponse nodeId) << RemoteData.fromResult)
 
 
 initEditForm : Container -> HeaderData -> Maybe (Form.Model Msg)

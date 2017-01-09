@@ -10,14 +10,14 @@ import Users.View
 import Helpers.Models exposing (..)
 
 
-view : Content -> AuthToken -> Html Msg
-view content token =
+view : AuthToken -> Content -> Html Msg
+view token content =
     case content of
         FoldersContent folders ->
-            viewFolders folders
+            viewFolders token folders
 
         UsersContent model ->
-            viewUsers model token
+            viewUsers token model
 
         CasesContent cases ->
             div [ class "body-content" ]
@@ -28,20 +28,20 @@ view content token =
                 (contentEmpty)
 
 
-viewFolders : Folders.Models.Folders -> Html Msg
-viewFolders folders =
+viewFolders : AuthToken -> Folders.Models.Folders -> Html Msg
+viewFolders token folders =
     let
         htmlFolders =
-            Folders.View.view folders
+            Folders.View.view token folders
     in
         Html.map FoldersMsg htmlFolders
 
 
-viewUsers : Users.Models.Model -> AuthToken -> Html Msg
-viewUsers model token =
+viewUsers : AuthToken -> Users.Models.Model -> Html Msg
+viewUsers token model =
     let
         htmlUsers =
-            Users.View.view model token
+            Users.View.view token model
     in
         Html.map UsersMsg htmlUsers
 

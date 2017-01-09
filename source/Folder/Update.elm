@@ -2,6 +2,7 @@ module Folder.Update exposing (..)
 
 import Folder.Models exposing (..)
 import Folder.Commands exposing (..)
+import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Helpers.Ports exposing (..)
 import Tree.Models exposing (Tree, Node)
@@ -51,22 +52,22 @@ update message folder =
             ( folder, Cmd.none, Nothing )
 
         -- MOVE FILES MODAL
-        ModalAction MoveFiles action ->
-            updateModalActionMoveFiles folder action
+        ModalAction token MoveFiles action ->
+            updateModalActionMoveFiles token folder action
 
         ModalMsg MoveFiles modalMsg ->
             updateModalMsgMoveFiles folder modalMsg
 
         -- DELETE FILES MODAL
-        ModalAction DeleteFiles action ->
-            updateModalActionDeleteFiles folder action
+        ModalAction token DeleteFiles action ->
+            updateModalActionDeleteFiles token folder action
 
         ModalMsg DeleteFiles modalMsg ->
             updateModalMsgDeleteFiles folder modalMsg
 
         -- DOWNLOAD FILES MODAL?
-        ModalAction DownloadFiles action ->
-            updateModalActionDownloadFiles folder action
+        ModalAction token DownloadFiles action ->
+            updateModalActionDownloadFiles token folder action
 
         ModalMsg DownloadFiles modalMsg ->
             updateModalMsgDownloadFiles folder modalMsg
@@ -194,14 +195,14 @@ updateCloseActionMenu folder =
 -- MOVE FILES
 
 
-updateModalActionMoveFiles : Folder -> ModalAction -> ReturnFolder
-updateModalActionMoveFiles folder action =
+updateModalActionMoveFiles : AuthToken -> Folder -> ModalAction -> ReturnFolder
+updateModalActionMoveFiles token folder action =
     case action of
         Open ->
             updateMoveFilesModalOpen folder
 
         Save ->
-            updateMoveFilesModalSave folder
+            updateMoveFilesModalSave token folder
 
         Cancel ->
             ( { folder | filesMoveModal = Ui.Modal.close folder.filesMoveModal }, Cmd.none, Nothing )
@@ -222,8 +223,8 @@ updateMoveFilesModalOpen folder =
         )
 
 
-updateMoveFilesModalSave : Folder -> ReturnFolder
-updateMoveFilesModalSave folder =
+updateMoveFilesModalSave : AuthToken -> Folder -> ReturnFolder
+updateMoveFilesModalSave token folder =
     let
         newFilesMoveModal =
             Ui.Modal.close folder.filesMoveModal
@@ -231,26 +232,17 @@ updateMoveFilesModalSave folder =
         selectedFiles =
             List.filter (\f -> f.checked) folder.files
 
-        filesUrl tree =
+        treeId tree =
             List.head tree.path
                 |> Maybe.map (\node -> node.id)
                 |> Maybe.withDefault tree.id
-                |> Folder.Commands.filesUrl
 
-        request tree url =
-            Http.request
-                { method = "PUT"
-                , url = url
-                , headers = []
-                , body = (Http.jsonBody (encodeFiles selectedFiles))
-                , expect = (Http.expectJson folderDecoder)
-                , timeout = Nothing
-                , withCredentials = True
-                }
+        request tree id =
+            Helpers.Helpers.request token "Files" id Put (encodeFiles selectedFiles) folderDecoder
 
         folderRequest =
-            Maybe.map (\tree -> ( filesUrl tree, tree )) folder.moveTree
-                |> Maybe.map (\( url, tree ) -> ( url, request tree url ))
+            Maybe.map (\tree -> ( treeId tree, tree )) folder.moveTree
+                |> Maybe.map (\( id, tree ) -> request tree id)
     in
         ( { folder
             | filesMoveModal = newFilesMoveModal
@@ -273,14 +265,14 @@ updateModalMsgMoveFiles folder modalMsg =
 -- DELETE FILES
 
 
-updateModalActionDeleteFiles : Folder -> ModalAction -> ReturnFolder
-updateModalActionDeleteFiles folder action =
+updateModalActionDeleteFiles : AuthToken -> Folder -> ModalAction -> ReturnFolder
+updateModalActionDeleteFiles token folder action =
     case action of
         Open ->
             updateDeleteFilesModalOpen folder
 
         Save ->
-            updateDeleteFilesModalSave folder
+            updateDeleteFilesModalSave token folder
 
         Cancel ->
             ( { folder | filesDeleteModal = Ui.Modal.close folder.filesDeleteModal }, Cmd.none, Nothing )
@@ -301,34 +293,23 @@ updateDeleteFilesModalOpen folder =
         )
 
 
-updateDeleteFilesModalSave : Folder -> ReturnFolder
-updateDeleteFilesModalSave folder =
+updateDeleteFilesModalSave : AuthToken -> Folder -> ReturnFolder
+updateDeleteFilesModalSave token folder =
     let
         newFilesDeleteModal =
             Ui.Modal.close folder.filesDeleteModal
-
-        url =
-            Folder.Commands.filesUrl folder.info.id
 
         selectedFiles =
             List.filter (\f -> f.checked) folder.files
 
         request =
-            Http.request
-                { method = "DELETE"
-                , url = url
-                , headers = []
-                , body = (Http.jsonBody (encodeFiles selectedFiles))
-                , expect = (Http.expectJson folderDecoder)
-                , timeout = Nothing
-                , withCredentials = True
-                }
+            Helpers.Helpers.request token "Files" folder.info.id Delete (encodeFiles selectedFiles) folderDecoder
     in
         ( { folder
             | filesDeleteModal = newFilesDeleteModal
           }
         , Cmd.none
-        , Just ( url, request )
+        , Just request
         )
 
 
@@ -345,8 +326,8 @@ updateModalMsgDeleteFiles folder modalMsg =
 -- DOWNLOAD FILES
 
 
-updateModalActionDownloadFiles : Folder -> ModalAction -> ReturnFolder
-updateModalActionDownloadFiles folder action =
+updateModalActionDownloadFiles : AuthToken -> Folder -> ModalAction -> ReturnFolder
+updateModalActionDownloadFiles token folder action =
     case action of
         Open ->
             updateDownloadFilesModalOpen folder

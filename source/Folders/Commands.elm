@@ -170,19 +170,12 @@ createChild nodeId type_ name =
             RootType
 
 
-saveFolderInfo : NodeId -> Folder.Models.FolderInfo -> HttpMethod -> Cmd Msg
-saveFolderInfo folderId folderInfo method =
-    let
-        url =
-            case method of
-                Post ->
-                    (apiUrl ++ "Folders")
-
-                Put ->
-                    (apiUrl ++ "Folders/" ++ folderId)
-    in
-        requester url
-            method
-            (Folder.Commands.encodeFolderInfo folderInfo)
-            foldersDecoder
-            (FolderInfoSaveResponse << RemoteData.fromResult)
+saveFolderInfo : AuthToken -> NodeId -> Folder.Models.FolderInfo -> HttpMethod -> Cmd Msg
+saveFolderInfo token folderId folderInfo method =
+    requester token
+        "Folders"
+        folderId
+        method
+        (Folder.Commands.encodeFolderInfo folderInfo)
+        foldersDecoder
+        (FolderInfoSaveResponse << RemoteData.fromResult)

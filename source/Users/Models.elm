@@ -37,7 +37,7 @@ type Msg
     | CloseActionMenu
     | NoAction
       -- MODALS
-    | ModalAction ModalType ModalAction AuthToken
+    | ModalAction AuthToken ModalType ModalAction
     | ModalMsg ModalType Ui.Modal.Msg
       -- EDIT USER FORM
     | UserFormMsg Form.Msg
@@ -208,22 +208,4 @@ updateUser form user =
 
 saveUser : AuthToken -> User -> HttpMethod -> Cmd Msg
 saveUser token user method =
-    let
-        ( url, methodName ) =
-            case method of
-                Post ->
-                    ( (apiUrl ++ "Users"), "POST" )
-
-                Put ->
-                    ( (apiUrl ++ "Users/" ++ user.id), "PUT" )
-    in
-        Http.request
-            { method = methodName
-            , url = url
-            , headers = [ Http.header "X-CSRF-Token" token ]
-            , body = (Http.jsonBody (encodeUser user))
-            , expect = (Http.expectJson modelDecoder)
-            , timeout = Nothing
-            , withCredentials = True
-            }
-            |> Http.send (UserSaveResponse << RemoteData.fromResult)
+    Helpers.Helpers.requester token "Users" user.id method (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)

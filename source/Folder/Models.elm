@@ -32,7 +32,7 @@ type Msg
     | CloseActionMenu
     | NoAction
       -- MODALS
-    | ModalAction ModalType ModalAction
+    | ModalAction AuthToken ModalType ModalAction
     | ModalMsg ModalType Ui.Modal.Msg
       -- PORTS
     | DownloadResponse String
