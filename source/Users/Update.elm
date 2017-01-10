@@ -90,6 +90,29 @@ updateInner msg model =
             ModalMsg DeleteUser modalMsg ->
                 updateModalMsgDeleteUser model modalMsg
 
+            -- RESET PASSWORD USER MODAL
+            ModalAction token ResetPasswordUser action ->
+                updateModalActionResetPasswordUser token model action
+
+            ModalMsg ResetPasswordUser modalMsg ->
+                updateModalMsgResetPasswordUser model modalMsg
+
+            -- CHANGE PASSWORD USER MODAL
+            ModalAction token ChangePasswordUser action ->
+                updateModalActionChangePasswordUser token model action
+
+            ModalMsg ChangePasswordUser modalMsg ->
+                updateModalMsgChangePasswordUser model modalMsg
+
+            UserChangePasswordFormMsg msg ->
+                let
+                    ( newUserChangePasswordForm, effect ) =
+                        maybeUpdate (Form.update msg) model.userChangePasswordForm
+                in
+                    ( { model | userChangePasswordForm = newUserChangePasswordForm }
+                    , Cmd.map UserChangePasswordFormMsg effect
+                    )
+
             -- OTHER MODALS - TEMP - TODO
             ModalAction _ _ _ ->
                 singleton model
@@ -301,3 +324,147 @@ updateModalMsgDeleteUser model modalMsg =
             Ui.Modal.update modalMsg model.userDeleteModal
     in
         ( { model | userDeleteModal = newUserDeleteModal }, Cmd.none )
+
+
+
+-- RESET PASSWORD USER
+
+
+updateModalActionResetPasswordUser : AuthToken -> Model -> ModalAction -> Return Msg Model
+updateModalActionResetPasswordUser token model action =
+    let
+        maybeUser =
+            List.filter .checked model.users
+                |> List.head
+
+        dispatch user =
+            case action of
+                Open ->
+                    updateResetPasswordUserModalOpen model user
+
+                Save ->
+                    updateResetPasswordUserModalSave token model user
+
+                Cancel ->
+                    ( { model | userResetPasswordModal = Ui.Modal.close model.userResetPasswordModal }, Cmd.none )
+    in
+        maybeUser
+            |> Maybe.map dispatch
+            |> Maybe.withDefault (singleton model)
+
+
+updateResetPasswordUserModalOpen : Model -> User -> Return Msg Model
+updateResetPasswordUserModalOpen model user =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close model.usersActionMenu
+    in
+        ( { model
+            | usersActionMenu = newActionMenu
+            , userResetPasswordModal = Ui.Modal.open model.userResetPasswordModal
+          }
+        , Cmd.none
+        )
+
+
+updateResetPasswordUserModalSave : AuthToken -> Model -> User -> Return Msg Model
+updateResetPasswordUserModalSave token model user =
+    let
+        newUserResetPasswordModal =
+            Ui.Modal.close model.userResetPasswordModal
+
+        newEffect =
+            Helpers.Helpers.requester token "ResetPassword" user.id Put (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)
+    in
+        ( { model
+            | userResetPasswordModal = newUserResetPasswordModal
+          }
+        , newEffect
+        )
+
+
+updateModalMsgResetPasswordUser : Model -> Ui.Modal.Msg -> Return Msg Model
+updateModalMsgResetPasswordUser model modalMsg =
+    let
+        newUserResetPasswordModal =
+            Ui.Modal.update modalMsg model.userResetPasswordModal
+    in
+        ( { model | userResetPasswordModal = newUserResetPasswordModal }, Cmd.none )
+
+
+
+-- CHANGE PASSWORD USER
+
+
+updateModalActionChangePasswordUser : AuthToken -> Model -> ModalAction -> Return Msg Model
+updateModalActionChangePasswordUser token model action =
+    let
+        maybeUser =
+            List.filter .checked model.users
+                |> List.head
+
+        dispatch user =
+            case action of
+                Open ->
+                    updateChangePasswordUserModalOpen model user
+
+                Save ->
+                    case model.userChangePasswordForm of
+                        Just form ->
+                            updateChangePasswordUserModalSave token model user form
+
+                        Nothing ->
+                            singleton model
+
+                Cancel ->
+                    ( { model | userChangePasswordModal = Ui.Modal.close model.userChangePasswordModal }, Cmd.none )
+    in
+        maybeUser
+            |> Maybe.map dispatch
+            |> Maybe.withDefault (singleton model)
+
+
+updateChangePasswordUserModalOpen : Model -> User -> Return Msg Model
+updateChangePasswordUserModalOpen model user =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close model.usersActionMenu
+
+        newUserChangePasswordForm =
+            Users.Models.changePasswordForm (initChangePassword user.id)
+    in
+        ( { model
+            | usersActionMenu = newActionMenu
+            , userChangePasswordModal = Ui.Modal.open model.userChangePasswordModal
+            , userChangePasswordForm = Just newUserChangePasswordForm
+          }
+        , Cmd.none
+        )
+
+
+updateChangePasswordUserModalSave : AuthToken -> Model -> User -> Form.Model Msg -> Return Msg Model
+updateChangePasswordUserModalSave token model user form =
+    let
+        newUserChangePasswordModal =
+            Ui.Modal.close model.userChangePasswordModal
+
+        changePassword =
+            Users.Models.updateChangePassword form (initChangePassword user.id)
+
+        newEffect =
+            Helpers.Helpers.requester token "ChangePassword" user.id Put (encodeChangePassword changePassword) modelDecoder (UserSaveResponse << RemoteData.fromResult)
+    in
+        ( { model
+            | userChangePasswordModal = newUserChangePasswordModal
+          }
+        , newEffect
+        )
+
+
+updateModalMsgChangePasswordUser : Model -> Ui.Modal.Msg -> Return Msg Model
+updateModalMsgChangePasswordUser model modalMsg =
+    let
+        newUserChangePasswordModal =
+            Ui.Modal.update modalMsg model.userChangePasswordModal
+    in
+        ( { model | userChangePasswordModal = newUserChangePasswordModal }, Cmd.none )

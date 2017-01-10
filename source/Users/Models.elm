@@ -10,7 +10,6 @@ import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
 import RemoteData exposing (..)
-import Http
 
 
 type ModalType
@@ -42,6 +41,8 @@ type Msg
       -- EDIT USER FORM
     | UserFormMsg Form.Msg
     | UserSaveResponse (WebData Model)
+      -- CHANGE PASSWORD FORM
+    | UserChangePasswordFormMsg Form.Msg
 
 
 type alias Model =
@@ -62,6 +63,9 @@ type alias Model =
     , userChangePasswordModal : Ui.Modal.Model
     , userChangePasswordForm : Maybe (Form.Model Msg)
     , userDeleteModal : Ui.Modal.Model
+    , userChangePasswordModal : Ui.Modal.Model
+    , userChangePasswordForm : Maybe (Form.Model Msg)
+    , userResetPasswordModal : Ui.Modal.Model
     }
 
 
@@ -79,14 +83,21 @@ type alias User =
     }
 
 
+type alias ChangePassword =
+    { id : String
+    , password : String
+    , confirmPassword : String
+    }
+
+
 initUser : NodeId -> User
 initUser entityId =
     User entityId "" "" "" False False False False False False
 
 
-usersUrl : NodeId -> String
-usersUrl nodeId =
-    apiUrl ++ "Users/" ++ nodeId
+initChangePassword : NodeId -> ChangePassword
+initChangePassword entityId =
+    ChangePassword entityId "" ""
 
 
 modelDecoder : Decode.Decoder Model
@@ -106,6 +117,9 @@ modelDecoder =
         |> hardcoded Nothing
         |> hardcoded Ui.Modal.init
         |> hardcoded Nothing
+        |> hardcoded Ui.Modal.init
+        |> hardcoded Nothing
+        |> hardcoded Ui.Modal.init
         |> hardcoded Ui.Modal.init
         |> hardcoded Nothing
         |> hardcoded Ui.Modal.init
@@ -138,6 +152,23 @@ encodeUser user =
         , ( "accessToMobiles", Encode.bool user.accessToMobiles )
         , ( "accessToStaff", Encode.bool user.accessToStaff )
         , ( "accessToClients", Encode.bool user.accessToClients )
+        ]
+
+
+changePasswordDecoder : Decode.Decoder ChangePassword
+changePasswordDecoder =
+    decode ChangePassword
+        |> required "id" Decode.string
+        |> required "password" Decode.string
+        |> required "confirmPassword" Decode.string
+
+
+encodeChangePassword : ChangePassword -> Encode.Value
+encodeChangePassword changePassword =
+    Encode.object
+        [ ( "id", Encode.string changePassword.id )
+        , ( "password", Encode.string changePassword.password )
+        , ( "confirmPassword", Encode.string changePassword.confirmPassword )
         ]
 
 
@@ -209,3 +240,33 @@ updateUser form user =
 saveUser : AuthToken -> User -> HttpMethod -> Cmd Msg
 saveUser token user method =
     Helpers.Helpers.requester token "Users" user.id method (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)
+
+
+changePasswordForm : ChangePassword -> Form.Model msg
+changePasswordForm changePassword =
+    Form.init
+        { checkboxes = []
+        , inputs =
+            [ ( "Password", 1, "Password", changePassword.password, Just "password" )
+            , ( "Confirm Password", 2, "Confirm Password", changePassword.confirmPassword, Just "password" )
+            ]
+        , numberRanges = []
+        , textareas = []
+        , choosers = []
+        , colors = []
+        , dates = []
+        , titles = []
+        }
+
+
+updateChangePassword : Form.Model msg -> ChangePassword -> ChangePassword
+updateChangePassword form changePassword =
+    { changePassword
+        | password = Form.valueOfInput "Password" changePassword.password form
+        , confirmPassword = Form.valueOfInput "Confirm Password" changePassword.confirmPassword form
+    }
+
+
+saveChangePassword : AuthToken -> ChangePassword -> HttpMethod -> Cmd Msg
+saveChangePassword token changePassword method =
+    Helpers.Helpers.requester token "ChangePassword" changePassword.id method (encodeChangePassword changePassword) modelDecoder (UserSaveResponse << RemoteData.fromResult)

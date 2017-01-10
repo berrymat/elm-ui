@@ -272,6 +272,39 @@ viewActionMenu token model =
                     ]
                 ]
             }
+
+        userResetPasswordModalViewModel =
+            { content =
+                [ div [ class "padded-modal-content" ]
+                    [ text ("Confirm reset of password for user '" ++ user.email ++ "'?") ]
+                ]
+            , title = "Reset Password"
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.danger "Reset" (ModalAction token ResetPasswordUser Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token ResetPasswordUser Cancel)
+                    ]
+                ]
+            }
+
+        changePasswordModalContent =
+            case model.userChangePasswordForm of
+                Just form ->
+                    [ Form.view UserChangePasswordFormMsg form ]
+
+                Nothing ->
+                    [ text "Change Password Modal" ]
+
+        userChangePasswordModalViewModel =
+            { content = changePasswordModalContent
+            , title = "Change Password"
+            , footer =
+                [ Ui.Container.rowEnd []
+                    [ Ui.Button.primary "Change" (ModalAction token ChangePasswordUser Save)
+                    , Ui.Button.secondary "Cancel" (ModalAction token ChangePasswordUser Cancel)
+                    ]
+                ]
+            }
     in
         case actions of
             [] ->
@@ -284,4 +317,6 @@ viewActionMenu token model =
                         model.usersActionMenu
                     , Ui.Modal.view (ModalMsg modalType) userEditModalViewModel model.userEditModal
                     , Ui.Modal.view (ModalMsg DeleteUser) userDeleteModalViewModel model.userDeleteModal
+                    , Ui.Modal.view (ModalMsg ResetPasswordUser) userResetPasswordModalViewModel model.userResetPasswordModal
+                    , Ui.Modal.view (ModalMsg ChangePasswordUser) userChangePasswordModalViewModel model.userChangePasswordModal
                     ]

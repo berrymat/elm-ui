@@ -165,25 +165,38 @@ $color-4: rgb(0, 33, 144);
 $bg-color-5: rgb(40, 154, 254);
 $color-5: rgb(0, 58, 158);
 */
+$bg-color-1: #167fc2;
+$bg-color-2: #188ed9;
+$bg-color-3: #239be8;
+$bg-color-4: #39a6eb;
+$bg-color-5: #50b0ee;
+$bg-color-6: #67bbf0;
+$bg-color-7: #7ec5f3;
+$bg-color-8: #95d0f5;
+$bg-color-9: #acdaf8;
+$bg-color-10: #c3e5fa;
+
+/*
 $bg-color-1: #0591bf;
-$color-1: #e3f8ff;
 $bg-color-2: #05a7db;
-$color-2: #e3f8ff;
 $bg-color-3: #05bcf7;
-$color-3: #033241;
 $bg-color-4: #1dc5fb;
-$color-4: #033241;
 $bg-color-5: #39cdfc;
-$color-5: #033241;
 $bg-color-6: #54d4fd;
-$color-6: #033241;
 $bg-color-7: #70dbfe;
-$color-7: #033241;
 $bg-color-8: #8ce2fe;
-$color-8: #033241;
 $bg-color-9: #a7eaff;
-$color-9: #033241;
 $bg-color-10: #e3f8ff;
+*/
+$color-1: #e3f8ff;
+$color-2: #e3f8ff;
+$color-3: #033241;
+$color-4: #033241;
+$color-5: #033241;
+$color-6: #033241;
+$color-7: #033241;
+$color-8: #033241;
+$color-9: #033241;
 $color-10: #033241;
 
 $footer-height: 53px;
@@ -390,6 +403,11 @@ div.k-treeview {
     height: 40px;
     color: $color-1;
     background-color: $bg-color-1;
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    padding: 0.5em;
 }
 
 .sidebar {
