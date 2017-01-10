@@ -41,7 +41,7 @@ type alias Model =
     , useraccess : UserAccess
     , actionMenu : Ui.DropdownMenu.Model
     , editModal : Ui.Modal.Model
-    , editForm : Maybe (Form.Model Msg)
+    , editForm : Maybe Form.Model
     }
 
 
@@ -90,7 +90,7 @@ getTabFromType tabType model =
             |> Maybe.withDefault firstTab
 
 
-initEditForm : Model -> Maybe (Form.Model Msg)
+initEditForm : Model -> Maybe Form.Model
 initEditForm model =
     case model.header of
         RootHeader root ->
@@ -112,7 +112,7 @@ initEditForm model =
             Nothing
 
 
-updateState : Form.Model Msg -> Model -> Model
+updateState : Form.Model -> Model -> Model
 updateState form model =
     case model.header of
         RootHeader root ->

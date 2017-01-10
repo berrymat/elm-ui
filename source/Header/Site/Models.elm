@@ -41,7 +41,7 @@ type alias SiteAccess =
     }
 
 
-initEditForm : Site -> Form.Model msg
+initEditForm : Site -> Form.Model
 initEditForm site =
     let
         values =
@@ -69,7 +69,7 @@ initEditForm site =
             }
 
 
-updateState : Form.Model msg -> Site -> Site
+updateState : Form.Model -> Site -> Site
 updateState form site =
     let
         updatedValues values =

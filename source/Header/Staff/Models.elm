@@ -37,7 +37,7 @@ type alias StaffAccess =
     }
 
 
-initEditForm : Staff -> Form.Model msg
+initEditForm : Staff -> Form.Model
 initEditForm staff =
     let
         values =
@@ -65,7 +65,7 @@ initEditForm staff =
             }
 
 
-updateState : Form.Model msg -> Staff -> Staff
+updateState : Form.Model -> Staff -> Staff
 updateState form staff =
     let
         updatedValues values =

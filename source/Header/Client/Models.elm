@@ -37,7 +37,7 @@ type alias ClientAccess =
     }
 
 
-initEditForm : Client -> Form.Model msg
+initEditForm : Client -> Form.Model
 initEditForm client =
     let
         values =
@@ -65,7 +65,7 @@ initEditForm client =
             }
 
 
-updateState : Form.Model msg -> Client -> Client
+updateState : Form.Model -> Client -> Client
 updateState form client =
     let
         updatedValues values =

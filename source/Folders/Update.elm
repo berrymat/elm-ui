@@ -350,7 +350,7 @@ updateFolderModalOpen folders folderInfo method =
         )
 
 
-updateFolderModalSave : AuthToken -> Folders -> (NodeId -> FolderInfo) -> Form.Model Msg -> HttpMethod -> Return Msg Folders
+updateFolderModalSave : AuthToken -> Folders -> (NodeId -> FolderInfo) -> Form.Model -> HttpMethod -> Return Msg Folders
 updateFolderModalSave token folders folderInfo form method =
     let
         newFolderEditModal =

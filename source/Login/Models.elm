@@ -19,7 +19,7 @@ type Msg
 
 type alias Login =
     { loginModal : Ui.Modal.Model
-    , loginForm : Form.Model Msg
+    , loginForm : Form.Model
     , authResult : WebData AuthResult
     }
 
@@ -37,7 +37,7 @@ rememberMe =
     "Remember me?"
 
 
-loginForm : Form.Model Msg
+loginForm : Form.Model
 loginForm =
     let
         checkboxes =

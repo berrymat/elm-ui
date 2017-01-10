@@ -54,7 +54,7 @@ type alias Folders =
     , folderActionMenu : Ui.DropdownMenu.Model
     , folderEditMethod : Maybe HttpMethod
     , folderEditModal : Ui.Modal.Model
-    , folderEditForm : Maybe (Form.Model Msg)
+    , folderEditForm : Maybe Form.Model
     , folderMoveModal : Ui.Modal.Model
     , folderDeleteModal : Ui.Modal.Model
     , moveTree : Maybe Tree.Models.Tree

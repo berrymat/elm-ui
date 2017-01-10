@@ -36,7 +36,7 @@ type alias RootValues =
     }
 
 
-initEditForm : Root -> Form.Model msg
+initEditForm : Root -> Form.Model
 initEditForm root =
     let
         values =
@@ -64,7 +64,7 @@ initEditForm root =
             }
 
 
-updateState : Form.Model msg -> Root -> Root
+updateState : Form.Model -> Root -> Root
 updateState form root =
     let
         updatedValues values =

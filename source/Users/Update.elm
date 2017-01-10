@@ -226,7 +226,7 @@ updateUserModalOpen model user method =
         )
 
 
-updateUserModalSave : AuthToken -> Model -> User -> Form.Model Msg -> HttpMethod -> Return Msg Model
+updateUserModalSave : AuthToken -> Model -> User -> Form.Model -> HttpMethod -> Return Msg Model
 updateUserModalSave token model user form method =
     let
         newUserEditModal =
@@ -442,7 +442,7 @@ updateChangePasswordUserModalOpen model user =
         )
 
 
-updateChangePasswordUserModalSave : AuthToken -> Model -> User -> Form.Model Msg -> Return Msg Model
+updateChangePasswordUserModalSave : AuthToken -> Model -> User -> Form.Model -> Return Msg Model
 updateChangePasswordUserModalSave token model user form =
     let
         newUserChangePasswordModal =

@@ -116,7 +116,7 @@ updateEditModalOpen model =
     )
 
 
-updateEditModalSave : AuthToken -> Model -> Form.Model Msg -> Return Msg Model
+updateEditModalSave : AuthToken -> Model -> Form.Model -> Return Msg Model
 updateEditModalSave token model form =
     let
         nodeId =

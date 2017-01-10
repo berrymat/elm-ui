@@ -136,7 +136,7 @@ writableForStaffName =
     "Can Staff upload files to this folder?"
 
 
-folderForm : FolderInfo -> Form.Model msg
+folderForm : FolderInfo -> Form.Model
 folderForm folderInfo =
     Form.init
         { checkboxes =
@@ -162,12 +162,12 @@ folderForm folderInfo =
         }
 
 
-newFolderForm : NodeId -> Form.Model msg
+newFolderForm : NodeId -> Form.Model
 newFolderForm folderId =
     folderForm (initFolderInfo folderId)
 
 
-updateFolder : Form.Model msg -> FolderInfo -> FolderInfo
+updateFolder : Form.Model -> FolderInfo -> FolderInfo
 updateFolder form folderInfo =
     { folderInfo
         | name = Form.valueOfInput "name" folderInfo.name form

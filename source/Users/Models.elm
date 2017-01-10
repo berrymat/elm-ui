@@ -59,12 +59,12 @@ type alias Model =
     , usersActionMenu : Ui.DropdownMenu.Model
     , userEditMethod : Maybe HttpMethod
     , userEditModal : Ui.Modal.Model
-    , userEditForm : Maybe (Form.Model Msg)
+    , userEditForm : Maybe Form.Model
     , userChangePasswordModal : Ui.Modal.Model
-    , userChangePasswordForm : Maybe (Form.Model Msg)
+    , userChangePasswordForm : Maybe Form.Model
     , userDeleteModal : Ui.Modal.Model
     , userChangePasswordModal : Ui.Modal.Model
-    , userChangePasswordForm : Maybe (Form.Model Msg)
+    , userChangePasswordForm : Maybe Form.Model
     , userResetPasswordModal : Ui.Modal.Model
     }
 
@@ -197,7 +197,7 @@ accessToClientsName =
     "Access to Clients?"
 
 
-userForm : User -> Form.Model msg
+userForm : User -> Form.Model 
 userForm user =
     Form.init
         { checkboxes =
@@ -223,7 +223,7 @@ userForm user =
         }
 
 
-updateUser : Form.Model msg -> User -> User
+updateUser : Form.Model -> User -> User
 updateUser form user =
     { user
         | email = Form.valueOfInput "Email" user.email form
@@ -242,7 +242,7 @@ saveUser token user method =
     Helpers.Helpers.requester token "Users" user.id method (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)
 
 
-changePasswordForm : ChangePassword -> Form.Model msg
+changePasswordForm : ChangePassword -> Form.Model
 changePasswordForm changePassword =
     Form.init
         { checkboxes = []
@@ -259,7 +259,7 @@ changePasswordForm changePassword =
         }
 
 
-updateChangePassword : Form.Model msg -> ChangePassword -> ChangePassword
+updateChangePassword : Form.Model -> ChangePassword -> ChangePassword
 updateChangePassword form changePassword =
     { changePassword
         | password = Form.valueOfInput "Password" changePassword.password form
