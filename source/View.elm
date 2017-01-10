@@ -10,9 +10,9 @@ import Models exposing (..)
 import Login.Models
 import Login.View
 import Container.View
-import Container.Messages
+import Container.Models
 import Routing exposing (Route(..))
-import Container.Models exposing (..)
+import Container.Models
 import RemoteData
 import Helpers.Models exposing (..)
 import Ui.NotificationCenter
@@ -51,7 +51,7 @@ containerNavItems model =
         headeritem entity =
             Ui.Header.item
                 { text = entity.name
-                , action = Just (ContainerMsg (Container.Messages.Goto entity.nodeType headerId))
+                , action = Just (ContainerMsg (Container.Models.Goto entity.nodeType headerId))
                 , link = Nothing
                 , target = ""
                 }
@@ -62,7 +62,7 @@ containerNavItems model =
     in
         [ Ui.Header.item
             { text = "Home"
-            , action = Just (ContainerMsg Container.Messages.GotoHome)
+            , action = Just (ContainerMsg Container.Models.GotoHome)
             , link = Nothing
             , target = ""
             }
@@ -162,7 +162,7 @@ loginPage login =
     Html.map LoginMsg (Login.View.view login)
 
 
-containerPage : AuthToken -> Container -> Html Msg
+containerPage : AuthToken -> Container.Models.Container -> Html Msg
 containerPage token container =
     Html.map ContainerMsg (Container.View.view token container)
 

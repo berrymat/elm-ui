@@ -6,7 +6,6 @@ import Helpers.Models exposing (..)
 import Container.Models exposing (initialContainer)
 import Login.Models
 import Login.Update
-import Container.Messages
 import Container.Update
 import Routing exposing (Route(..), parseLocation)
 import Return exposing (..)
@@ -97,7 +96,7 @@ update msg model =
             updateNotification model subMsg
 
 
-updateContainer : Model -> Container.Messages.Msg -> Return Msg Model
+updateContainer : Model -> Container.Models.Msg -> Return Msg Model
 updateContainer model subMsg =
     Container.Update.update subMsg model.container
         |> Return.mapBoth ContainerMsg (\new -> { model | container = new })
@@ -120,7 +119,7 @@ tryUpdateContainer model parentType id childType =
             singleton model
 
         Success result ->
-            updateContainer model (Container.Messages.LoadContainer parentType id childType)
+            updateContainer model (Container.Models.LoadContainer parentType id childType)
 
 
 updateLogout : Model -> Return Msg Model

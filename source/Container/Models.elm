@@ -1,17 +1,34 @@
 module Container.Models exposing (..)
 
 import Helpers.Models exposing (..)
+import Tree.Messages
 import Tree.Models exposing (Tree, initialTree, Node)
-import Header.Models exposing (..)
+import Header.Models
+import Folders.Models
+import Users.Models
 import Content.Models exposing (Content, initialContent)
 import RemoteData exposing (..)
+
+
+type Msg
+    = GotoHome
+    | Goto NodeType NodeId
+    | LoadContainer NodeType NodeId NodeType
+    | SelectPath NodeId
+    | SelectTab TabType
+    | TreeMsg Tree.Messages.Msg
+    | HeaderMsg Header.Models.Msg
+    | ContentMsg Content.Models.Msg
+    | FetchHeaderResponse Bool (WebData Header.Models.Model)
+    | FetchFoldersResponse NodeId (WebData Folders.Models.Folders)
+    | FetchUsersResponse NodeId (WebData Users.Models.Model)
+    | FetchCasesResponse NodeId (WebData Content.Models.Cases)
 
 
 type alias Container =
     { tree : WebData Tree
     , path : List Node
-    , headerData : WebData HeaderData
-    , headerUi : HeaderUi
+    , header : WebData Header.Models.Model
     , childtypes : List Entity
     , tab : Tab
     , content : WebData Content
@@ -22,8 +39,7 @@ initialContainer : Container
 initialContainer =
     { tree = NotAsked
     , path = []
-    , headerData = NotAsked
-    , headerUi = initialHeaderUi
+    , header = NotAsked
     , childtypes = []
     , tab = Tab EmptyTab ""
     , content = NotAsked
@@ -35,3 +51,8 @@ type alias PathItem =
     , nodeType : NodeType
     , name : String
     }
+
+
+isHeaderEmpty : Container -> Bool
+isHeaderEmpty container =
+    (container.header == NotAsked)

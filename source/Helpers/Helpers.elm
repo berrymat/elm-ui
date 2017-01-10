@@ -5,7 +5,7 @@ import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes exposing (class)
 import Http
 import HttpBuilder exposing (..)
 import Helpers.Models exposing (..)
@@ -117,6 +117,67 @@ encodeNotification notification =
         [ ( "notificationType", Encode.string notification.notificationType )
         , ( "message", Encode.string notification.message )
         ]
+
+
+createTab : String -> String -> Tab
+createTab id name =
+    if id == "folders" then
+        Tab FoldersType name
+    else if id == "users" then
+        Tab UsersType name
+    else if id == "cases" then
+        Tab CasesType name
+    else
+        Tab FoldersType name
+
+
+convertNodeType : String -> Maybe NodeType
+convertNodeType type_ =
+    let
+        lowerType =
+            String.toLower type_
+    in
+        if lowerType == "root" then
+            Just RootType
+        else if lowerType == "customer" then
+            Just CustomerType
+        else if lowerType == "client" then
+            Just ClientType
+        else if lowerType == "site" then
+            Just SiteType
+        else if lowerType == "staff" then
+            Just StaffType
+        else if lowerType == "folder" then
+            Just FolderType
+        else
+            Nothing
+
+
+createEntity : String -> String -> Entity
+createEntity id name =
+    Entity (convertNodeType id |> Maybe.withDefault RootType) name
+
+
+tabDecoder : Decode.Decoder Tab
+tabDecoder =
+    decode createTab
+        |> required "id" Decode.string
+        |> required "name" Decode.string
+
+
+entityDecoder : Decode.Decoder Entity
+entityDecoder =
+    decode createEntity
+        |> required "id" Decode.string
+        |> required "name" Decode.string
+
+
+useraccessDecoder : Decode.Decoder UserAccess
+useraccessDecoder =
+    decode UserAccess
+        |> required "admin" Decode.bool
+        |> required "owner" Decode.bool
+        |> required "root" Decode.bool
 
 
 fullAddress : Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String

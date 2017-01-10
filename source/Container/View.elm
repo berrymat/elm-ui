@@ -3,7 +3,6 @@ module Container.View exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (class, style, attribute, href, id, classList, src)
 import Html.Events exposing (onClick)
-import Container.Messages exposing (..)
 import Container.Models exposing (..)
 import Tree.Models exposing (..)
 import Helpers.Models exposing (..)
@@ -21,7 +20,7 @@ view token container =
             [ viewTree container
             ]
         , div [ class "body" ]
-            [ Header.View.view token container
+            [ viewHeader token container
             , div [ class "body-path" ]
                 [ viewPath container
                 , viewTabs container
@@ -41,6 +40,18 @@ viewTree container =
                 (Helpers.RemoteData.viewPendingDefault "flexer")
     in
         Html.map TreeMsg htmlTree
+
+
+viewHeader : AuthToken -> Container -> Html Msg
+viewHeader token container =
+    let
+        htmlContent =
+            Helpers.RemoteData.view
+                container.header
+                (Header.View.view token)
+                (Helpers.RemoteData.viewPendingDefault "body-header")
+    in
+        Html.map HeaderMsg htmlContent
 
 
 viewContent : AuthToken -> Container -> Html Msg
@@ -110,7 +121,7 @@ viewTabs : Container -> Html Msg
 viewTabs container =
     let
         tabs =
-            RemoteData.map (\d -> d.tabs) container.headerData
+            RemoteData.map (\d -> d.tabs) container.header
                 |> RemoteData.withDefault []
     in
         div [ class "tabs" ]

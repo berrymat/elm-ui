@@ -3,9 +3,7 @@ module Header.View exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Container.Messages exposing (..)
-import Container.Models exposing (..)
-import Helpers.Helpers exposing (..)
+import Header.Models exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (..)
 import Header.Root.View
@@ -24,27 +22,14 @@ import Ui.Helpers.Env
 import Json.Decode as Decode
 
 
-view : AuthToken -> Container -> Html Msg
-view token container =
+view : AuthToken -> Model -> Html Msg
+view token model =
     div [ class "body-header" ]
-        (viewWebData container.headerData (header token container.headerUi) headerPending)
-
-
-headerPending : String -> List (Html Msg)
-headerPending iconClass =
-    [ div [ class "body-header-image" ] []
-    , div [ class "body-header-extra header-loading" ]
-        [ i [ class iconClass ] [] ]
-    ]
-
-
-header : AuthToken -> HeaderUi -> HeaderData -> List (Html Msg)
-header token ui data =
-    [ headerImage data.header
-    , headerContent token data.header data.useraccess ui
-    , div [ class "body-header-extra" ]
-        [ text "Extra" ]
-    ]
+        [ headerImage model.header
+        , headerContent token model
+        , div [ class "body-header-extra" ]
+            [ text "Extra" ]
+        ]
 
 
 headerImage : Header -> Html Msg
@@ -94,26 +79,20 @@ dropdownMenuItem token icon name type_ =
         ]
 
 
-actionDropdownViewModel : AuthToken -> Header -> UserAccess -> HeaderUi -> Ui.DropdownMenu.ViewModel Msg
-actionDropdownViewModel token header useraccess ui =
+actionDropdownViewModel : AuthToken -> Model -> Ui.DropdownMenu.ViewModel Msg
+actionDropdownViewModel token model =
     let
         actions =
             [ ( "android-download", "Edit", EditHeader )
-            , ( "trash-b", "Delete", DeleteHeader )
             ]
+
+        useraccess =
+            model.useraccess
 
         actionFilter ( _, _, type_ ) =
             case type_ of
                 EditHeader ->
                     useraccess.admin || useraccess.owner
-
-                DeleteHeader ->
-                    case header of
-                        CustomerHeader _ ->
-                            useraccess.admin && useraccess.root
-
-                        _ ->
-                            useraccess.admin
 
         accessibleActions =
             List.filter actionFilter actions
@@ -128,14 +107,14 @@ actionDropdownViewModel token header useraccess ui =
         }
 
 
-headerActions : AuthToken -> Header -> UserAccess -> HeaderUi -> List (Html Msg)
-headerActions token header useraccess ui =
+headerActions : AuthToken -> Model -> List (Html Msg)
+headerActions token model =
     let
         dropdownViewModel =
-            actionDropdownViewModel token header useraccess ui
+            actionDropdownViewModel token model
 
         modalContent =
-            case ui.editForm of
+            case model.editForm of
                 Just form ->
                     [ Form.view EditFormMsg form ]
 
@@ -152,29 +131,17 @@ headerActions token header useraccess ui =
                     ]
                 ]
             }
-
-        deleteModalViewModel =
-            { content = [ text "Delete Modal" ]
-            , title = "Delete Details"
-            , footer =
-                [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Delete" (ModalAction token DeleteHeader Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction token DeleteHeader Cancel)
-                    ]
-                ]
-            }
     in
-        [ Ui.DropdownMenu.view dropdownViewModel ActionMenu ui.actionMenu
-        , Ui.Modal.view (ModalMsg EditHeader) editModalViewModel ui.editModal
-        , Ui.Modal.view (ModalMsg DeleteHeader) deleteModalViewModel ui.deleteModal
+        [ Ui.DropdownMenu.view dropdownViewModel ActionMenu model.actionMenu
+        , Ui.Modal.view (ModalMsg EditHeader) editModalViewModel model.editModal
         ]
 
 
-headerContent : AuthToken -> Header -> UserAccess -> HeaderUi -> Html Msg
-headerContent token header useraccess ui =
+headerContent : AuthToken -> Model -> Html Msg
+headerContent token model =
     let
         headerItems =
-            case header of
+            case model.header of
                 RootHeader root ->
                     Header.Root.View.headerItems root
 
@@ -196,13 +163,7 @@ headerContent token header useraccess ui =
         headerContent =
             List.append
                 headerItems
-                (headerActions token header useraccess ui)
+                (headerActions token model)
     in
         div [ class "body-header-content" ]
             headerContent
-
-
-headerEmpty : List (Html Msg)
-headerEmpty =
-    [ text "Empty"
-    ]

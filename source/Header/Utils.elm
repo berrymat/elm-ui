@@ -3,10 +3,10 @@ module Header.Utils exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Helpers.Models exposing (..)
-import Container.Messages exposing (..)
+import Header.Models exposing (..)
 
 
-headerItem : String -> String -> AccessType -> Maybe String -> Html Msg
+headerItem : String -> String -> AccessType -> Maybe String -> Html msg
 headerItem title icon accessType maybeValue =
     let
         hidden =

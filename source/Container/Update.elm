@@ -1,6 +1,5 @@
 module Container.Update exposing (..)
 
-import Container.Messages exposing (..)
 import Container.Commands exposing (..)
 import Container.Models exposing (..)
 import Content.Models
@@ -10,14 +9,11 @@ import Tree.Update
 import Tree.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
-import Header.Models exposing (..)
-import Header.Commands
+import Header.Models exposing (getTabFromType)
 import Content.Update
+import Header.Update
 import Navigation
 import RemoteData exposing (..)
-import Ui.DropdownMenu
-import Ui.Modal
-import Components.Form as Form
 import Return exposing (..)
 
 
@@ -26,6 +22,9 @@ update msg container =
     let
         errorCmd =
             case msg of
+                FetchHeaderResponse isTree model ->
+                    Helpers.Helpers.errorCmd model
+
                 FetchFoldersResponse nodeId folders ->
                     Helpers.Helpers.errorCmd folders
 
@@ -34,12 +33,6 @@ update msg container =
 
                 FetchCasesResponse nodeId cases ->
                     Helpers.Helpers.errorCmd cases
-
-                HeaderResponse isTree newHeaderData ->
-                    Helpers.Helpers.errorCmd newHeaderData
-
-                HeaderPutResponse webdata ->
-                    Helpers.Helpers.errorCmd webdata
 
                 _ ->
                     Cmd.none
@@ -52,135 +45,78 @@ update msg container =
 
 updateInner : Msg -> Container -> Return Msg Container
 updateInner msg container =
-    let
-        ui =
-            container.headerUi
-    in
-        case msg of
-            GotoHome ->
-                updateGotoHome container
+    case msg of
+        GotoHome ->
+            updateGotoHome container
 
-            Goto nodeType nodeId ->
-                updateGoto container nodeType nodeId
+        Goto nodeType nodeId ->
+            updateGoto container nodeType nodeId
 
-            LoadContainer parentType nodeId childType ->
-                updateLoadContainer parentType nodeId childType container
+        LoadContainer parentType nodeId childType ->
+            updateLoadContainer parentType nodeId childType container
 
-            SelectPath nodeId ->
-                let
-                    ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
-                        Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
-                in
-                    updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
+        SelectPath nodeId ->
+            let
+                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
+                    Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
+            in
+                updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
 
-            SelectTab tabType ->
-                let
-                    nodeId =
-                        Header.Models.headerId container.headerData
+        SelectTab tabType ->
+            let
+                nodeId =
+                    Container.Commands.headerId container.header
 
-                    updatedTab =
-                        getTabFromType container.headerData tabType
+                updatedTab =
+                    Container.Commands.getTabFromType tabType container.header
 
-                    cmdContent =
-                        fetchContent tabType nodeId
-                in
-                    ( { container | tab = updatedTab, content = Loading }, cmdContent )
+                cmdContent =
+                    fetchContent tabType nodeId
+            in
+                ( { container | tab = updatedTab, content = Loading }, cmdContent )
 
-            TreeMsg subMsg ->
-                let
-                    ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
-                        Tree.Update.update subMsg container.tree
-                in
-                    updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
+        TreeMsg subMsg ->
+            let
+                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
+                    Tree.Update.update subMsg container.tree
+            in
+                updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
 
-            FetchFoldersResponse nodeId folders ->
-                ( { container | content = RemoteData.map Content.Models.FoldersContent folders }, Cmd.none )
+        FetchHeaderResponse isTree model ->
+            RemoteData.map (updateContent container isTree) model
+                |> RemoteData.withDefault (singleton container)
 
-            FetchUsersResponse nodeId users ->
-                ( { container | content = RemoteData.map Content.Models.UsersContent users }, Cmd.none )
+        FetchFoldersResponse nodeId folders ->
+            ( { container | content = RemoteData.map Content.Models.FoldersContent folders }, Cmd.none )
 
-            FetchCasesResponse nodeId cases ->
-                ( { container | content = RemoteData.map Content.Models.CasesContent cases }, Cmd.none )
+        FetchUsersResponse nodeId users ->
+            ( { container | content = RemoteData.map Content.Models.UsersContent users }, Cmd.none )
 
-            ContentMsg subMsg ->
-                RemoteData.update (Content.Update.update subMsg) container.content
-                    |> Return.mapBoth ContentMsg (\new -> { container | content = new })
+        FetchCasesResponse nodeId cases ->
+            ( { container | content = RemoteData.map Content.Models.CasesContent cases }, Cmd.none )
 
-            HeaderResponse isTree newHeaderData ->
-                RemoteData.map (updateContent container isTree) newHeaderData
-                    |> RemoteData.withDefault (singleton container)
+        ContentMsg subMsg ->
+            RemoteData.update (Content.Update.update subMsg) container.content
+                |> Return.mapBoth ContentMsg (\new -> { container | content = new })
 
-            -- TODO - CHANGE TO USE handleWebDataResponse
-            HeaderPutResponse webdata ->
-                let
-                    x =
-                        Debug.log "HeaderPutResponse Data" webdata
-
-                    newContainer =
-                        case webdata of
-                            NotAsked ->
-                                container
-
-                            Loading ->
-                                container
-
-                            Failure err ->
-                                let
-                                    x =
-                                        Debug.log ("Failure " ++ (toString err))
-                                in
-                                    container
-
-                            Success data ->
-                                let
-                                    newEditModal =
-                                        Ui.Modal.close ui.editModal
-
-                                    newUi =
-                                        { ui | editModal = newEditModal }
-                                in
-                                    { container | headerUi = newUi, headerData = webdata }
-                in
-                    ( newContainer, Cmd.none )
-
-            -- ACTION MENU
-            ActionMenu action ->
-                updateActionMenu container action
-
-            CloseActionMenu ->
-                updateCloseActionMenu container
-
-            NoAction ->
-                ( container, Cmd.none )
-
-            -- EDIT MODAL
-            ModalAction token EditHeader action ->
-                updateEditModalAction token container action
-
-            ModalMsg EditHeader msg ->
-                updateEditModalMsg container msg
-
-            -- DELETE MODAL
-            ModalAction token DeleteHeader action ->
-                updateDeleteModalAction token container action
-
-            ModalMsg DeleteHeader msg ->
-                updateDeleteModalMsg container msg
-
-            -- FORM
-            EditFormMsg msg ->
-                updateEditFormMsg container msg
+        HeaderMsg subMsg ->
+            RemoteData.update (Header.Update.update subMsg) container.header
+                |> Return.mapBoth HeaderMsg (\new -> { container | header = new })
 
 
 subscriptions : Container -> Sub Msg
 subscriptions container =
     let
+        subHeader =
+            RemoteData.map Header.Update.subscriptions container.header
+                |> RemoteData.withDefault Sub.none
+
         subContent =
             RemoteData.map Content.Update.subscriptions container.content
                 |> RemoteData.withDefault Sub.none
     in
         Sub.batch
-            [ Sub.map ActionMenu (Ui.DropdownMenu.subscriptions container.headerUi.actionMenu)
+            [ Sub.map HeaderMsg subHeader
             , Sub.map ContentMsg subContent
             ]
 
@@ -217,7 +153,7 @@ updateLoadContainer parentType nodeId childType container =
             Cmd.map TreeMsg (Tree.Commands.fetchRoot treeId)
 
         ( newContainer, headerCmd ) =
-            Header.Commands.fetchHeader container ( parentType, nodeId, True )
+            fetchHeader container ( parentType, nodeId, True )
     in
         ( { newContainer | path = [] }, Cmd.batch [ treeCmd, headerCmd ] )
 
@@ -243,7 +179,7 @@ updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
                     List.head path
                         |> Maybe.map (\s -> ( s.nodeType, s.id, False ))
                         |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id, True )
-                        |> Header.Commands.fetchHeader { container | path = path }
+                        |> fetchHeader { container | path = path }
 
                 Nothing ->
                     ( container, Cmd.none )
@@ -266,29 +202,27 @@ updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
         ( { newContainer | tree = Success updatedTree }, cmdBatch )
 
 
-updateContent : Container -> Bool -> HeaderData -> Return Msg Container
-updateContent container isTree headerData =
+updateContent : Container -> Bool -> Header.Models.Model -> Return Msg Container
+updateContent container isTree model =
     let
-        ui =
-            container.headerUi
-
         childtypes =
             if isTree then
-                headerData.childtypes
+                model.childtypes
             else
                 container.childtypes
 
         newContainer =
-            { container | headerData = Success headerData, childtypes = childtypes }
+            { container | header = Success model, childtypes = childtypes }
 
         headerId =
-            Header.Models.headerId container.headerData
+            RemoteData.map Header.Models.headerId container.header
+                |> RemoteData.withDefault ""
 
         updatedHeaderId =
-            Header.Models.headerId newContainer.headerData
+            Header.Models.headerId model
 
         updatedTab =
-            getTabFromType newContainer.headerData container.tab.tabType
+            Header.Models.getTabFromType container.tab.tabType model
 
         ( updatedContent, cmdContent ) =
             if (headerId /= updatedHeaderId) then
@@ -302,261 +236,3 @@ updateContent container isTree headerData =
                 ]
     in
         ( { newContainer | tab = updatedTab, content = updatedContent }, cmdBatch )
-
-
-
--- ACTION MENU UPDATES
-
-
-applyNewActionMenu : Container -> Ui.DropdownMenu.Model -> Return Msg Container
-applyNewActionMenu container newMenu =
-    let
-        headerUi =
-            container.headerUi
-    in
-        ( { container | headerUi = { headerUi | actionMenu = newMenu } }, Cmd.none )
-
-
-updateActionMenu : Container -> Ui.DropdownMenu.Msg -> Return Msg Container
-updateActionMenu container action =
-    let
-        newActionMenu =
-            Ui.DropdownMenu.update action container.headerUi.actionMenu
-    in
-        applyNewActionMenu container newActionMenu
-
-
-updateCloseActionMenu : Container -> Return Msg Container
-updateCloseActionMenu container =
-    let
-        newActionMenu =
-            Ui.DropdownMenu.close container.headerUi.actionMenu
-    in
-        applyNewActionMenu container newActionMenu
-
-
-
--- HELPERS
-
-
-applyActionMenu : Ui.DropdownMenu.Model -> HeaderUi -> HeaderUi
-applyActionMenu newMenu headerUi =
-    { headerUi | actionMenu = newMenu }
-
-
-applyHeaderUi : HeaderUi -> Container -> Container
-applyHeaderUi newUi container =
-    { container | headerUi = newUi }
-
-
-
--- EDIT MODAL UPDATES
-
-
-applyEditModal : Ui.Modal.Model -> HeaderUi -> HeaderUi
-applyEditModal newModal headerUi =
-    { headerUi | editModal = newModal }
-
-
-applyEditForm : Maybe (Form.Model Msg) -> HeaderUi -> HeaderUi
-applyEditForm newForm headerUi =
-    { headerUi | editForm = newForm }
-
-
-applyNewEditModal : Container -> Ui.Modal.Model -> Maybe (Form.Model Msg) -> Ui.DropdownMenu.Model -> Return Msg Container
-applyNewEditModal container newModal newForm newMenu =
-    ( applyHeaderUi
-        (container.headerUi
-            |> applyEditModal newModal
-            |> applyEditForm newForm
-            |> applyActionMenu newMenu
-        )
-        container
-    , Cmd.none
-    )
-
-
-updateEditModalAction : AuthToken -> Container -> ModalAction -> Return Msg Container
-updateEditModalAction token container action =
-    case action of
-        Open ->
-            updateEditModalOpen container
-
-        Save ->
-            updateEditModalSave token container
-
-        Cancel ->
-            updateEditModalCancel container
-
-
-updateEditModalOpen : Container -> Return Msg Container
-updateEditModalOpen container =
-    let
-        newEditForm =
-            RemoteData.map (initEditForm container) container.headerData
-                |> RemoteData.withDefault container.headerUi.editForm
-
-        newEditModal =
-            Ui.Modal.open container.headerUi.editModal
-
-        newActionMenu =
-            Ui.DropdownMenu.close container.headerUi.actionMenu
-    in
-        applyNewEditModal container newEditModal newEditForm newActionMenu
-
-
-updateEditModalSave : AuthToken -> Container -> Return Msg Container
-updateEditModalSave token container =
-    case container.headerUi.editForm of
-        Just form ->
-            let
-                nodeId =
-                    Header.Models.headerId container.headerData
-
-                newContainer =
-                    RemoteData.map (updateState form container) container.headerData
-                        |> RemoteData.withDefault container
-
-                newEffect =
-                    RemoteData.map (Header.Commands.putHeader token nodeId) newContainer.headerData
-                        |> RemoteData.withDefault Cmd.none
-            in
-                ( newContainer, newEffect )
-
-        Nothing ->
-            ( container, Cmd.none )
-
-
-updateEditModalCancel : Container -> Return Msg Container
-updateEditModalCancel container =
-    let
-        ui =
-            container.headerUi
-
-        newEditModal =
-            Ui.Modal.close ui.editModal
-    in
-        applyNewEditModal container newEditModal ui.editForm ui.actionMenu
-
-
-updateEditModalMsg : Container -> Ui.Modal.Msg -> Return Msg Container
-updateEditModalMsg container msg =
-    let
-        ui =
-            container.headerUi
-
-        newEditModal =
-            Ui.Modal.update msg ui.editModal
-    in
-        applyNewEditModal container newEditModal ui.editForm ui.actionMenu
-
-
-
--- DELETE MODAL UPDATES
-
-
-applyDeleteModal : Ui.Modal.Model -> HeaderUi -> HeaderUi
-applyDeleteModal newModal headerUi =
-    { headerUi | deleteModal = newModal }
-
-
-applyNewDeleteModal : Container -> Ui.Modal.Model -> Ui.DropdownMenu.Model -> Return Msg Container
-applyNewDeleteModal container newModal newMenu =
-    ( applyHeaderUi
-        (container.headerUi
-            |> applyDeleteModal newModal
-            |> applyActionMenu newMenu
-        )
-        container
-    , Cmd.none
-    )
-
-
-updateDeleteModalAction : AuthToken -> Container -> ModalAction -> Return Msg Container
-updateDeleteModalAction token container action =
-    case action of
-        Open ->
-            updateDeleteModalOpen container
-
-        Save ->
-            updateDeleteModalSave token container
-
-        Cancel ->
-            updateDeleteModalCancel container
-
-
-updateDeleteModalOpen : Container -> Return Msg Container
-updateDeleteModalOpen container =
-    let
-        ui =
-            container.headerUi
-
-        newDeleteModal =
-            Ui.Modal.open ui.deleteModal
-
-        newActionMenu =
-            Ui.DropdownMenu.close ui.actionMenu
-    in
-        applyNewDeleteModal container newDeleteModal newActionMenu
-
-
-updateDeleteModalSave : AuthToken -> Container -> Return Msg Container
-updateDeleteModalSave token container =
-    let
-        ui =
-            container.headerUi
-
-        newDeleteModal =
-            Ui.Modal.close ui.deleteModal
-    in
-        applyNewDeleteModal container newDeleteModal ui.actionMenu
-
-
-updateDeleteModalCancel : Container -> Return Msg Container
-updateDeleteModalCancel container =
-    let
-        ui =
-            container.headerUi
-
-        newDeleteModal =
-            Ui.Modal.close ui.deleteModal
-    in
-        applyNewDeleteModal container newDeleteModal ui.actionMenu
-
-
-updateDeleteModalMsg : Container -> Ui.Modal.Msg -> Return Msg Container
-updateDeleteModalMsg container msg =
-    let
-        ui =
-            container.headerUi
-
-        newDeleteModal =
-            Ui.Modal.update msg ui.deleteModal
-    in
-        applyNewDeleteModal container newDeleteModal ui.actionMenu
-
-
-
--- EDIT FORM UPDATES
-
-
-updateEditFormMsg : Container -> Form.Msg -> Return Msg Container
-updateEditFormMsg container msg =
-    case container.headerUi.editForm of
-        Just form ->
-            let
-                ui =
-                    container.headerUi
-
-                ( newForm, effect ) =
-                    Form.update msg form
-
-                ( newContainer, newEffect ) =
-                    ( { container | headerUi = { ui | editForm = Just newForm } }
-                    , Cmd.map EditFormMsg effect
-                    )
-            in
-                ( newContainer, newEffect )
-
-        Nothing ->
-            ( container, Cmd.none )

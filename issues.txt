@@ -1,4 +1,3 @@
 + Want to change ChildrenState.Expanding to use WebData status instead
 
-+ Proper Login with 403 / 401 handling instead of authenticating in background
-
++ Header delete should move to main tree actions

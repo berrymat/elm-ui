@@ -1,6 +1,7 @@
 module Tree.Update exposing (..)
 
 import Tree.Messages exposing (Msg(..))
+import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
 import Tree.Commands exposing (..)

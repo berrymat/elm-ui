@@ -11,9 +11,7 @@ import Erl
 import Helpers.Helpers exposing (..)
 import Json.Decode as Decode exposing (field)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
-import Header.Commands exposing (entityDecoder)
 import Helpers.Models exposing (..)
-import Tree.Models exposing (convertNodeType)
 import Navigation
 
 

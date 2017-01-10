@@ -168,24 +168,20 @@ updateCloseActionMenu model =
 
 updateModalActionUser : AuthToken -> Model -> ModalAction -> User -> HttpMethod -> Return Msg Model
 updateModalActionUser token model action user method =
-    let
-        ( newModel, newCmd ) =
-            case action of
-                Open ->
-                    updateUserModalOpen model user method
+    case action of
+        Open ->
+            updateUserModalOpen model user method
 
-                Save ->
-                    case model.userEditForm of
-                        Just form ->
-                            updateUserModalSave token model user form method
+        Save ->
+            case model.userEditForm of
+                Just form ->
+                    updateUserModalSave token model user form method
 
-                        Nothing ->
-                            ( model, Cmd.none )
+                Nothing ->
+                    singleton model
 
-                Cancel ->
-                    ( { model | userEditModal = Ui.Modal.close model.userEditModal }, Cmd.none )
-    in
-        ( newModel, newCmd )
+        Cancel ->
+            ( { model | userEditModal = Ui.Modal.close model.userEditModal }, Cmd.none )
 
 
 updateUserModalOpen : Model -> User -> HttpMethod -> Return Msg Model

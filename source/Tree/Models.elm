@@ -63,26 +63,6 @@ type alias Tree =
     }
 
 
-convertNodeType : String -> Maybe NodeType
-convertNodeType type_ =
-    let
-        lowerType =
-            String.toLower type_
-    in
-        if lowerType == "root" then
-            Just RootType
-        else if lowerType == "customer" then
-            Just CustomerType
-        else if lowerType == "client" then
-            Just ClientType
-        else if lowerType == "site" then
-            Just SiteType
-        else if lowerType == "staff" then
-            Just StaffType
-        else if lowerType == "folder" then
-            Just FolderType
-        else
-            Nothing
 
 
 initialTree : Tree

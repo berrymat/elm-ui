@@ -6,7 +6,6 @@ import Container.Models exposing (Container, initialContainer)
 import Routing
 import RemoteData exposing (..)
 import Ui.NotificationCenter
-import Container.Messages
 import Navigation exposing (Location)
 import Json.Decode
 
@@ -14,7 +13,7 @@ import Json.Decode
 type Msg
     = App Ui.App.Msg
     | LoginMsg Login.Models.Msg
-    | ContainerMsg Container.Messages.Msg
+    | ContainerMsg Container.Models.Msg
     | OnLocationChange Location
     | Logout
     | LogoutResponse (WebData Bool)
