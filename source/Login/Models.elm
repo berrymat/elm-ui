@@ -39,23 +39,18 @@ rememberMe =
 
 loginForm : Form.Model
 loginForm =
-    let
-        checkboxes =
-            [ ( rememberMe, 11, False )
+    Form.init
+        { checkboxes =
+            [ ( rememberMe, 11, False, [] )
             ]
-
-        inputs =
-            [ ( "Email", 1, "Email address", "", Just "email" )
-            , ( "Password", 2, "Password", "", Just "password" )
+        , inputs =
+            [ ( "Email", 1, "Email address", "", Just "email", [] )
+            , ( "Password", 2, "Password", "", Just "password", [] )
             ]
-    in
-        Form.init
-            { checkboxes = checkboxes
-            , inputs = inputs
-            , numberRanges = []
-            , textareas = []
-            , choosers = []
-            , colors = []
-            , dates = []
-            , titles = []
-            }
+        , numberRanges = []
+        , textareas = []
+        , choosers = []
+        , colors = []
+        , dates = []
+        , titles = []
+        }

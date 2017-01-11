@@ -5,6 +5,7 @@ import Components.Form as Form
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
+import Components.Validators exposing (..)
 
 
 type alias Client =
@@ -46,15 +47,15 @@ initEditForm client =
         Form.init
             { checkboxes = []
             , inputs =
-                [ ( "name", 0, "Name", (Maybe.withDefault "" values.name), Nothing )
-                , ( "address1", 1, "Address Line 1", (Maybe.withDefault "" values.address1), Nothing )
-                , ( "address2", 2, "Address Line 2", (Maybe.withDefault "" values.address2), Nothing )
-                , ( "address3", 3, "Address Line 3", (Maybe.withDefault "" values.address3), Nothing )
-                , ( "address4", 4, "Address Line 4", (Maybe.withDefault "" values.address4), Nothing )
-                , ( "postcode", 5, "Postcode", (Maybe.withDefault "" values.postcode), Nothing )
-                , ( "contact", 6, "Contact", (Maybe.withDefault "" values.contact), Nothing )
-                , ( "phone", 7, "Phone", (Maybe.withDefault "" values.tel), Nothing )
-                , ( "email", 8, "Email", (Maybe.withDefault "" values.email), Nothing )
+                [ ( "name", 0, "Name", (Maybe.withDefault "" values.name), Nothing, [ Form.Validator requiredInput ] )
+                , ( "address1", 1, "Address Line 1", (Maybe.withDefault "" values.address1), Nothing, [] )
+                , ( "address2", 2, "Address Line 2", (Maybe.withDefault "" values.address2), Nothing, [] )
+                , ( "address3", 3, "Address Line 3", (Maybe.withDefault "" values.address3), Nothing, [] )
+                , ( "address4", 4, "Address Line 4", (Maybe.withDefault "" values.address4), Nothing, [] )
+                , ( "postcode", 5, "Postcode", (Maybe.withDefault "" values.postcode), Nothing, [] )
+                , ( "contact", 6, "Contact", (Maybe.withDefault "" values.contact), Nothing, [] )
+                , ( "phone", 7, "Phone", (Maybe.withDefault "" values.tel), Nothing, [] )
+                , ( "email", 8, "Email", (Maybe.withDefault "" values.email), Nothing, [ Form.Validator optionalValidEmail ] )
                 ]
             , numberRanges = []
             , textareas = []

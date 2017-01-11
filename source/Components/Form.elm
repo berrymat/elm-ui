@@ -4,10 +4,6 @@ import Html exposing (node, text)
 import Html.Attributes exposing (class)
 import Html.Keyed
 import Html.Lazy
-
-
---import Html.App
-
 import Ext.Color exposing (Hsv)
 import Dict exposing (Dict)
 import Color
@@ -19,7 +15,6 @@ import Ui.DatePicker
 import Ui.Textarea
 import Ui.Checkbox
 import Ui.Chooser
-import Ui.Button
 import Ui.Input
 
 
@@ -42,14 +37,18 @@ type Validator a
     = Validator (Model -> a -> ValidationError)
 
 
+type alias ModelItem model =
+    ( Int, model, List (Validator model), ValidationError )
+
+
 type alias Model =
-    { numberRanges : Dict String ( Int, Ui.NumberRange.Model )
-    , checkboxes : Dict String ( Int, Ui.Checkbox.Model )
-    , colors : Dict String ( Int, Ui.ColorPicker.Model )
-    , textareas : Dict String ( Int, Ui.Textarea.Model )
-    , choosers : Dict String ( Int, Ui.Chooser.Model )
-    , dates : Dict String ( Int, Ui.DatePicker.Model )
-    , inputs : Dict String ( Int, Ui.Input.Model, List (Validator Ui.Input.Model), ValidationError )
+    { numberRanges : Dict String (ModelItem Ui.NumberRange.Model)
+    , checkboxes : Dict String (ModelItem Ui.Checkbox.Model)
+    , colors : Dict String (ModelItem Ui.ColorPicker.Model)
+    , textareas : Dict String (ModelItem Ui.Textarea.Model)
+    , choosers : Dict String (ModelItem Ui.Chooser.Model)
+    , dates : Dict String (ModelItem Ui.DatePicker.Model)
+    , inputs : Dict String (ModelItem Ui.Input.Model)
     , titles : Dict String ( Int, String )
     , valid : Maybe Bool
     , uid : String
@@ -57,25 +56,13 @@ type alias Model =
 
 
 type alias TempModel =
-    { numberRanges : List ( String, Int, Float, String, Float, Float, Int, Float )
-    , choosers : List ( String, Int, List Ui.Chooser.Item, String, String )
-    , textareas : List ( String, Int, String, String )
-    , inputs : List ( String, Int, String, String, Maybe String )
-    , colors : List ( String, Int, Color.Color )
-    , checkboxes : List ( String, Int, Bool )
-    , dates : List ( String, Int, Date.Date )
-    , titles : List ( String, Int, String )
-    }
-
-
-type alias TempModelEx =
-    { numberRanges : List ( String, Int, Float, String, Float, Float, Int, Float )
-    , choosers : List ( String, Int, List Ui.Chooser.Item, String, String )
-    , textareas : List ( String, Int, String, String )
+    { numberRanges : List ( String, Int, Float, String, Float, Float, Int, Float, List (Validator Ui.NumberRange.Model) )
+    , checkboxes : List ( String, Int, Bool, List (Validator Ui.Checkbox.Model) )
+    , colors : List ( String, Int, Color.Color, List (Validator Ui.ColorPicker.Model) )
+    , textareas : List ( String, Int, String, String, List (Validator Ui.Textarea.Model) )
+    , choosers : List ( String, Int, List Ui.Chooser.Item, String, String, List (Validator Ui.Chooser.Model) )
+    , dates : List ( String, Int, Date.Date, List (Validator Ui.DatePicker.Model) )
     , inputs : List ( String, Int, String, String, Maybe String, List (Validator Ui.Input.Model) )
-    , colors : List ( String, Int, Color.Color )
-    , checkboxes : List ( String, Int, Bool )
-    , dates : List ( String, Int, Date.Date )
     , titles : List ( String, Int, String )
     }
 
@@ -83,76 +70,14 @@ type alias TempModelEx =
 init : TempModel -> Model
 init data =
     let
-        initDatePickers ( name, index, value ) =
-            ( name, ( index, Ui.DatePicker.init value ) )
+        initDatePickers ( name, index, value, validators ) =
+            ( name, ( index, Ui.DatePicker.init value, validators, Nothing ) )
 
-        initCheckbox ( name, index, value ) =
-            ( name, ( index, Ui.Checkbox.init value ) )
+        initCheckbox ( name, index, value, validators ) =
+            ( name, ( index, Ui.Checkbox.init value, validators, Nothing ) )
 
-        initChooser ( name, index, data, placeholder, value ) =
-            ( name, ( index, Ui.Chooser.init data placeholder value ) )
-
-        initInput ( name, index, placeholder, value, maybeKind ) =
-            let
-                initInput =
-                    Ui.Input.init value placeholder
-
-                input =
-                    maybeKind
-                        |> Maybe.map (\kind -> { initInput | kind = kind })
-                        |> Maybe.withDefault initInput
-            in
-                ( name, ( index, input, [], Nothing ) )
-
-        initColors ( name, index, value ) =
-            ( name, ( index, Ui.ColorPicker.init value ) )
-
-        initTextarea ( name, index, placeholder, value ) =
-            ( name, ( index, Ui.Textarea.init value placeholder ) )
-
-        initNumberRange ( name, index, value, affix, min, max, round, step ) =
-            let
-                baseNumberRange =
-                    Ui.NumberRange.init value
-
-                numberRange =
-                    { baseNumberRange
-                        | affix = affix
-                        , round = round
-                        , step = step
-                        , max = max
-                        , min = min
-                    }
-            in
-                ( name, ( index, numberRange ) )
-
-        initTitle ( name, index, value ) =
-            ( name, ( index, value ) )
-    in
-        { numberRanges = Dict.fromList (List.map initNumberRange data.numberRanges)
-        , checkboxes = Dict.fromList (List.map initCheckbox data.checkboxes)
-        , textareas = Dict.fromList (List.map initTextarea data.textareas)
-        , choosers = Dict.fromList (List.map initChooser data.choosers)
-        , dates = Dict.fromList (List.map initDatePickers data.dates)
-        , colors = Dict.fromList (List.map initColors data.colors)
-        , inputs = Dict.fromList (List.map initInput data.inputs)
-        , titles = Dict.fromList (List.map initTitle data.titles)
-        , valid = Nothing
-        , uid = Uid.uid ()
-        }
-
-
-initEx : TempModelEx -> Model
-initEx data =
-    let
-        initDatePickers ( name, index, value ) =
-            ( name, ( index, Ui.DatePicker.init value ) )
-
-        initCheckbox ( name, index, value ) =
-            ( name, ( index, Ui.Checkbox.init value ) )
-
-        initChooser ( name, index, data, placeholder, value ) =
-            ( name, ( index, Ui.Chooser.init data placeholder value ) )
+        initChooser ( name, index, data, placeholder, value, validators ) =
+            ( name, ( index, Ui.Chooser.init data placeholder value, validators, Nothing ) )
 
         initInput ( name, index, placeholder, value, maybeKind, validators ) =
             let
@@ -166,13 +91,13 @@ initEx data =
             in
                 ( name, ( index, input, validators, Nothing ) )
 
-        initColors ( name, index, value ) =
-            ( name, ( index, Ui.ColorPicker.init value ) )
+        initColors ( name, index, value, validators ) =
+            ( name, ( index, Ui.ColorPicker.init value, validators, Nothing ) )
 
-        initTextarea ( name, index, placeholder, value ) =
-            ( name, ( index, Ui.Textarea.init value placeholder ) )
+        initTextarea ( name, index, placeholder, value, validators ) =
+            ( name, ( index, Ui.Textarea.init value placeholder, validators, Nothing ) )
 
-        initNumberRange ( name, index, value, affix, min, max, round, step ) =
+        initNumberRange ( name, index, value, affix, min, max, round, step, validators ) =
             let
                 baseNumberRange =
                     Ui.NumberRange.init value
@@ -186,7 +111,7 @@ initEx data =
                         , min = min
                     }
             in
-                ( name, ( index, numberRange ) )
+                ( name, ( index, numberRange, validators, Nothing ) )
 
         initTitle ( name, index, value ) =
             ( name, ( index, value ) )
@@ -215,14 +140,13 @@ validateModel model =
             Dict.map (\name item -> validateItem item) dict
     in
         { model
-            | inputs =
-                (validateDict model.inputs)
-                --            , numberRanges = model.numberRanges
-                --        , checkboxes = model.checkboxes
-                --        , textareas = model.textareas
-                --        , choosers = model.choosers
-                --        , dates = model.dates
-                --        , colors = model.colors
+            | inputs = (validateDict model.inputs)
+            , numberRanges = (validateDict model.numberRanges)
+            , checkboxes = (validateDict model.checkboxes)
+            , textareas = (validateDict model.textareas)
+            , choosers = (validateDict model.choosers)
+            , dates = (validateDict model.dates)
+            , colors = (validateDict model.colors)
         }
 
 
@@ -239,15 +163,12 @@ isFormValid model =
             Dict.foldl isItemValid True dict
     in
         (isDictValid model.inputs)
-
-
-
---        && (isDictValid model.numberRanges)
---        && (isDictValid model.checkboxes)
---        && (isDictValid model.textareas)
---        && (isDictValid model.choosers)
---        && (isDictValid model.dates)
---        && (isDictValid model.colors)
+            && (isDictValid model.numberRanges)
+            && (isDictValid model.checkboxes)
+            && (isDictValid model.textareas)
+            && (isDictValid model.choosers)
+            && (isDictValid model.dates)
+            && (isDictValid model.colors)
 
 
 nextPosition : Model -> Int
@@ -270,14 +191,14 @@ subscriptions model =
 
         colorSubs =
             Dict.toList model.colors
-                |> List.map (\( key, ( pos, colorPicker ) ) -> colorSub key colorPicker)
+                |> List.map (\( key, ( pos, colorPicker, validators, error ) ) -> colorSub key colorPicker)
 
         numberRangeSub name numberRange =
             Sub.map (NumberRanges name) (Ui.NumberRange.subscriptions numberRange)
 
         numberRangeSubs =
             Dict.toList model.numberRanges
-                |> List.map (\( key, ( pos, numberRange ) ) -> numberRangeSub key numberRange)
+                |> List.map (\( key, ( pos, numberRange, validators, error ) ) -> numberRangeSub key numberRange)
     in
         Sub.batch (colorSubs ++ numberRangeSubs)
 
@@ -286,24 +207,11 @@ valueOfSimple :
     String
     -> value
     -> (model -> value)
-    -> Dict String ( Int, model )
+    -> Dict String (ModelItem model)
     -> value
 valueOfSimple name default accessor dict =
     Dict.get name dict
-        |> Maybe.map (\( f, s ) -> s)
-        |> Maybe.map accessor
-        |> Maybe.withDefault default
-
-
-valueOfSimpleEx :
-    String
-    -> value
-    -> (model -> value)
-    -> Dict String ( Int, model, List (Validator Ui.Input.Model), ValidationError )
-    -> value
-valueOfSimpleEx name default accessor dict =
-    Dict.get name dict
-        |> Maybe.map (\( f, s, i, v ) -> s)
+        |> Maybe.map (\( _, s, _, _ ) -> s)
         |> Maybe.map accessor
         |> Maybe.withDefault default
 
@@ -315,7 +223,7 @@ valueOfCheckbox name default model =
 
 valueOfInput : String -> String -> Model -> String
 valueOfInput name default model =
-    valueOfSimpleEx name default .value model.inputs
+    valueOfSimple name default .value model.inputs
 
 
 valueOfNumberRange : String -> Float -> Model -> Float
@@ -341,53 +249,11 @@ valueOfDate name default model =
 valueOfChooser : String -> String -> Model -> String
 valueOfChooser name default model =
     case Dict.get name model.choosers of
-        Just ( index, chooser ) ->
+        Just ( index, chooser, validators, error ) ->
             Maybe.withDefault default (Ui.Chooser.getFirstSelected chooser)
 
         _ ->
             default
-
-
-updateColor : String -> Color.Color -> Model -> Model
-updateColor name value model =
-    let
-        updatedColor item =
-            case item of
-                Just ( index, colorPicker ) ->
-                    Just ( index, Ui.ColorPicker.setValue value colorPicker )
-
-                _ ->
-                    item
-    in
-        { model | colors = Dict.update name updatedColor model.colors }
-
-
-updateDate : String -> Date.Date -> Model -> Model
-updateDate name value model =
-    let
-        updatedDate item =
-            case item of
-                Just ( index, datepicker ) ->
-                    Just ( index, Ui.DatePicker.setValue value datepicker )
-
-                _ ->
-                    item
-    in
-        { model | dates = Dict.update name updatedDate model.dates }
-
-
-updateTextarea : String -> String -> Model -> Model
-updateTextarea name value model =
-    let
-        updatedTextarea item =
-            case item of
-                Just ( index, input ) ->
-                    Just ( index, Ui.Textarea.setValue value input )
-
-                _ ->
-                    item
-    in
-        { model | textareas = Dict.update name updatedTextarea model.textareas }
 
 
 validate : Model -> List (Validator a) -> a -> ValidationError
@@ -408,20 +274,67 @@ validate model validators input =
         List.foldl validate Nothing validators
 
 
+validateItem : ModelItem model -> value -> (value -> model -> model) -> Model -> ModelItem model
+validateItem ( index, itemModel, validators, error ) value setter model =
+    let
+        newValue =
+            setter value itemModel
+
+        newError =
+            validate model validators newValue
+    in
+        ( index, newValue, validators, newError )
+
+
+updateColor : String -> Color.Color -> Model -> Model
+updateColor name value model =
+    let
+        updatedColor item =
+            case item of
+                Just itemModel ->
+                    Just (validateItem itemModel value Ui.ColorPicker.setValue model)
+
+                _ ->
+                    item
+    in
+        { model | colors = Dict.update name updatedColor model.colors }
+
+
+updateDate : String -> Date.Date -> Model -> Model
+updateDate name value model =
+    let
+        updatedDate item =
+            case item of
+                Just itemModel ->
+                    Just (validateItem itemModel value Ui.DatePicker.setValue model)
+
+                _ ->
+                    item
+    in
+        { model | dates = Dict.update name updatedDate model.dates }
+
+
+updateTextarea : String -> String -> Model -> Model
+updateTextarea name value model =
+    let
+        updatedTextarea item =
+            case item of
+                Just itemModel ->
+                    Just (validateItem itemModel value Ui.Textarea.setValue model)
+
+                _ ->
+                    item
+    in
+        { model | textareas = Dict.update name updatedTextarea model.textareas }
+
+
 updateInput : String -> String -> Model -> Model
 updateInput name value model =
     let
         updatedInput item =
             case item of
-                Just ( index, input, validators, error ) ->
-                    let
-                        newInput =
-                            Ui.Input.setValue value input
-
-                        newError =
-                            validate model validators newInput
-                    in
-                        Just ( index, newInput, validators, newError )
+                Just itemModel ->
+                    Just (validateItem itemModel value Ui.Input.setValue model)
 
                 _ ->
                     item
@@ -434,8 +347,8 @@ updateNumberRange name value model =
     let
         updatedNumberRange item =
             case item of
-                Just ( index, numberRange ) ->
-                    Just ( index, Ui.NumberRange.setValue value numberRange )
+                Just itemModel ->
+                    Just (validateItem itemModel value Ui.NumberRange.setValue model)
 
                 _ ->
                     item
@@ -448,8 +361,8 @@ updateCheckbox name value model =
     let
         updatedCheckbox item =
             case item of
-                Just ( index, checkbox ) ->
-                    Just ( index, Ui.Checkbox.setValue value checkbox )
+                Just itemModel ->
+                    Just (validateItem itemModel value Ui.Checkbox.setValue model)
 
                 _ ->
                     item
@@ -458,32 +371,13 @@ updateCheckbox name value model =
 
 
 updateDict :
-    String
-    -> msg
-    -> (msg -> model -> ( model, Cmd msg ))
-    -> Dict String ( Int, model )
-    -> ( Cmd msg, Dict String ( Int, model ) )
-updateDict name act fn dict =
-    case Dict.get name dict of
-        Just ( index, value ) ->
-            let
-                ( updateValue, effect ) =
-                    fn act value
-            in
-                ( effect, Dict.insert name ( index, updateValue ) dict )
-
-        Nothing ->
-            ( Cmd.none, dict )
-
-
-updateDictEx :
     Model
     -> String
     -> msg
     -> (msg -> model -> ( model, Cmd msg ))
-    -> Dict String ( Int, model, List (Validator model), ValidationError )
-    -> ( Cmd msg, Dict String ( Int, model, List (Validator model), ValidationError ) )
-updateDictEx model name act fn dict =
+    -> Dict String (ModelItem model)
+    -> ( Cmd msg, Dict String (ModelItem model) )
+updateDict model name act fn dict =
     case Dict.get name dict of
         Just ( index, value, validators, error ) ->
             let
@@ -505,7 +399,7 @@ update action model =
         DatePickers name act ->
             let
                 ( effect, updatedDatePickers ) =
-                    updateDict name act Ui.DatePicker.update model.dates
+                    updateDict model name act Ui.DatePicker.update model.dates
             in
                 ( { model | dates = updatedDatePickers }
                 , Cmd.map (DatePickers name) effect
@@ -514,7 +408,7 @@ update action model =
         Checkboxes name act ->
             let
                 ( effect, updatedCheckboxes ) =
-                    updateDict name act Ui.Checkbox.update model.checkboxes
+                    updateDict model name act Ui.Checkbox.update model.checkboxes
             in
                 ( { model | checkboxes = updatedCheckboxes }
                 , Cmd.map (Checkboxes name) effect
@@ -523,7 +417,7 @@ update action model =
         Choosers name act ->
             let
                 ( effect, updatedChoosers ) =
-                    updateDict name act Ui.Chooser.update model.choosers
+                    updateDict model name act Ui.Chooser.update model.choosers
             in
                 ( { model | choosers = updatedChoosers }
                 , Cmd.map (Choosers name) effect
@@ -532,7 +426,7 @@ update action model =
         Inputs name act ->
             let
                 ( effect, updatedInputs ) =
-                    updateDictEx model name act Ui.Input.update model.inputs
+                    updateDict model name act Ui.Input.update model.inputs
             in
                 ( { model | inputs = updatedInputs }
                 , Cmd.map (Inputs name) effect
@@ -541,7 +435,7 @@ update action model =
         Colors name act ->
             let
                 ( effect, updatedColors ) =
-                    updateDict name act Ui.ColorPicker.update model.colors
+                    updateDict model name act Ui.ColorPicker.update model.colors
             in
                 ( { model | colors = updatedColors }
                 , Cmd.map (Colors name) effect
@@ -550,7 +444,7 @@ update action model =
         Textareas name act ->
             let
                 ( effect, updatedTextareas ) =
-                    updateDict name act Ui.Textarea.update model.textareas
+                    updateDict model name act Ui.Textarea.update model.textareas
             in
                 ( { model | textareas = updatedTextareas }
                 , Cmd.map (Textareas name) effect
@@ -559,7 +453,7 @@ update action model =
         NumberRanges name act ->
             let
                 ( effect, updatedNumberRanges ) =
-                    updateDict name act Ui.NumberRange.update model.numberRanges
+                    updateDict model name act Ui.NumberRange.update model.numberRanges
             in
                 ( { model | numberRanges = updatedNumberRanges }
                 , Cmd.map (NumberRanges name) effect
@@ -572,35 +466,47 @@ update action model =
 view : (Msg -> msg) -> Model -> Html.Html msg
 view address fields =
     let
-        renderDatePicker name data =
+        renderDatePicker name ( data, error, valid ) =
             blockField name
                 (Html.map (address << (DatePickers name)) (Ui.DatePicker.view "en_us" data))
+                error
+                valid
 
-        renderCheckbox name data =
+        renderCheckbox name ( data, error, valid ) =
             inlineField name
                 (Html.map (address << (Checkboxes name)) (Ui.Checkbox.view data))
+                error
+                valid
 
-        renderChooser name data =
+        renderChooser name ( data, error, valid ) =
             blockField name
                 (Html.map (address << (Choosers name)) (Ui.Chooser.view data))
+                error
+                valid
 
         renderInput name ( data, error, valid ) =
-            blockFieldEx name
+            blockField name
                 (Html.map (address << (Inputs name)) (Ui.Input.view data))
                 error
                 valid
 
-        renderColorPicker name data =
+        renderColorPicker name ( data, error, valid ) =
             blockField name
                 (Html.map (address << (Colors name)) (Ui.ColorPicker.view data))
+                error
+                valid
 
-        renderTextarea name data =
+        renderTextarea name ( data, error, valid ) =
             blockField name
                 (Html.map (address << (Textareas name)) (Ui.Textarea.view data))
+                error
+                valid
 
-        renderNumberRange name data =
+        renderNumberRange name ( data, error, valid ) =
             blockField name
                 (Html.map (address << (NumberRanges name)) (Ui.NumberRange.view data))
+                error
+                valid
 
         renderTitle name data =
             node "ui-form-title" [] [ text data ]
@@ -618,14 +524,7 @@ view address fields =
             in
                 node "ui-form-error" [ class className ] [ text message ]
 
-        blockField name child =
-            node "ui-form-block"
-                []
-                [ node "ui-form-label" [] [ text name ]
-                , child
-                ]
-
-        blockFieldEx name child error valid =
+        blockField name child error valid =
             node "ui-form-block"
                 []
                 [ node "ui-form-label" [] [ text name ]
@@ -633,47 +532,35 @@ view address fields =
                 , errorMessage error valid
                 ]
 
-        inlineField name child =
+        inlineField name child error valid =
             node "ui-form-inline"
                 []
                 [ child
                 , node "ui-form-label" [] [ text name ]
+                , errorMessage error valid
                 ]
 
-        renderList fn ( name, ( index, data ) ) =
-            ( index, fn name data )
-
-        renderListEx fn ( name, ( index, data, validators, error ) ) =
+        renderList fn ( name, ( index, data, validators, error ) ) =
             ( index, fn name ( data, error, fields.valid ) )
-
-        renderButton ( index, msg, button ) =
-            let
-                html =
-                    node "ui-form-block"
-                        []
-                        [ Ui.Button.view msg button
-                        ]
-            in
-                ( index, html )
-
-        renderButtons list =
-            List.map renderButton list
 
         renderMap fn list =
             List.map (\item -> renderList fn item) (Dict.toList list)
 
-        renderMapEx fn list =
-            List.map (\item -> renderListEx fn item) (Dict.toList list)
+        renderTitleList fn ( name, ( index, data ) ) =
+            ( index, fn name data )
+
+        renderTitleMap fn list =
+            List.map (\item -> renderTitleList fn item) (Dict.toList list)
 
         items =
             ((renderMap renderCheckbox fields.checkboxes)
                 ++ (renderMap (Html.Lazy.lazy2 renderColorPicker) fields.colors)
                 ++ (renderMap (Html.Lazy.lazy2 renderChooser) fields.choosers)
                 ++ (renderMap (Html.Lazy.lazy2 renderDatePicker) fields.dates)
-                ++ (renderMapEx (Html.Lazy.lazy2 renderInput) fields.inputs)
+                ++ (renderMap (Html.Lazy.lazy2 renderInput) fields.inputs)
                 ++ (renderMap (Html.Lazy.lazy2 renderTextarea) fields.textareas)
                 ++ (renderMap (Html.Lazy.lazy2 renderNumberRange) fields.numberRanges)
-                ++ (renderMap (Html.Lazy.lazy2 renderTitle) fields.titles)
+                ++ (renderTitleMap (Html.Lazy.lazy2 renderTitle) fields.titles)
             )
 
         sortedItems =

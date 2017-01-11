@@ -10,6 +10,7 @@ import Json.Encode as Encode
 import Table
 import Ui.DropdownMenu
 import Ui.Modal
+import Components.Validators exposing (..)
 
 
 filesUrl : NodeId -> String
@@ -140,15 +141,15 @@ folderForm : FolderInfo -> Form.Model
 folderForm folderInfo =
     Form.init
         { checkboxes =
-            [ ( readableForCustomersName, 11, folderInfo.readableForCustomers )
-            , ( readableForClientsName, 12, folderInfo.readableForClients )
-            , ( readableForStaffName, 13, folderInfo.readableForStaff )
-            , ( writableForCustomersName, 21, folderInfo.writableForCustomers )
-            , ( writableForClientsName, 22, folderInfo.writableForClients )
-            , ( writableForStaffName, 23, folderInfo.writableForStaff )
+            [ ( readableForCustomersName, 11, folderInfo.readableForCustomers, [] )
+            , ( readableForClientsName, 12, folderInfo.readableForClients, [] )
+            , ( readableForStaffName, 13, folderInfo.readableForStaff, [] )
+            , ( writableForCustomersName, 21, folderInfo.writableForCustomers, [] )
+            , ( writableForClientsName, 22, folderInfo.writableForClients, [] )
+            , ( writableForStaffName, 23, folderInfo.writableForStaff, [] )
             ]
         , inputs =
-            [ ( "name", 1, "Name", folderInfo.name, Nothing )
+            [ ( "name", 1, "Name", folderInfo.name, Nothing, [ Form.Validator requiredInput ] )
             ]
         , numberRanges = []
         , textareas = []

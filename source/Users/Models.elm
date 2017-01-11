@@ -10,6 +10,7 @@ import Ui.DropdownMenu
 import Ui.Input
 import Ui.Modal
 import Components.Form as Form exposing (ValidationError)
+import Components.Validators exposing (..)
 import RemoteData exposing (..)
 import Char
 
@@ -199,16 +200,16 @@ userForm : User -> Form.Model
 userForm user =
     Form.init
         { checkboxes =
-            [ ( isAdministratorName, 11, user.isAdministrator )
-            , ( accessToCasesName, 12, user.accessToCases )
-            , ( accessToMobilesName, 13, user.accessToMobiles )
-            , ( accessToStaffName, 14, user.accessToStaff )
-            , ( accessToClientsName, 15, user.accessToClients )
+            [ ( isAdministratorName, 11, user.isAdministrator, [] )
+            , ( accessToCasesName, 12, user.accessToCases, [] )
+            , ( accessToMobilesName, 13, user.accessToMobiles, [] )
+            , ( accessToStaffName, 14, user.accessToStaff, [] )
+            , ( accessToClientsName, 15, user.accessToClients, [] )
             ]
         , inputs =
-            [ ( "Email", 1, "Email", user.email, Nothing )
-            , ( "First Name", 2, "First Name", user.firstName, Nothing )
-            , ( "Last Name", 3, "Last Name", user.lastName, Nothing )
+            [ ( "Email", 1, "Email", user.email, Nothing, [ Form.Validator requiredValidEmail ] )
+            , ( "First Name", 2, "First Name", user.firstName, Nothing, [ Form.Validator requiredInput ] )
+            , ( "Last Name", 3, "Last Name", user.lastName, Nothing, [ Form.Validator requiredInput ] )
             ]
         , numberRanges = []
         , textareas = []
@@ -243,32 +244,46 @@ saveUser token user method =
 validatePasswordComplexity : Form.Model -> Ui.Input.Model -> ValidationError
 validatePasswordComplexity model input =
     let
-        uppers =
-            String.filter Char.isUpper input.value
+        length =
+            String.length input.value
 
-        lowers =
-            String.filter Char.isLower input.value
+        uppersCount =
+            String.filter Char.isUpper input.value |> String.length
+
+        lowersCount =
+            String.filter Char.isLower input.value |> String.length
+
+        digitsCount =
+            String.filter Char.isDigit input.value |> String.length
+
+        othersCount =
+            length - (uppersCount + lowersCount + digitsCount)
     in
-        if
-            (String.length input.value)
-                < 8
-                || (String.length uppers)
-                < 1
-                || (String.length lowers)
-                < 1
-        then
+        if length < 8 || uppersCount == 0 || lowersCount == 0 || digitsCount == 0 || othersCount == 0 then
             Just "Password must be at least 8 characters long and include at least one uppercase, lowercase, numeric and punctuation character"
+        else
+            Nothing
+
+
+matchingPasswords : Form.Model -> Ui.Input.Model -> ValidationError
+matchingPasswords model input =
+    let
+        password =
+            Form.valueOfInput "Password" "" model
+    in
+        if password /= input.value then
+            Just "Passwords must match each other"
         else
             Nothing
 
 
 changePasswordForm : ChangePassword -> Form.Model
 changePasswordForm changePassword =
-    Form.initEx
+    Form.init
         { checkboxes = []
         , inputs =
             [ ( "Password", 1, "Password", changePassword.password, Just "password", [ Form.Validator validatePasswordComplexity ] )
-            , ( "Confirm Password", 2, "Confirm Password", changePassword.confirmPassword, Just "password", [] )
+            , ( "Confirm Password", 2, "Confirm Password", changePassword.confirmPassword, Just "password", [ Form.Validator matchingPasswords ] )
             ]
         , numberRanges = []
         , textareas = []
