@@ -15,6 +15,7 @@ import Ui.DropdownMenu
 import Ui.IconButton
 import Ui.Modal
 import Components.Form as Form
+import Html.Lazy
 
 
 view : AuthToken -> Model -> Html Msg
@@ -287,13 +288,13 @@ viewActionMenu token model =
                 ]
             }
 
-        changePasswordModalContent =
+        ( changePasswordModalContent, changePasswordValid ) =
             case model.userChangePasswordForm of
                 Just form ->
-                    [ Form.view UserChangePasswordFormMsg form ]
+                    ( [ Form.view UserChangePasswordFormMsg form ], Form.isFormValid form )
 
                 Nothing ->
-                    [ text "Change Password Modal" ]
+                    ( [ text "Change Password Modal" ], False )
 
         userChangePasswordModalViewModel =
             { content = changePasswordModalContent

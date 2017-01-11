@@ -1,6 +1,7 @@
 module Components.Form exposing (..)
 
 import Html exposing (node, text)
+import Html.Attributes exposing (class)
 import Html.Keyed
 import Html.Lazy
 
@@ -30,14 +31,15 @@ type Msg
     | Textareas String Ui.Textarea.Msg
     | Choosers String Ui.Chooser.Msg
     | Inputs String Ui.Input.Msg
+    | Validate
 
 
 type alias ValidationError =
     Maybe String
 
 
-type InputValidator
-    = InputValidator (Model -> Ui.Input.Model -> ValidationError)
+type Validator a
+    = Validator (Model -> a -> ValidationError)
 
 
 type alias Model =
@@ -47,8 +49,9 @@ type alias Model =
     , textareas : Dict String ( Int, Ui.Textarea.Model )
     , choosers : Dict String ( Int, Ui.Chooser.Model )
     , dates : Dict String ( Int, Ui.DatePicker.Model )
-    , inputs : Dict String ( Int, Ui.Input.Model, List InputValidator, ValidationError )
+    , inputs : Dict String ( Int, Ui.Input.Model, List (Validator Ui.Input.Model), ValidationError )
     , titles : Dict String ( Int, String )
+    , valid : Maybe Bool
     , uid : String
     }
 
@@ -69,7 +72,7 @@ type alias TempModelEx =
     { numberRanges : List ( String, Int, Float, String, Float, Float, Int, Float )
     , choosers : List ( String, Int, List Ui.Chooser.Item, String, String )
     , textareas : List ( String, Int, String, String )
-    , inputs : List ( String, Int, String, String, Maybe String, List InputValidator )
+    , inputs : List ( String, Int, String, String, Maybe String, List (Validator Ui.Input.Model) )
     , colors : List ( String, Int, Color.Color )
     , checkboxes : List ( String, Int, Bool )
     , dates : List ( String, Int, Date.Date )
@@ -134,6 +137,7 @@ init data =
         , colors = Dict.fromList (List.map initColors data.colors)
         , inputs = Dict.fromList (List.map initInput data.inputs)
         , titles = Dict.fromList (List.map initTitle data.titles)
+        , valid = Nothing
         , uid = Uid.uid ()
         }
 
@@ -187,16 +191,63 @@ initEx data =
         initTitle ( name, index, value ) =
             ( name, ( index, value ) )
     in
-        { numberRanges = Dict.fromList (List.map initNumberRange data.numberRanges)
-        , checkboxes = Dict.fromList (List.map initCheckbox data.checkboxes)
-        , textareas = Dict.fromList (List.map initTextarea data.textareas)
-        , choosers = Dict.fromList (List.map initChooser data.choosers)
-        , dates = Dict.fromList (List.map initDatePickers data.dates)
-        , colors = Dict.fromList (List.map initColors data.colors)
-        , inputs = Dict.fromList (List.map initInput data.inputs)
-        , titles = Dict.fromList (List.map initTitle data.titles)
-        , uid = Uid.uid ()
+        validateModel
+            { numberRanges = Dict.fromList (List.map initNumberRange data.numberRanges)
+            , checkboxes = Dict.fromList (List.map initCheckbox data.checkboxes)
+            , textareas = Dict.fromList (List.map initTextarea data.textareas)
+            , choosers = Dict.fromList (List.map initChooser data.choosers)
+            , dates = Dict.fromList (List.map initDatePickers data.dates)
+            , colors = Dict.fromList (List.map initColors data.colors)
+            , inputs = Dict.fromList (List.map initInput data.inputs)
+            , titles = Dict.fromList (List.map initTitle data.titles)
+            , valid = Nothing
+            , uid = Uid.uid ()
+            }
+
+
+validateModel : Model -> Model
+validateModel model =
+    let
+        validateItem ( index, data, validators, error ) =
+            ( index, data, validators, (validate model validators data) )
+
+        validateDict dict =
+            Dict.map (\name item -> validateItem item) dict
+    in
+        { model
+            | inputs =
+                (validateDict model.inputs)
+                --            , numberRanges = model.numberRanges
+                --        , checkboxes = model.checkboxes
+                --        , textareas = model.textareas
+                --        , choosers = model.choosers
+                --        , dates = model.dates
+                --        , colors = model.colors
         }
+
+
+isFormValid : Model -> Bool
+isFormValid model =
+    let
+        isItemValid _ ( _, _, _, error ) valid =
+            if valid then
+                error |> Maybe.map (\_ -> False) |> Maybe.withDefault True
+            else
+                False
+
+        isDictValid dict =
+            Dict.foldl isItemValid True dict
+    in
+        (isDictValid model.inputs)
+
+
+
+--        && (isDictValid model.numberRanges)
+--        && (isDictValid model.checkboxes)
+--        && (isDictValid model.textareas)
+--        && (isDictValid model.choosers)
+--        && (isDictValid model.dates)
+--        && (isDictValid model.colors)
 
 
 nextPosition : Model -> Int
@@ -248,7 +299,7 @@ valueOfSimpleEx :
     String
     -> value
     -> (model -> value)
-    -> Dict String ( Int, model, List InputValidator, ValidationError )
+    -> Dict String ( Int, model, List (Validator Ui.Input.Model), ValidationError )
     -> value
 valueOfSimpleEx name default accessor dict =
     Dict.get name dict
@@ -339,12 +390,12 @@ updateTextarea name value model =
         { model | textareas = Dict.update name updatedTextarea model.textareas }
 
 
-validateInput : Model -> List InputValidator -> Ui.Input.Model -> ValidationError
-validateInput model validators input =
+validate : Model -> List (Validator a) -> a -> ValidationError
+validate model validators input =
     let
         validate validator error =
             let
-                (InputValidator validatorFn) =
+                (Validator validatorFn) =
                     validator
             in
                 case error of
@@ -355,15 +406,6 @@ validateInput model validators input =
                         validatorFn model input
     in
         List.foldl validate Nothing validators
-
-
-
-{-
-   foldl : (a -> b -> b) -> b -> List a -> b
-   Reduce a list from the left.
-
-   foldl (::) [] [1,2,3] == [3,2,1]
--}
 
 
 updateInput : String -> String -> Model -> Model
@@ -377,7 +419,7 @@ updateInput name value model =
                             Ui.Input.setValue value input
 
                         newError =
-                            validateInput model validators newInput
+                            validate model validators newInput
                     in
                         Just ( index, newInput, validators, newError )
 
@@ -435,19 +477,23 @@ updateDict name act fn dict =
 
 
 updateDictEx :
-    String
+    Model
+    -> String
     -> msg
     -> (msg -> model -> ( model, Cmd msg ))
-    -> Dict String ( Int, model, List InputValidator, ValidationError )
-    -> ( Cmd msg, Dict String ( Int, model, List InputValidator, ValidationError ) )
-updateDictEx name act fn dict =
+    -> Dict String ( Int, model, List (Validator model), ValidationError )
+    -> ( Cmd msg, Dict String ( Int, model, List (Validator model), ValidationError ) )
+updateDictEx model name act fn dict =
     case Dict.get name dict of
         Just ( index, value, validators, error ) ->
             let
                 ( updateValue, effect ) =
                     fn act value
+
+                newError =
+                    validate model validators updateValue
             in
-                ( effect, Dict.insert name ( index, updateValue, validators, error ) dict )
+                ( effect, Dict.insert name ( index, updateValue, validators, newError ) dict )
 
         Nothing ->
             ( Cmd.none, dict )
@@ -486,7 +532,7 @@ update action model =
         Inputs name act ->
             let
                 ( effect, updatedInputs ) =
-                    updateDictEx name act Ui.Input.update model.inputs
+                    updateDictEx model name act Ui.Input.update model.inputs
             in
                 ( { model | inputs = updatedInputs }
                 , Cmd.map (Inputs name) effect
@@ -519,6 +565,9 @@ update action model =
                 , Cmd.map (NumberRanges name) effect
                 )
 
+        Validate ->
+            ( { model | valid = Just (isFormValid model) }, Cmd.none )
+
 
 view : (Msg -> msg) -> Model -> Html.Html msg
 view address fields =
@@ -535,9 +584,11 @@ view address fields =
             blockField name
                 (Html.map (address << (Choosers name)) (Ui.Chooser.view data))
 
-        renderInput name data error =
-            blockField name
+        renderInput name ( data, error, valid ) =
+            blockFieldEx name
                 (Html.map (address << (Inputs name)) (Ui.Input.view data))
+                error
+                valid
 
         renderColorPicker name data =
             blockField name
@@ -554,11 +605,32 @@ view address fields =
         renderTitle name data =
             node "ui-form-title" [] [ text data ]
 
+        errorMessage error valid =
+            let
+                message =
+                    error |> Maybe.withDefault ""
+
+                className =
+                    if (valid |> Maybe.withDefault True) then
+                        ""
+                    else
+                        "error"
+            in
+                node "ui-form-error" [ class className ] [ text message ]
+
         blockField name child =
             node "ui-form-block"
                 []
                 [ node "ui-form-label" [] [ text name ]
                 , child
+                ]
+
+        blockFieldEx name child error valid =
+            node "ui-form-block"
+                []
+                [ node "ui-form-label" [] [ text name ]
+                , child
+                , errorMessage error valid
                 ]
 
         inlineField name child =
@@ -572,7 +644,7 @@ view address fields =
             ( index, fn name data )
 
         renderListEx fn ( name, ( index, data, validators, error ) ) =
-            ( index, fn name data error )
+            ( index, fn name ( data, error, fields.valid ) )
 
         renderButton ( index, msg, button ) =
             let
@@ -598,7 +670,7 @@ view address fields =
                 ++ (renderMap (Html.Lazy.lazy2 renderColorPicker) fields.colors)
                 ++ (renderMap (Html.Lazy.lazy2 renderChooser) fields.choosers)
                 ++ (renderMap (Html.Lazy.lazy2 renderDatePicker) fields.dates)
-                ++ (renderMapEx (Html.Lazy.lazy3 renderInput) fields.inputs)
+                ++ (renderMapEx (Html.Lazy.lazy2 renderInput) fields.inputs)
                 ++ (renderMap (Html.Lazy.lazy2 renderTextarea) fields.textareas)
                 ++ (renderMap (Html.Lazy.lazy2 renderNumberRange) fields.numberRanges)
                 ++ (renderMap (Html.Lazy.lazy2 renderTitle) fields.titles)

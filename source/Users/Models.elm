@@ -7,9 +7,11 @@ import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Table
 import Ui.DropdownMenu
+import Ui.Input
 import Ui.Modal
-import Components.Form as Form
+import Components.Form as Form exposing (ValidationError)
 import RemoteData exposing (..)
+import Char
 
 
 type ModalType
@@ -60,8 +62,6 @@ type alias Model =
     , userEditMethod : Maybe HttpMethod
     , userEditModal : Ui.Modal.Model
     , userEditForm : Maybe Form.Model
-    , userChangePasswordModal : Ui.Modal.Model
-    , userChangePasswordForm : Maybe Form.Model
     , userDeleteModal : Ui.Modal.Model
     , userChangePasswordModal : Ui.Modal.Model
     , userChangePasswordForm : Maybe Form.Model
@@ -114,8 +114,6 @@ modelDecoder =
         |> hardcoded (Table.initialSort "Email")
         |> hardcoded ""
         |> hardcoded Ui.DropdownMenu.init
-        |> hardcoded Nothing
-        |> hardcoded Ui.Modal.init
         |> hardcoded Nothing
         |> hardcoded Ui.Modal.init
         |> hardcoded Nothing
@@ -197,7 +195,7 @@ accessToClientsName =
     "Access to Clients?"
 
 
-userForm : User -> Form.Model 
+userForm : User -> Form.Model
 userForm user =
     Form.init
         { checkboxes =
@@ -242,13 +240,35 @@ saveUser token user method =
     Helpers.Helpers.requester token "Users" user.id method (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)
 
 
+validatePasswordComplexity : Form.Model -> Ui.Input.Model -> ValidationError
+validatePasswordComplexity model input =
+    let
+        uppers =
+            String.filter Char.isUpper input.value
+
+        lowers =
+            String.filter Char.isLower input.value
+    in
+        if
+            (String.length input.value)
+                < 8
+                || (String.length uppers)
+                < 1
+                || (String.length lowers)
+                < 1
+        then
+            Just "Password must be at least 8 characters long and include at least one uppercase, lowercase, numeric and punctuation character"
+        else
+            Nothing
+
+
 changePasswordForm : ChangePassword -> Form.Model
 changePasswordForm changePassword =
-    Form.init
+    Form.initEx
         { checkboxes = []
         , inputs =
-            [ ( "Password", 1, "Password", changePassword.password, Just "password" )
-            , ( "Confirm Password", 2, "Confirm Password", changePassword.confirmPassword, Just "password" )
+            [ ( "Password", 1, "Password", changePassword.password, Just "password", [ Form.Validator validatePasswordComplexity ] )
+            , ( "Confirm Password", 2, "Confirm Password", changePassword.confirmPassword, Just "password", [] )
             ]
         , numberRanges = []
         , textareas = []

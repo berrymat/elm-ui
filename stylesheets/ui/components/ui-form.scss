@@ -34,6 +34,21 @@ ui-form {
           width: 100%;
         }
       }
+
+      ui-form-error {
+        margin-top: 7px;
+        display: block;
+        font-size: 0.75em;
+        color: rgb(127, 127, 127);
+
+        &.error {
+          color: rgb(198, 0, 0);        
+        }
+
+        + * {
+          width: 100%;
+        }
+      }
     }
 
     ui-button {

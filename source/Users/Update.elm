@@ -411,7 +411,7 @@ updateModalActionChangePasswordUser token model action =
                 Save ->
                     case model.userChangePasswordForm of
                         Just form ->
-                            updateChangePasswordUserModalSave token model user form
+                            updateChangePasswordUserModalValidate token model user form
 
                         Nothing ->
                             singleton model
@@ -439,6 +439,31 @@ updateChangePasswordUserModalOpen model user =
             , userChangePasswordForm = Just newUserChangePasswordForm
           }
         , Cmd.none
+        )
+
+
+updateChangePasswordUserModalValidate : AuthToken -> Model -> User -> Form.Model -> Return Msg Model
+updateChangePasswordUserModalValidate token model user form =
+    let
+        ( newForm, newFormEffect ) =
+            Form.update Form.Validate form
+
+        ( newModel, newEffect ) =
+            case newForm.valid of
+                Just valid ->
+                    if valid then
+                        updateChangePasswordUserModalSave token model user newForm
+                    else
+                        ( model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+    in
+        ( { newModel | userChangePasswordForm = Just newForm }
+        , Cmd.batch
+            [ newEffect
+            , Cmd.map UserChangePasswordFormMsg newFormEffect
+            ]
         )
 
 
