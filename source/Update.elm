@@ -148,7 +148,7 @@ tryUpdateReset model resetToken =
         NotAsked ->
             let
                 ( newReset, resetMsg ) =
-                    Reset.Update.update Reset.Models.LoadToken model.reset
+                    Reset.Update.update (Reset.Models.LoadToken resetToken) model.reset
             in
                 ( { model | reset = newReset }, Cmd.map ResetMsg resetMsg )
 
@@ -171,7 +171,7 @@ updateLogout model =
                 |> withCredentials
                 |> send (LogoutResponse << RemoteData.fromResult)
     in
-        ( model, cmd )
+        ( { model | login = Login.Models.initialLogin }, cmd )
 
 
 updateLogoutResponse : Model -> WebData Bool -> Return Msg Model

@@ -9,7 +9,11 @@ import Helpers.Models exposing (..)
 type Msg
     = LoadReset
     | AuthenticateResponse (WebData AuthResult)
-    | LoadToken
+    | LoadToken String
+    | ResetFormMsg Form.Msg
+    | ResetModalMsg Ui.Modal.Msg
+    | SaveResetModal AuthToken
+    | PasswordResetResponse (WebData AuthResult)
 
 
 type alias Model =

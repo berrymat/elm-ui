@@ -139,6 +139,12 @@ authToken model =
         |> RemoteData.withDefault ""
 
 
+resetAuthToken : Model -> AuthToken
+resetAuthToken model =
+    RemoteData.map .authToken model.reset.authResult
+        |> RemoteData.withDefault ""
+
+
 page : Model -> Html Msg
 page model =
     case model.route of
@@ -158,7 +164,7 @@ page model =
             containerPage (authToken model) model.container
 
         ResetRoute resetToken ->
-            resetPage (authToken model) model.reset
+            resetPage (resetAuthToken model) model.reset
 
         NotFoundRoute ->
             notFoundView
