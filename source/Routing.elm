@@ -10,6 +10,7 @@ type Route
     | CustomerRoute String
     | ClientRoute String
     | StaffRoute String
+    | ResetRoute String
     | NotFoundRoute
 
 
@@ -21,6 +22,7 @@ matchers =
         , map CustomerRoute (s "Customer" </> string)
         , map ClientRoute (s "Client" </> string)
         , map StaffRoute (s "Staff" </> string)
+        , map ResetRoute (s "Reset" </> string)
         ]
 
 

@@ -11,8 +11,9 @@ import Login.Models
 import Login.View
 import Container.View
 import Container.Models
+import Reset.View
+import Reset.Models
 import Routing exposing (Route(..))
-import Container.Models
 import RemoteData
 import Helpers.Models exposing (..)
 import Ui.NotificationCenter
@@ -111,6 +112,9 @@ navItems model =
         StaffRoute id ->
             containerNavItems model
 
+        ResetRoute resetToken ->
+            loginNavItems model
+
         NotFoundRoute ->
             []
 
@@ -153,6 +157,9 @@ page model =
         StaffRoute id ->
             containerPage (authToken model) model.container
 
+        ResetRoute resetToken ->
+            resetPage (authToken model) model.reset
+
         NotFoundRoute ->
             notFoundView
 
@@ -165,6 +172,11 @@ loginPage login =
 containerPage : AuthToken -> Container.Models.Container -> Html Msg
 containerPage token container =
     Html.map ContainerMsg (Container.View.view token container)
+
+
+resetPage : AuthToken -> Reset.Models.Model -> Html Msg
+resetPage token reset =
+    Html.map ResetMsg (Reset.View.view token reset)
 
 
 notFoundView : Html msg

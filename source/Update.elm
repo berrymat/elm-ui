@@ -3,10 +3,12 @@ module Update exposing (..)
 import Ui.App
 import Models exposing (..)
 import Helpers.Models exposing (..)
-import Container.Models exposing (initialContainer)
 import Login.Models
 import Login.Update
+import Container.Models exposing (initialContainer)
 import Container.Update
+import Reset.Models
+import Reset.Update
 import Routing exposing (Route(..), parseLocation)
 import Return exposing (..)
 import HttpBuilder exposing (..)
@@ -47,6 +49,9 @@ fetchData model =
         StaffRoute id ->
             tryUpdateContainer model CustomerType id StaffType
 
+        ResetRoute resetToken ->
+            tryUpdateReset model resetToken
+
         NotFoundRoute ->
             ( model, Cmd.none )
 
@@ -75,6 +80,15 @@ update msg model =
                         model.login
             in
                 ( { model | login = updatedLogin }, Cmd.map LoginMsg cmd )
+
+        ResetMsg subMsg ->
+            let
+                ( updatedReset, cmd ) =
+                    Reset.Update.update
+                        subMsg
+                        model.reset
+            in
+                ( { model | reset = updatedReset }, Cmd.map ResetMsg cmd )
 
         ContainerMsg subMsg ->
             updateContainer model subMsg
@@ -120,6 +134,32 @@ tryUpdateContainer model parentType id childType =
 
         Success result ->
             updateContainer model (Container.Models.LoadContainer parentType id childType)
+
+
+updateReset : Model -> Reset.Models.Msg -> Return Msg Model
+updateReset model subMsg =
+    Reset.Update.update subMsg model.reset
+        |> Return.mapBoth ResetMsg (\new -> { model | reset = new })
+
+
+tryUpdateReset : Model -> String -> Return Msg Model
+tryUpdateReset model resetToken =
+    case model.reset.authResult of
+        NotAsked ->
+            let
+                ( newReset, resetMsg ) =
+                    Reset.Update.update Reset.Models.LoadToken model.reset
+            in
+                ( { model | reset = newReset }, Cmd.map ResetMsg resetMsg )
+
+        Loading ->
+            singleton model
+
+        Failure error ->
+            singleton model
+
+        Success result ->
+            updateReset model Reset.Models.LoadReset
 
 
 updateLogout : Model -> Return Msg Model
