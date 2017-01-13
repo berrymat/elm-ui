@@ -9,8 +9,8 @@ import Return exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Components.Form as Form
-import Ui.Helpers.Emitter
-import Http exposing (..)
+import Users.Restrict.Models
+import Users.Restrict.Update
 
 
 update : Msg -> Model -> Return Msg Model
@@ -113,12 +113,26 @@ updateInner msg model =
                     , Cmd.map UserChangePasswordFormMsg effect
                     )
 
-            -- OTHER MODALS - TEMP - TODO
-            ModalAction _ _ _ ->
+            -- RESTRICT USER MODAL
+            ModalAction token RestrictUser action ->
+                updateModalActionRestrictUser token model action
+
+            ModalMsg RestrictUser modalMsg ->
                 singleton model
 
-            ModalMsg _ _ ->
-                singleton model
+            ModalComponentMsg RestrictType modalMsg ->
+                updateModalComponentMsgRestrictType model modalMsg
+
+
+
+{-
+   -- OTHER MODALS - TEMP - TODO
+   ModalAction _ _ _ ->
+       singleton model
+
+   ModalMsg _ _ ->
+       singleton model
+-}
 
 
 subscriptions : Model -> Sub Msg
@@ -493,3 +507,44 @@ updateModalMsgChangePasswordUser model modalMsg =
             Ui.Modal.update modalMsg model.userChangePasswordModal
     in
         ( { model | userChangePasswordModal = newUserChangePasswordModal }, Cmd.none )
+
+
+
+-- RESTRICT USER
+
+
+updateModalActionRestrictUser : AuthToken -> Model -> ModalAction -> Return Msg Model
+updateModalActionRestrictUser token model action =
+    let
+        maybeUser =
+            List.filter .checked model.users
+                |> List.head
+
+        dispatch user =
+            case action of
+                Open ->
+                    updateRestrictUserModalOpen model user
+
+                _ ->
+                    singleton model
+    in
+        maybeUser
+            |> Maybe.map dispatch
+            |> Maybe.withDefault (singleton model)
+
+
+updateRestrictUserModalOpen : Model -> User -> Return Msg Model
+updateRestrictUserModalOpen model user =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close model.usersActionMenu
+    in
+        updateModalComponentMsgRestrictType model (Users.Restrict.Models.Open user.id)
+            |> Return.map (\model -> { model | usersActionMenu = newActionMenu })
+
+
+updateModalComponentMsgRestrictType : Model -> Users.Restrict.Models.Msg -> Return Msg Model
+updateModalComponentMsgRestrictType model modalMsg =
+    Users.Restrict.Update.update modalMsg model.userRestrictModal
+        |> Return.mapBoth (ModalComponentMsg Users.Models.RestrictType)
+            (\new -> { model | userRestrictModal = new })

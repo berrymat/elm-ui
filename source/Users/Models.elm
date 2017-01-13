@@ -13,6 +13,7 @@ import Components.Form as Form exposing (ValidationError)
 import Components.Validators exposing (..)
 import RemoteData exposing (..)
 import Char
+import Users.Restrict.Models as Restrict
 
 
 type ModalType
@@ -22,6 +23,10 @@ type ModalType
     | ResetPasswordUser
     | ChangePasswordUser
     | DeleteUser
+
+
+type ComponentModalType
+    = RestrictType
 
 
 type ModalAction
@@ -46,6 +51,8 @@ type Msg
     | UserSaveResponse (WebData Model)
       -- CHANGE PASSWORD FORM
     | UserChangePasswordFormMsg Form.Msg
+      -- NEW MODAL COMPONENTS
+    | ModalComponentMsg ComponentModalType Restrict.Msg
 
 
 type alias Model =
@@ -67,6 +74,7 @@ type alias Model =
     , userChangePasswordModal : Ui.Modal.Model
     , userChangePasswordForm : Maybe Form.Model
     , userResetPasswordModal : Ui.Modal.Model
+    , userRestrictModal : Restrict.Model
     }
 
 
@@ -122,6 +130,7 @@ modelDecoder =
         |> hardcoded Ui.Modal.init
         |> hardcoded Nothing
         |> hardcoded Ui.Modal.init
+        |> hardcoded Restrict.init
 
 
 userDecoder : Decode.Decoder User

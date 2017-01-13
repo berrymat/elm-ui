@@ -15,7 +15,7 @@ import Ui.DropdownMenu
 import Ui.IconButton
 import Ui.Modal
 import Components.Form as Form
-import Html.Lazy
+import Users.Restrict.View
 
 
 view : AuthToken -> Model -> Html Msg
@@ -320,4 +320,5 @@ viewActionMenu token model =
                     , Ui.Modal.view (ModalMsg DeleteUser) userDeleteModalViewModel model.userDeleteModal
                     , Ui.Modal.view (ModalMsg ResetPasswordUser) userResetPasswordModalViewModel model.userResetPasswordModal
                     , Ui.Modal.view (ModalMsg ChangePasswordUser) userChangePasswordModalViewModel model.userChangePasswordModal
+                    , Html.map (ModalComponentMsg RestrictType) (Users.Restrict.View.view token model.userRestrictModal)
                     ]
