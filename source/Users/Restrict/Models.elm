@@ -7,14 +7,16 @@ import RemoteData exposing (..)
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
+import Users.Manager.User exposing (..)
+import Return exposing (..)
+import Helpers.Helpers exposing (..)
 
 
 type Msg
-    = Open NodeId
-    | Save AuthToken
+    = Save AuthToken
     | Cancel
     | RestrictResponse (WebData (List Restriction))
-    | SaveResponse (WebData (List Restriction))
+    | SaveResponse (WebData User)
     | ToggleRestriction NodeId
     | SetQuery String
     | SetTableState Table.State
@@ -29,22 +31,29 @@ type alias Restriction =
 
 
 type alias Model =
-    { modal : Ui.Modal.Model
-    , nodeId : NodeId
+    { id : NodeId
+    , modal : Ui.Modal.Model
     , restrictions : WebData (List Restriction)
     , tableState : Table.State
     , query : String
+    , response : WebData User
     }
 
 
-init : Model
-init =
-    { modal = Ui.Modal.init
-    , nodeId = ""
-    , restrictions = NotAsked
-    , tableState = Table.initialSort "Email"
-    , query = ""
-    }
+init : User -> Return Msg Model
+init user =
+    ( { id = user.id
+      , modal = Ui.Modal.open Ui.Modal.init
+      , restrictions = Loading
+      , tableState = Table.initialSort "Email"
+      , query = ""
+      , response = NotAsked
+      }
+    , fetcher "Restrictions"
+        user.id
+        restrictionsDecoder
+        (RestrictResponse << RemoteData.fromResult)
+    )
 
 
 restrictionsDecoder : Decode.Decoder (List Restriction)

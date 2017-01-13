@@ -7,14 +7,13 @@ import Return exposing (..)
 import RemoteData exposing (..)
 import Table
 import Ui.Modal
+import Users.Manager.Out exposing (..)
+import Users.Manager.User exposing (..)
 
 
-update : Msg -> Model -> Return Msg Model
+update : Msg -> Model -> ( Return Msg Model, OutMsg )
 update msg model =
     case msg of
-        Open nodeId ->
-            updateOpen model nodeId
-
         Save authToken ->
             updateSave model authToken
 
@@ -40,79 +39,72 @@ update msg model =
             updateModalMsg model modalMsg
 
 
-updateOpen : Model -> NodeId -> Return Msg Model
-updateOpen model nodeId =
-    let
-        cmdFetch =
-            fetcher "Restrictions"
-                nodeId
-                restrictionsDecoder
-                (RestrictResponse << RemoteData.fromResult)
-    in
-        ( { model
-            | restrictions = Loading
-            , nodeId = nodeId
-            , modal = Ui.Modal.open model.modal
-          }
-        , cmdFetch
-        )
-
-
-updateSave : Model -> AuthToken -> Return Msg Model
+updateSave : Model -> AuthToken -> ( Return Msg Model, OutMsg )
 updateSave model authToken =
     let
         saveRestrictions authToken restrictions =
             ( restrictions
             , putter authToken
                 "Restrictions"
-                model.nodeId
+                model.id
                 (encodeRestrictions restrictions)
-                restrictionsDecoder
+                userDecoder
                 (SaveResponse << RemoteData.fromResult)
             )
 
-        ( newRestrictions, saveCmd ) =
+        ( newRestrictions, cmd ) =
             RemoteData.update (saveRestrictions authToken) model.restrictions
+
+        newModel =
+            { model | restrictions = newRestrictions }
     in
-        ( { model | restrictions = newRestrictions }, saveCmd )
+        ( return newModel cmd, OutNone )
 
 
-updateCancel : Model -> Return Msg Model
+updateCancel : Model -> ( Return Msg Model, OutMsg )
 updateCancel model =
-    ( { model | modal = Ui.Modal.close model.modal }, Cmd.none )
+    ( singleton { model | modal = Ui.Modal.close model.modal }, OutNone )
 
 
-updateRestrictResponse : Model -> WebData (List Restriction) -> Return Msg Model
+updateRestrictResponse : Model -> WebData (List Restriction) -> ( Return Msg Model, OutMsg )
 updateRestrictResponse model response =
-    ( { model | restrictions = response }, Cmd.none )
+    ( singleton { model | restrictions = response }, OutNone )
 
 
-updateSetQuery : Model -> String -> Return Msg Model
+updateSetQuery : Model -> String -> ( Return Msg Model, OutMsg )
 updateSetQuery model query =
-    ( { model | query = query }, Cmd.none )
+    ( singleton { model | query = query }, OutNone )
 
 
-updateSetTableState : Model -> Table.State -> Return Msg Model
+updateSetTableState : Model -> Table.State -> ( Return Msg Model, OutMsg )
 updateSetTableState model tableState =
-    ( { model | tableState = tableState }, Cmd.none )
+    ( singleton { model | tableState = tableState }, OutNone )
 
 
-updateModalMsg : Model -> Ui.Modal.Msg -> Return Msg Model
+updateModalMsg : Model -> Ui.Modal.Msg -> ( Return Msg Model, OutMsg )
 updateModalMsg model modalMsg =
-    ( { model | modal = Ui.Modal.update modalMsg model.modal }, Cmd.none )
+    ( singleton { model | modal = Ui.Modal.update modalMsg model.modal }, OutNone )
 
 
-updateSaveResponse : Model -> WebData (List Restriction) -> Return Msg Model
+updateSaveResponse : Model -> WebData User -> ( Return Msg Model, OutMsg )
 updateSaveResponse model response =
     let
-        newModal =
-            RemoteData.map (\r -> Ui.Modal.close model.modal) response
-                |> RemoteData.withDefault model.modal
+        newModel =
+            { model | response = response }
+
+        cmd =
+            Helpers.Helpers.errorCmd response
+
+        updateSaveResponseSuccess user =
+            ( singleton { newModel | modal = Ui.Modal.close model.modal }
+            , OutUpdate user
+            )
     in
-        ( { model | restrictions = response, modal = newModal }, Cmd.none )
+        RemoteData.map updateSaveResponseSuccess response
+            |> RemoteData.withDefault ( return newModel cmd, OutNone )
 
 
-updateToggleRestriction : Model -> NodeId -> Return Msg Model
+updateToggleRestriction : Model -> NodeId -> ( Return Msg Model, OutMsg )
 updateToggleRestriction model nodeId =
     let
         toggleRestrictions restrictions =
@@ -128,4 +120,4 @@ updateToggleRestriction model nodeId =
         newRestrictions =
             RemoteData.map toggleRestrictions model.restrictions
     in
-        ( { model | restrictions = newRestrictions }, Cmd.none )
+        ( singleton { model | restrictions = newRestrictions }, OutNone )

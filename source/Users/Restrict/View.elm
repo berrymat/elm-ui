@@ -3,8 +3,6 @@ module Users.Restrict.View exposing (..)
 import Users.Restrict.Models exposing (..)
 import Helpers.Models exposing (..)
 import Helpers.RemoteData
-import Return exposing (..)
-import RemoteData exposing (..)
 import Table exposing (..)
 import Ui.Button
 import Ui.Container

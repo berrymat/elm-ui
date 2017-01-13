@@ -8,7 +8,6 @@ import HttpBuilder exposing (..)
 import Http
 import RemoteData exposing (..)
 import Login.Update exposing (authenticateDecoder)
-import Users.Models exposing (encodeChangePassword, ChangePassword)
 import Components.Form as Form
 import Ui.Modal
 import Navigation

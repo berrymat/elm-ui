@@ -4,18 +4,15 @@ import Users.Models exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Helpers.Helpers exposing (..)
 import Table exposing (..)
 import Helpers.Models exposing (..)
 import Dict
 import Ui
-import Ui.Button
-import Ui.Container
 import Ui.DropdownMenu
 import Ui.IconButton
-import Ui.Modal
-import Components.Form as Form
-import Users.Restrict.View
+import Users.Manager.User exposing (..)
+import Users.Manager.View as Manager
+import Users.Manager.Models exposing (ModalType(..))
 
 
 view : AuthToken -> Model -> Html Msg
@@ -155,7 +152,7 @@ simpleRowAttrs _ =
 
 dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
 dropdownMenuItem token icon name type_ =
-    Ui.DropdownMenu.item [ onClick (ModalAction token type_ Open) ]
+    Ui.DropdownMenu.item [ onClick (ModalAction token type_) ]
         [ Ui.icon icon True []
         , node "span" [] [ text name ]
         ]
@@ -226,86 +223,6 @@ viewActionMenu token model =
             List.filter .checked model.users
                 |> List.head
                 |> Maybe.withDefault (initUser model.id)
-
-        modalContent =
-            case model.userEditForm of
-                Just form ->
-                    [ Form.view UserFormMsg form ]
-
-                Nothing ->
-                    [ text "Edit Modal" ]
-
-        ( title, saveText, modalType ) =
-            case model.userEditMethod of
-                Just Post ->
-                    ( "New User", "Create", NewUser )
-
-                Just Put ->
-                    ( "Edit User", "Update", EditUser )
-
-                Just Delete ->
-                    ( "", "", NewUser )
-
-                Nothing ->
-                    ( "", "", NewUser )
-
-        userEditModalViewModel =
-            { content = modalContent
-            , title = title
-            , footer =
-                [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary saveText (ModalAction token modalType Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction token modalType Cancel)
-                    ]
-                ]
-            }
-
-        userDeleteModalViewModel =
-            { content =
-                [ div [ class "padded-modal-content" ]
-                    [ text ("Confirm deletion of user '" ++ user.email ++ "'?") ]
-                ]
-            , title = "Delete User"
-            , footer =
-                [ Ui.Container.rowEnd []
-                    [ Ui.Button.danger "Delete" (ModalAction token DeleteUser Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction token DeleteUser Cancel)
-                    ]
-                ]
-            }
-
-        userResetPasswordModalViewModel =
-            { content =
-                [ div [ class "padded-modal-content" ]
-                    [ text ("Confirm reset of password for user '" ++ user.email ++ "'?") ]
-                ]
-            , title = "Reset Password"
-            , footer =
-                [ Ui.Container.rowEnd []
-                    [ Ui.Button.danger "Reset" (ModalAction token ResetPasswordUser Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction token ResetPasswordUser Cancel)
-                    ]
-                ]
-            }
-
-        ( changePasswordModalContent, changePasswordValid ) =
-            case model.userChangePasswordForm of
-                Just form ->
-                    ( [ Form.view UserChangePasswordFormMsg form ], Form.isFormValid form )
-
-                Nothing ->
-                    ( [ text "Change Password Modal" ], False )
-
-        userChangePasswordModalViewModel =
-            { content = changePasswordModalContent
-            , title = "Change Password"
-            , footer =
-                [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Change" (ModalAction token ChangePasswordUser Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction token ChangePasswordUser Cancel)
-                    ]
-                ]
-            }
     in
         case actions of
             [] ->
@@ -315,10 +232,6 @@ viewActionMenu token model =
                 div []
                     [ Ui.DropdownMenu.view (actionDropdownViewModel actions token)
                         ActionMenu
-                        model.usersActionMenu
-                    , Ui.Modal.view (ModalMsg modalType) userEditModalViewModel model.userEditModal
-                    , Ui.Modal.view (ModalMsg DeleteUser) userDeleteModalViewModel model.userDeleteModal
-                    , Ui.Modal.view (ModalMsg ResetPasswordUser) userResetPasswordModalViewModel model.userResetPasswordModal
-                    , Ui.Modal.view (ModalMsg ChangePasswordUser) userChangePasswordModalViewModel model.userChangePasswordModal
-                    , Html.map (ModalComponentMsg RestrictType) (Users.Restrict.View.view token model.userRestrictModal)
+                        model.actionMenu
+                    , Html.map ManagerMsg (Manager.view token model.manager)
                     ]

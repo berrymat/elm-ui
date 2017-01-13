@@ -44,12 +44,6 @@ putter token collection id value decoder msg =
     requester token collection id Put value decoder msg
 
 
-type HttpMethod
-    = Post
-    | Put
-    | Delete
-
-
 request : AuthToken -> String -> String -> HttpMethod -> Encode.Value -> Decode.Decoder a -> ( String, Http.Request a )
 request token collection id method value decoder =
     let

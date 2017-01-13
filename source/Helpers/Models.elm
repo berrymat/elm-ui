@@ -1,5 +1,7 @@
 module Helpers.Models exposing (..)
 
+import Json.Encode as Encode
+
 
 type alias NodeId =
     String
@@ -40,7 +42,6 @@ type TabType
     | EmptyTab
 
 
-
 type alias Tab =
     { tabType : TabType
     , name : String
@@ -66,6 +67,12 @@ type AccessType
     | Write
 
 
+type HttpMethod
+    = Post
+    | Put
+    | Delete
+
+
 convertAccessType : String -> AccessType
 convertAccessType type_ =
     if type_ == "r" then
@@ -76,5 +83,33 @@ convertAccessType type_ =
         None
 
 
+type alias ChangePassword =
+    { id : String
+    , password : String
+    , confirmPassword : String
+    }
 
 
+initChangePassword : NodeId -> ChangePassword
+initChangePassword entityId =
+    ChangePassword entityId "" ""
+
+
+
+{-
+   changePasswordDecoder : Decode.Decoder ChangePassword
+   changePasswordDecoder =
+       decode ChangePassword
+           |> required "id" Decode.string
+           |> required "password" Decode.string
+           |> required "confirmPassword" Decode.string
+-}
+
+
+encodeChangePassword : ChangePassword -> Encode.Value
+encodeChangePassword changePassword =
+    Encode.object
+        [ ( "id", Encode.string changePassword.id )
+        , ( "password", Encode.string changePassword.password )
+        , ( "confirmPassword", Encode.string changePassword.confirmPassword )
+        ]

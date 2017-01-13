@@ -2,36 +2,18 @@ module Users.Update exposing (..)
 
 import Users.Models exposing (..)
 import Table
-import RemoteData exposing (..)
 import Ui.DropdownMenu
-import Ui.Modal
 import Return exposing (..)
-import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
-import Components.Form as Form
-import Users.Restrict.Models
-import Users.Restrict.Update
+import Users.Manager.Update as ManagerUpdate
+import Users.Manager.User exposing (..)
+import Users.Manager.Out exposing (..)
+import Users.Manager.Models as Manager exposing (ModalType(..))
+import Users.Manager.Update as ManagerUpdate
 
 
 update : Msg -> Model -> Return Msg Model
 update msg model =
-    let
-        errorCmd =
-            case msg of
-                UserSaveResponse webdata ->
-                    Helpers.Helpers.errorCmd webdata
-
-                _ ->
-                    Cmd.none
-
-        return =
-            updateInner msg model
-    in
-        (return |> Return.command errorCmd)
-
-
-updateInner : Msg -> Model -> Return Msg Model
-updateInner msg model =
     let
         user =
             List.filter .checked model.users
@@ -58,88 +40,80 @@ updateInner msg model =
                 ( model, Cmd.none )
 
             -- NEW USER MODAL
-            ModalAction token NewUser action ->
-                updateModalActionUser token model action (initUser model.id) Post
+            ModalAction token modalType ->
+                updateModalAction token model modalType user
 
-            ModalMsg NewUser modalMsg ->
-                updateModalMsgUser model modalMsg
-
-            -- EDIT USER MODAL
-            ModalAction token EditUser action ->
-                updateModalActionUser token model action user Put
-
-            ModalMsg EditUser modalMsg ->
-                updateModalMsgUser model modalMsg
-
-            UserFormMsg msg ->
-                let
-                    ( newUserEditModal, effect ) =
-                        maybeUpdate (Form.update msg) model.userEditForm
-                in
-                    ( { model | userEditForm = newUserEditModal }
-                    , Cmd.map UserFormMsg effect
-                    )
-
-            UserSaveResponse webdata ->
-                handleWebDataResponse model webdata "Users updated" singleton
-
-            -- DELETE USER MODAL
-            ModalAction token DeleteUser action ->
-                updateModalActionDeleteUser token model action
-
-            ModalMsg DeleteUser modalMsg ->
-                updateModalMsgDeleteUser model modalMsg
-
-            -- RESET PASSWORD USER MODAL
-            ModalAction token ResetPasswordUser action ->
-                updateModalActionResetPasswordUser token model action
-
-            ModalMsg ResetPasswordUser modalMsg ->
-                updateModalMsgResetPasswordUser model modalMsg
-
-            -- CHANGE PASSWORD USER MODAL
-            ModalAction token ChangePasswordUser action ->
-                updateModalActionChangePasswordUser token model action
-
-            ModalMsg ChangePasswordUser modalMsg ->
-                updateModalMsgChangePasswordUser model modalMsg
-
-            UserChangePasswordFormMsg msg ->
-                let
-                    ( newUserChangePasswordForm, effect ) =
-                        maybeUpdate (Form.update msg) model.userChangePasswordForm
-                in
-                    ( { model | userChangePasswordForm = newUserChangePasswordForm }
-                    , Cmd.map UserChangePasswordFormMsg effect
-                    )
-
-            -- RESTRICT USER MODAL
-            ModalAction token RestrictUser action ->
-                updateModalActionRestrictUser token model action
-
-            ModalMsg RestrictUser modalMsg ->
-                singleton model
-
-            ModalComponentMsg RestrictType modalMsg ->
-                updateModalComponentMsgRestrictType model modalMsg
+            ManagerMsg managerMsg ->
+                updateManagerMsg model managerMsg
 
 
+updateModalAction : AuthToken -> Model -> ModalType -> User -> Return Msg Model
+updateModalAction token model modalType user =
+    let
+        newActionMenu =
+            Ui.DropdownMenu.close model.actionMenu
 
-{-
-   -- OTHER MODALS - TEMP - TODO
-   ModalAction _ _ _ ->
-       singleton model
+        newModel =
+            { model | actionMenu = newActionMenu }
 
-   ModalMsg _ _ ->
-       singleton model
--}
+        newUser =
+            if modalType == NewUser then
+                (initUser model.id)
+            else
+                user
+
+        ( return, out ) =
+            ManagerUpdate.update (Manager.Open modalType newUser) model.manager
+    in
+        return
+            |> mapBoth ManagerMsg (\nm -> { newModel | manager = nm })
+
+
+updateManagerMsg : Model -> Manager.Msg -> Return Msg Model
+updateManagerMsg model managerMsg =
+    let
+        mapBothEx msg cmd ( return, out ) =
+            ( Return.mapBoth msg cmd return, out )
+
+        ( return, out ) =
+            ManagerUpdate.update managerMsg model.manager
+                |> mapBothEx ManagerMsg (\nm -> { model | manager = nm })
+
+        x =
+            Debug.log "out" out
+
+        newReturn =
+            Debug.log "newReturn"
+                (case out of
+                    OutCancel ->
+                        return |> Return.map (\m -> { m | manager = Manager.NoModel })
+
+                    OutNone ->
+                        return
+
+                    OutUpdate user ->
+                        let
+                            newUsers model =
+                                user :: (List.filter (\u -> u.id /= user.id) model.users)
+                        in
+                            return |> Return.map (\m -> { m | manager = Manager.NoModel, users = newUsers m })
+
+                    OutDelete user ->
+                        let
+                            newUsers model =
+                                (List.filter (\u -> u.id /= user.id) model.users)
+                        in
+                            return |> Return.map (\m -> { m | manager = Manager.NoModel, users = newUsers m })
+                )
+    in
+        newReturn
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     let
         subActionMenu =
-            Sub.map ActionMenu (Ui.DropdownMenu.subscriptions model.usersActionMenu)
+            Sub.map ActionMenu (Ui.DropdownMenu.subscriptions model.actionMenu)
     in
         Sub.batch
             [ subActionMenu
@@ -178,14 +152,14 @@ updateToggleUser model nodeId =
 
 applyNewActionMenu : Model -> Ui.DropdownMenu.Model -> Return Msg Model
 applyNewActionMenu model newMenu =
-    ( { model | usersActionMenu = newMenu }, Cmd.none )
+    ( { model | actionMenu = newMenu }, Cmd.none )
 
 
 updateActionMenu : Model -> Ui.DropdownMenu.Msg -> Return Msg Model
 updateActionMenu model action =
     let
         newActionMenu =
-            Ui.DropdownMenu.update action model.usersActionMenu
+            Ui.DropdownMenu.update action model.actionMenu
     in
         applyNewActionMenu model newActionMenu
 
@@ -194,357 +168,6 @@ updateCloseActionMenu : Model -> Return Msg Model
 updateCloseActionMenu model =
     let
         newActionMenu =
-            Ui.DropdownMenu.close model.usersActionMenu
+            Ui.DropdownMenu.close model.actionMenu
     in
         applyNewActionMenu model newActionMenu
-
-
-
--- NEW FOLDER UPDATES
-
-
-updateModalActionUser : AuthToken -> Model -> ModalAction -> User -> HttpMethod -> Return Msg Model
-updateModalActionUser token model action user method =
-    case action of
-        Open ->
-            updateUserModalOpen model user method
-
-        Save ->
-            case model.userEditForm of
-                Just form ->
-                    updateUserModalSave token model user form method
-
-                Nothing ->
-                    singleton model
-
-        Cancel ->
-            ( { model | userEditModal = Ui.Modal.close model.userEditModal }, Cmd.none )
-
-
-updateUserModalOpen : Model -> User -> HttpMethod -> Return Msg Model
-updateUserModalOpen model user method =
-    let
-        newActionMenu =
-            Ui.DropdownMenu.close model.usersActionMenu
-
-        newUserForm =
-            Users.Models.userForm user
-    in
-        ( { model
-            | usersActionMenu = newActionMenu
-            , userEditMethod = Just method
-            , userEditModal = Ui.Modal.open model.userEditModal
-            , userEditForm = Just newUserForm
-          }
-        , Cmd.none
-        )
-
-
-updateUserModalSave : AuthToken -> Model -> User -> Form.Model -> HttpMethod -> Return Msg Model
-updateUserModalSave token model user form method =
-    let
-        newUserEditModal =
-            Ui.Modal.close model.userEditModal
-
-        newUser =
-            Users.Models.updateUser form user
-
-        newUsers =
-            List.map
-                (\u ->
-                    if u.id == newUser.id then
-                        newUser
-                    else
-                        u
-                )
-                model.users
-
-        newEffect =
-            saveUser token newUser method
-    in
-        ( { model | userEditModal = newUserEditModal, users = newUsers }, newEffect )
-
-
-updateModalMsgUser : Model -> Ui.Modal.Msg -> Return Msg Model
-updateModalMsgUser model modalMsg =
-    let
-        newUserEditModal =
-            Ui.Modal.update modalMsg model.userEditModal
-    in
-        ( { model | userEditModal = newUserEditModal }, Cmd.none )
-
-
-
--- DELETE USER
-
-
-updateModalActionDeleteUser : AuthToken -> Model -> ModalAction -> Return Msg Model
-updateModalActionDeleteUser token model action =
-    let
-        maybeUser =
-            List.filter .checked model.users
-                |> List.head
-
-        dispatch user =
-            case action of
-                Open ->
-                    updateDeleteUserModalOpen model user
-
-                Save ->
-                    updateDeleteUserModalSave token model user
-
-                Cancel ->
-                    ( { model | userDeleteModal = Ui.Modal.close model.userDeleteModal }, Cmd.none )
-    in
-        maybeUser
-            |> Maybe.map dispatch
-            |> Maybe.withDefault (singleton model)
-
-
-updateDeleteUserModalOpen : Model -> User -> Return Msg Model
-updateDeleteUserModalOpen model user =
-    let
-        newActionMenu =
-            Ui.DropdownMenu.close model.usersActionMenu
-    in
-        ( { model
-            | usersActionMenu = newActionMenu
-            , userDeleteModal = Ui.Modal.open model.userDeleteModal
-          }
-        , Cmd.none
-        )
-
-
-updateDeleteUserModalSave : AuthToken -> Model -> User -> Return Msg Model
-updateDeleteUserModalSave token model user =
-    let
-        newUserDeleteModal =
-            Ui.Modal.close model.userDeleteModal
-
-        newEffect =
-            Helpers.Helpers.requester token "Users" user.id Delete (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)
-    in
-        ( { model
-            | userDeleteModal = newUserDeleteModal
-          }
-        , newEffect
-        )
-
-
-updateModalMsgDeleteUser : Model -> Ui.Modal.Msg -> Return Msg Model
-updateModalMsgDeleteUser model modalMsg =
-    let
-        newUserDeleteModal =
-            Ui.Modal.update modalMsg model.userDeleteModal
-    in
-        ( { model | userDeleteModal = newUserDeleteModal }, Cmd.none )
-
-
-
--- RESET PASSWORD USER
-
-
-updateModalActionResetPasswordUser : AuthToken -> Model -> ModalAction -> Return Msg Model
-updateModalActionResetPasswordUser token model action =
-    let
-        maybeUser =
-            List.filter .checked model.users
-                |> List.head
-
-        dispatch user =
-            case action of
-                Open ->
-                    updateResetPasswordUserModalOpen model user
-
-                Save ->
-                    updateResetPasswordUserModalSave token model user
-
-                Cancel ->
-                    ( { model | userResetPasswordModal = Ui.Modal.close model.userResetPasswordModal }, Cmd.none )
-    in
-        maybeUser
-            |> Maybe.map dispatch
-            |> Maybe.withDefault (singleton model)
-
-
-updateResetPasswordUserModalOpen : Model -> User -> Return Msg Model
-updateResetPasswordUserModalOpen model user =
-    let
-        newActionMenu =
-            Ui.DropdownMenu.close model.usersActionMenu
-    in
-        ( { model
-            | usersActionMenu = newActionMenu
-            , userResetPasswordModal = Ui.Modal.open model.userResetPasswordModal
-          }
-        , Cmd.none
-        )
-
-
-updateResetPasswordUserModalSave : AuthToken -> Model -> User -> Return Msg Model
-updateResetPasswordUserModalSave token model user =
-    let
-        newUserResetPasswordModal =
-            Ui.Modal.close model.userResetPasswordModal
-
-        newEffect =
-            Helpers.Helpers.requester token "ResetPassword" user.id Put (encodeUser user) modelDecoder (UserSaveResponse << RemoteData.fromResult)
-    in
-        ( { model
-            | userResetPasswordModal = newUserResetPasswordModal
-          }
-        , newEffect
-        )
-
-
-updateModalMsgResetPasswordUser : Model -> Ui.Modal.Msg -> Return Msg Model
-updateModalMsgResetPasswordUser model modalMsg =
-    let
-        newUserResetPasswordModal =
-            Ui.Modal.update modalMsg model.userResetPasswordModal
-    in
-        ( { model | userResetPasswordModal = newUserResetPasswordModal }, Cmd.none )
-
-
-
--- CHANGE PASSWORD USER
-
-
-updateModalActionChangePasswordUser : AuthToken -> Model -> ModalAction -> Return Msg Model
-updateModalActionChangePasswordUser token model action =
-    let
-        maybeUser =
-            List.filter .checked model.users
-                |> List.head
-
-        dispatch user =
-            case action of
-                Open ->
-                    updateChangePasswordUserModalOpen model user
-
-                Save ->
-                    case model.userChangePasswordForm of
-                        Just form ->
-                            updateChangePasswordUserModalValidate token model user form
-
-                        Nothing ->
-                            singleton model
-
-                Cancel ->
-                    ( { model | userChangePasswordModal = Ui.Modal.close model.userChangePasswordModal }, Cmd.none )
-    in
-        maybeUser
-            |> Maybe.map dispatch
-            |> Maybe.withDefault (singleton model)
-
-
-updateChangePasswordUserModalOpen : Model -> User -> Return Msg Model
-updateChangePasswordUserModalOpen model user =
-    let
-        newActionMenu =
-            Ui.DropdownMenu.close model.usersActionMenu
-
-        newUserChangePasswordForm =
-            Users.Models.changePasswordForm (initChangePassword user.id)
-    in
-        ( { model
-            | usersActionMenu = newActionMenu
-            , userChangePasswordModal = Ui.Modal.open model.userChangePasswordModal
-            , userChangePasswordForm = Just newUserChangePasswordForm
-          }
-        , Cmd.none
-        )
-
-
-updateChangePasswordUserModalValidate : AuthToken -> Model -> User -> Form.Model -> Return Msg Model
-updateChangePasswordUserModalValidate token model user form =
-    let
-        ( newForm, newFormEffect ) =
-            Form.update Form.Validate form
-
-        ( newModel, newEffect ) =
-            case newForm.valid of
-                Just valid ->
-                    if valid then
-                        updateChangePasswordUserModalSave token model user newForm
-                    else
-                        ( model, Cmd.none )
-
-                Nothing ->
-                    ( model, Cmd.none )
-    in
-        ( { newModel | userChangePasswordForm = Just newForm }
-        , Cmd.batch
-            [ newEffect
-            , Cmd.map UserChangePasswordFormMsg newFormEffect
-            ]
-        )
-
-
-updateChangePasswordUserModalSave : AuthToken -> Model -> User -> Form.Model -> Return Msg Model
-updateChangePasswordUserModalSave token model user form =
-    let
-        newUserChangePasswordModal =
-            Ui.Modal.close model.userChangePasswordModal
-
-        changePassword =
-            Users.Models.updateChangePassword form (initChangePassword user.id)
-
-        newEffect =
-            Helpers.Helpers.requester token "ChangePassword" user.id Put (encodeChangePassword changePassword) modelDecoder (UserSaveResponse << RemoteData.fromResult)
-    in
-        ( { model
-            | userChangePasswordModal = newUserChangePasswordModal
-          }
-        , newEffect
-        )
-
-
-updateModalMsgChangePasswordUser : Model -> Ui.Modal.Msg -> Return Msg Model
-updateModalMsgChangePasswordUser model modalMsg =
-    let
-        newUserChangePasswordModal =
-            Ui.Modal.update modalMsg model.userChangePasswordModal
-    in
-        ( { model | userChangePasswordModal = newUserChangePasswordModal }, Cmd.none )
-
-
-
--- RESTRICT USER
-
-
-updateModalActionRestrictUser : AuthToken -> Model -> ModalAction -> Return Msg Model
-updateModalActionRestrictUser token model action =
-    let
-        maybeUser =
-            List.filter .checked model.users
-                |> List.head
-
-        dispatch user =
-            case action of
-                Open ->
-                    updateRestrictUserModalOpen model user
-
-                _ ->
-                    singleton model
-    in
-        maybeUser
-            |> Maybe.map dispatch
-            |> Maybe.withDefault (singleton model)
-
-
-updateRestrictUserModalOpen : Model -> User -> Return Msg Model
-updateRestrictUserModalOpen model user =
-    let
-        newActionMenu =
-            Ui.DropdownMenu.close model.usersActionMenu
-    in
-        updateModalComponentMsgRestrictType model (Users.Restrict.Models.Open user.id)
-            |> Return.map (\model -> { model | usersActionMenu = newActionMenu })
-
-
-updateModalComponentMsgRestrictType : Model -> Users.Restrict.Models.Msg -> Return Msg Model
-updateModalComponentMsgRestrictType model modalMsg =
-    Users.Restrict.Update.update modalMsg model.userRestrictModal
-        |> Return.mapBoth (ModalComponentMsg Users.Models.RestrictType)
-            (\new -> { model | userRestrictModal = new })
