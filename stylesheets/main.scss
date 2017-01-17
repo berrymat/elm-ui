@@ -426,10 +426,28 @@ div.k-treeview {
     width: 370px;
     display: flex;
     flex-direction: column;
+    border-right: 1px solid $bg-color-1;
+}
+
+.sidebar-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;    
     overflow: auto;
     background-color: $bg-color-2;
     color: $color-2;
-    border-right: 1px solid $bg-color-1;
+}
+
+.sidebar-footer {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    background-color: $bg-color-8;
+    border-top: 1px solid $bg-color-1;
+    color: $color-8;
+    padding: 8px;
+    min-height: $footer-height;
 }
 
 .flexer {
@@ -652,7 +670,7 @@ div.body-path {
     td {
         padding: 6px 15px;
         min-width: 100px;
-        
+
         &.checkbox, &.radio {
             width: 50px;
         }

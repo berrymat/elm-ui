@@ -118,22 +118,26 @@ updateContainer model subMsg =
 
 tryUpdateContainer : Model -> NodeType -> NodeId -> NodeType -> Return Msg Model
 tryUpdateContainer model parentType id childType =
-    case model.login.authResult of
-        NotAsked ->
-            let
-                ( newLogin, loginMsg ) =
-                    Login.Update.update Login.Models.LoadToken model.login
-            in
-                ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
+    let
+        _ =
+            Debug.log "tryUpdateContainer" ( parentType, id, childType )
+    in
+        case model.login.authResult of
+            NotAsked ->
+                let
+                    ( newLogin, loginMsg ) =
+                        Login.Update.update (Login.Models.LoadToken parentType id childType) model.login
+                in
+                    ( { model | login = newLogin }, Cmd.map LoginMsg loginMsg )
 
-        Loading ->
-            singleton model
+            Loading ->
+                singleton model
 
-        Failure error ->
-            singleton model
+            Failure error ->
+                singleton model
 
-        Success result ->
-            updateContainer model (Container.Models.LoadContainer parentType id childType)
+            Success result ->
+                updateContainer model (Container.Models.LoadContainer parentType id childType)
 
 
 updateReset : Model -> Reset.Models.Msg -> Return Msg Model

@@ -8,13 +8,14 @@ import Helpers.Models exposing (..)
 
 type Msg
     = AuthenticateResponse (WebData AuthResult)
+    | TokenResponse NodeType NodeId NodeType (WebData AuthResult)
     | LoginFormMsg Form.Msg
     | LoginModalMsg Ui.Modal.Msg
     | OpenLoginModal
     | SaveLoginModal
     | CancelLoginModal
     | GotoHome
-    | LoadToken
+    | LoadToken NodeType NodeId NodeType
 
 
 type alias Login =

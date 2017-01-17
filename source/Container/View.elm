@@ -17,7 +17,10 @@ view : AuthToken -> Container -> Html Msg
 view token container =
     div [ class "fullview" ]
         [ div [ class "sidebar" ]
-            [ viewTree container
+            [ div [ class "sidebar-content" ]
+                [ viewTree container ]
+            , div [ class "sidebar-footer" ]
+                [ viewTreeFooter container ]
             ]
         , div [ class "body" ]
             [ viewHeader token container
@@ -40,6 +43,11 @@ viewTree container =
                 (Helpers.RemoteData.viewPendingDefault "flexer")
     in
         Html.map TreeMsg htmlTree
+
+
+viewTreeFooter : Container -> Html Msg
+viewTreeFooter container =
+    text "Footer"
 
 
 viewHeader : AuthToken -> Container -> Html Msg

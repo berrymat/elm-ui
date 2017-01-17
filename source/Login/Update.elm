@@ -57,11 +57,14 @@ updateInner msg login =
         AuthenticateResponse response ->
             updateAuthenticateResponse login response
 
+        TokenResponse parentType nodeId childType response ->
+            updateTokenResponse login parentType nodeId childType response
+
         GotoHome ->
             updateGotoHome login
 
-        LoadToken ->
-            updateLoadToken login
+        LoadToken parentType nodeId childType ->
+            updateLoadToken login parentType nodeId childType
 
 
 updateOpenLoginModal : Login -> Return Msg Login
@@ -150,6 +153,9 @@ updateAuthenticateResponse login authResult =
 updateAuthenticateResponseSuccess : Login -> AuthResult -> Return Msg Login
 updateAuthenticateResponseSuccess login authResult =
     let
+        _ =
+            Debug.log "updateAuthenticateResponseSuccess" ( login, authResult )
+
         maybeTypes =
             maybeAuthResultTypes authResult
     in
@@ -175,6 +181,31 @@ fetchAuthResult =
         |> send (AuthenticateResponse << RemoteData.fromResult)
 
 
+updateTokenResponse : Login -> NodeType -> NodeId -> NodeType -> WebData AuthResult -> Return Msg Login
+updateTokenResponse login parentType nodeId childType authResult =
+    RemoteData.map (updateTokenResponseSuccess login parentType nodeId childType) authResult
+        |> RemoteData.withDefault (singleton login)
+
+
+updateTokenResponseSuccess : Login -> NodeType -> NodeId -> NodeType -> AuthResult -> Return Msg Login
+updateTokenResponseSuccess login parentType nodeId childType authResult =
+    let
+        path =
+            nodeTypeToPath childType
+    in
+        singleton authResult
+            |> Return.map (\new -> { login | authResult = Success new })
+            |> Return.command (Navigation.newUrl ("#" ++ path ++ "/" ++ nodeId))
+
+
+fetchAuthToken : NodeType -> NodeId -> NodeType -> Cmd Msg
+fetchAuthToken parentType nodeId childType =
+    HttpBuilder.get (apiUrl ++ "User")
+        |> withExpect (Http.expectJson authenticateDecoder)
+        |> withCredentials
+        |> send ((TokenResponse parentType nodeId childType) << RemoteData.fromResult)
+
+
 updateGotoHome : Login -> Return Msg Login
 updateGotoHome login =
     case login.authResult of
@@ -192,12 +223,12 @@ updateGotoHome login =
             updateAuthenticateResponseSuccess login result
 
 
-updateLoadToken : Login -> Return Msg Login
-updateLoadToken login =
+updateLoadToken : Login -> NodeType -> NodeId -> NodeType -> Return Msg Login
+updateLoadToken login parentType nodeId childType =
     case login.authResult of
         NotAsked ->
             singleton login
-                |> command fetchAuthResult
+                |> command (fetchAuthToken parentType nodeId childType)
 
         Loading ->
             singleton login
