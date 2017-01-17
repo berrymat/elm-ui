@@ -78,37 +78,3 @@ issueSiteDecoder =
     decode IssueSite
         |> required "id" Decode.string
         |> required "name" Decode.string
-
-
-
-{-
-   public class Root
-   {
-       public string id { get; set; }
-       public bool canAdd { get; set; }
-       public bool canEdit { get; set; }
-       public bool canDelete { get; set; }
-
-       public List<ApiIssue> issues { get; set; }
-   }
-
-   public class ApiIssue
-   {
-       public string id { get; set; }
-       public string caseNumber { get; set; }
-       public double createdDateTime { get; set; }
-       public double closedDateTime { get; set; }
-       public string status { get; set; }
-       public string clientName { get; set; }
-       public string siteName { get; set; }
-       public string[] notes { get; set; }
-       public string photoUrl { get; set; }
-       public IssueSite[] sites { get; set; }
-   }
-
-   public class IssueSite
-   {
-       public string id { get; set; }
-       public string name { get; set; }
-   }
--}
