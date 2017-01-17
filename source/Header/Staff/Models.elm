@@ -57,6 +57,7 @@ initEditForm staff =
                 , ( "mobile", 6, "Mobile", (Maybe.withDefault "" values.mob), Nothing, [] )
                 , ( "email", 8, "Email", (Maybe.withDefault "" values.email), Nothing, [ Form.Validator optionalValidEmail ] )
                 ]
+            , fileInputs = []
             , numberRanges = []
             , textareas = []
             , choosers = []

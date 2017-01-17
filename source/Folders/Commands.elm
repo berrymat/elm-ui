@@ -150,9 +150,6 @@ createNode nodeId type_ name children =
 createChild : NodeId -> String -> String -> Node
 createChild nodeId type_ name =
     let
-        a =
-            Debug.log "nodeId" nodeId
-
         children =
             []
     in

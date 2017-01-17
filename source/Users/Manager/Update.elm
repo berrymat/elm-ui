@@ -1,7 +1,6 @@
 module Users.Manager.Update exposing (..)
 
 import Users.Manager.Models exposing (..)
-import Debug
 import Return exposing (..)
 import Helpers.Models exposing (..)
 import Users.Manager.Out exposing (..)
@@ -25,7 +24,7 @@ update msg model =
             ( Return.mapBoth msg cmd return, out )
     in
         case ( model, msg ) of
-            ( NoModel, Open modalType user ) ->
+            ( _, Open modalType user ) ->
                 ( updateOpen model modalType user, OutNone )
 
             ( EditModel model_, EditMsg msg_ ) ->

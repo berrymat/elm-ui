@@ -31,8 +31,8 @@ update msg container =
                 FetchUsersResponse nodeId users ->
                     Helpers.Helpers.errorCmd users
 
-                FetchCasesResponse nodeId cases ->
-                    Helpers.Helpers.errorCmd cases
+                FetchIssuesResponse nodeId issues ->
+                    Helpers.Helpers.errorCmd issues
 
                 _ ->
                     Cmd.none
@@ -92,8 +92,8 @@ updateInner msg container =
         FetchUsersResponse nodeId users ->
             ( { container | content = RemoteData.map Content.Models.UsersContent users }, Cmd.none )
 
-        FetchCasesResponse nodeId cases ->
-            ( { container | content = RemoteData.map Content.Models.CasesContent cases }, Cmd.none )
+        FetchIssuesResponse nodeId issues ->
+            ( { container | content = RemoteData.map Content.Models.IssuesContent issues }, Cmd.none )
 
         ContentMsg subMsg ->
             RemoteData.update (Content.Update.update subMsg) container.content
@@ -143,9 +143,6 @@ goto nodeType nodeId =
 updateLoadContainer : NodeType -> NodeId -> NodeType -> Container -> Return Msg Container
 updateLoadContainer parentType nodeId childType container =
     let
-        x =
-            Debug.log "updateLoadContainer" ( parentType, nodeId, childType )
-
         treeId =
             nodeId ++ "-" ++ (nodeTypeToPath childType)
 
@@ -167,12 +164,6 @@ updatePathFromTree container cmdTree maybePath maybeRoot updatedTree =
 updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> Return Msg Container
 updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
     let
-        x =
-            Debug.log "updatePathFromTreeSuccess maybePath" maybePath
-
-        y =
-            Debug.log "updatePathFromTreeSuccess maybeRoot" maybeRoot
-
         ( newContainer, cmdHeader ) =
             case maybePath of
                 Just path ->

@@ -13,6 +13,7 @@ import Ui.IconButton
 import Users.Manager.User exposing (..)
 import Users.Manager.View as Manager
 import Users.Manager.Models exposing (ModalType(..))
+import Helpers.Table exposing (..)
 
 
 view : AuthToken -> Model -> Html Msg
@@ -42,37 +43,6 @@ view token model =
 
 config : Table.Config User Msg
 config =
-    Table.customConfig
-        { toId = .id
-        , toMsg = SetTableState
-        , columns =
-            [ radioColumn "select" .checked .id
-            , stringColumn "email" .email
-            , stringColumn "firstName" .firstName
-            , stringColumn "lastName" .lastName
-            ]
-        , customizations = customizations
-        }
-
-
-radioColumn : String -> (data -> Bool) -> (data -> NodeId) -> Table.Column data Msg
-radioColumn name toCheck toId =
-    Table.veryCustomColumn
-        { name = name
-        , viewData = \data -> viewRadio (toCheck data) (toId data)
-        , sorter = Table.unsortable
-        }
-
-
-viewRadio : Bool -> NodeId -> Table.HtmlDetails Msg
-viewRadio selected nodeId =
-    Table.HtmlDetails [ class "radio" ]
-        [ input [ type_ "radio", checked selected, onClick (ToggleUser nodeId) ] []
-        ]
-
-
-customizations : Table.Customizations User Msg
-customizations =
     let
         columnInfo =
             Dict.fromList
@@ -81,69 +51,18 @@ customizations =
                 , ( "firstName", ( "First Name", "firstName" ) )
                 , ( "lastName", ( "Last Name", "lastName" ) )
                 ]
-
-        simpleThead : List ( String, Table.Status, Attribute msg ) -> Table.HtmlDetails msg
-        simpleThead headers =
-            Table.HtmlDetails [] (List.map simpleTheadHelp headers)
-
-        simpleTheadHelp : ( String, Table.Status, Attribute msg ) -> Html msg
-        simpleTheadHelp ( name, status, onClick ) =
-            let
-                ( caption, className ) =
-                    (Dict.get name columnInfo) |> Maybe.withDefault ( "", "" )
-
-                content =
-                    case status of
-                        Table.Unsortable ->
-                            [ Html.text caption ]
-
-                        Table.Sortable selected ->
-                            [ Html.text caption
-                            , if selected then
-                                darkGrey "↓"
-                              else
-                                lightGrey "↓"
-                            ]
-
-                        Table.Reversible Nothing ->
-                            [ Html.text caption
-                            , lightGrey "↕"
-                            ]
-
-                        Table.Reversible (Just isReversed) ->
-                            [ Html.text caption
-                            , darkGrey
-                                (if isReversed then
-                                    "↑"
-                                 else
-                                    "↓"
-                                )
-                            ]
-            in
-                Html.th [ onClick, class className ] content
     in
-        { tableAttrs = []
-        , caption = Nothing
-        , thead = simpleThead
-        , tfoot = Nothing
-        , tbodyAttrs = []
-        , rowAttrs = simpleRowAttrs
-        }
-
-
-darkGrey : String -> Html msg
-darkGrey symbol =
-    Html.span [ style [ ( "color", "#555" ) ] ] [ Html.text (" " ++ symbol) ]
-
-
-lightGrey : String -> Html msg
-lightGrey symbol =
-    Html.span [ style [ ( "color", "#ccc" ) ] ] [ Html.text (" " ++ symbol) ]
-
-
-simpleRowAttrs : data -> List (Attribute msg)
-simpleRowAttrs _ =
-    []
+        Table.customConfig
+            { toId = .id
+            , toMsg = SetTableState
+            , columns =
+                [ radioColumn "select" .checked .id ToggleUser
+                , stringColumn "email" .email
+                , stringColumn "firstName" .firstName
+                , stringColumn "lastName" .lastName
+                ]
+            , customizations = (customizations columnInfo)
+            }
 
 
 

@@ -74,10 +74,6 @@ update message folder =
 
         -- PORTS
         DownloadResponse response ->
-            let
-                x =
-                    Debug.log "downloadResponse" response
-            in
                 ( folder, Cmd.none, Nothing )
 
 

@@ -68,16 +68,24 @@ request token collection id method value decoder =
         )
 
 
-multipartRequest : AuthToken -> String -> List Http.Part -> Decode.Decoder a -> ( String, Http.Request a )
-multipartRequest token collection parts decoder =
+multipartRequest : AuthToken -> String -> String -> HttpMethod -> List Http.Part -> Decode.Decoder a -> ( String, Http.Request a )
+multipartRequest token collection id method parts decoder =
     let
-        url =
-            apiUrl ++ collection
+        ( methodName, url ) =
+            case method of
+                Post ->
+                    ( "POST", apiUrl ++ collection )
+
+                Put ->
+                    ( "PUT", apiUrl ++ collection ++ "/" ++ id )
+
+                Delete ->
+                    ( "DELETE", apiUrl ++ collection ++ "/" ++ id )
 
         request =
             Http.request
-                { method = "POST"
-                , url = apiUrl ++ collection
+                { method = methodName
+                , url = url
                 , headers = [ Http.header "X-CSRF-Token" token ]
                 , body = Http.multipartBody <| parts
                 , expect = (Http.expectJson decoder)
@@ -93,6 +101,16 @@ requester token baseurl urlid method value decoder msg =
     let
         ( _, req ) =
             request token baseurl urlid method value decoder
+    in
+        req
+            |> Http.send msg
+
+
+multipartRequester : AuthToken -> String -> String -> HttpMethod -> List Http.Part -> Decode.Decoder a -> (Result Http.Error a -> msg) -> Cmd msg
+multipartRequester token baseurl urlid method parts decoder msg =
+    let
+        ( _, req ) =
+            multipartRequest token baseurl urlid method parts decoder
     in
         req
             |> Http.send msg
@@ -120,7 +138,7 @@ createTab id name =
     else if id == "users" then
         Tab UsersType name
     else if id == "cases" then
-        Tab CasesType name
+        Tab IssuesType name
     else
         Tab FoldersType name
 

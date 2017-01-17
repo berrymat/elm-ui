@@ -80,6 +80,7 @@ changePasswordForm changePassword =
             [ ( "Password", 1, "Password", changePassword.password, Just "password", [ Form.Validator validatePasswordComplexity ] )
             , ( "Confirm Password", 2, "Confirm Password", changePassword.confirmPassword, Just "password", [ Form.Validator matchingPasswords ] )
             ]
+        , fileInputs = []
         , numberRanges = []
         , textareas = []
         , choosers = []

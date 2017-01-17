@@ -3,8 +3,8 @@ module Container.Commands exposing (..)
 import Container.Models exposing (..)
 import Helpers.Models exposing (..)
 import Folders.Commands
+import Issues.Models
 import Users.Models
-import Content.Commands exposing (..)
 import Helpers.Helpers exposing (..)
 import RemoteData exposing (..)
 import Header.Models exposing (Header(..))
@@ -69,8 +69,8 @@ fetchContent tabType nodeId =
             UsersType ->
                 fetchUsers nodeId
 
-            CasesType ->
-                fetchCases nodeId
+            IssuesType ->
+                fetchIssues nodeId
 
             EmptyTab ->
                 Cmd.none
@@ -94,9 +94,12 @@ fetchUsers nodeId =
         ((FetchUsersResponse nodeId) << RemoteData.fromResult)
 
 
-fetchCases : NodeId -> Cmd Msg
-fetchCases nodeId =
-    fetcher "Cases" nodeId casesDecoder ((FetchCasesResponse nodeId) << RemoteData.fromResult)
+fetchIssues : NodeId -> Cmd Msg
+fetchIssues nodeId =
+    fetcher "Issues"
+        nodeId
+        Issues.Models.modelDecoder
+        ((FetchIssuesResponse nodeId) << RemoteData.fromResult)
 
 
 

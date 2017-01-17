@@ -1,23 +1,23 @@
-module Users.Update exposing (..)
+module Issues.Update exposing (..)
 
-import Users.Models exposing (..)
+import Issues.Models exposing (..)
 import Table
 import Ui.DropdownMenu
 import Return exposing (..)
 import Helpers.Models exposing (..)
-import Users.Manager.User exposing (..)
-import Users.Manager.Out exposing (..)
-import Users.Manager.Models as Manager exposing (ModalType(..))
-import Users.Manager.Update as ManagerUpdate
+import Issues.Issue exposing (..)
+import Issues.Actions.Out exposing (..)
+import Issues.Actions.Models as Actions exposing (ModalType(..))
+import Issues.Actions.Update as ActionsUpdate
 
 
 update : Msg -> Model -> Return Msg Model
 update msg model =
     let
-        user =
-            List.filter .checked model.users
+        issue =
+            List.filter .checked model.issues
                 |> List.head
-                |> Maybe.withDefault (initUser model.id)
+                |> Maybe.withDefault (initIssue model.id)
     in
         case msg of
             SetQuery newQuery ->
@@ -26,8 +26,8 @@ update msg model =
             SetTableState newState ->
                 updateSetTableState model newState
 
-            ToggleUser nodeId ->
-                updateToggleUser model nodeId
+            ToggleIssue nodeId ->
+                updateToggleIssue model nodeId
 
             ActionMenu action ->
                 updateActionMenu model action
@@ -38,16 +38,15 @@ update msg model =
             NoAction ->
                 ( model, Cmd.none )
 
-            -- NEW USER MODAL
             ModalAction token modalType ->
-                updateModalAction token model modalType user
+                updateModalAction token model modalType issue
 
-            ManagerMsg managerMsg ->
-                updateManagerMsg model managerMsg
+            ActionsMsg actionsMsg ->
+                updateActionsMsg model actionsMsg
 
 
-updateModalAction : AuthToken -> Model -> ModalType -> User -> Return Msg Model
-updateModalAction token model modalType user =
+updateModalAction : AuthToken -> Model -> ModalType -> Issue -> Return Msg Model
+updateModalAction token model modalType issue =
     let
         newActionMenu =
             Ui.DropdownMenu.close model.actionMenu
@@ -55,63 +54,50 @@ updateModalAction token model modalType user =
         newModel =
             { model | actionMenu = newActionMenu }
 
-        newUser =
-            if modalType == NewUser then
-                (initUser model.id)
+        newIssue =
+            if modalType == NewIssue then
+                (initIssue model.id)
             else
-                user
+                issue
 
         ( return, out ) =
-            ManagerUpdate.update (Manager.Open modalType newUser) model.manager
+            ActionsUpdate.update (Actions.Open modalType model.sites newIssue) model.actions
     in
         return
-            |> mapBoth ManagerMsg (\nm -> { newModel | manager = nm })
+            |> mapBoth ActionsMsg (\na -> { newModel | actions = na })
 
 
-updateManagerMsg : Model -> Manager.Msg -> Return Msg Model
-updateManagerMsg model managerMsg =
+updateActionsMsg : Model -> Actions.Msg -> Return Msg Model
+updateActionsMsg model actionsMsg =
     let
         mapBothEx msg cmd ( return, out ) =
             ( Return.mapBoth msg cmd return, out )
 
         ( return, out ) =
-            ManagerUpdate.update managerMsg model.manager
-                |> mapBothEx ManagerMsg (\nm -> { model | manager = nm })
+            ActionsUpdate.update actionsMsg model.actions
+                |> mapBothEx ActionsMsg (\na -> { model | actions = na })
 
         newReturn =
             case out of
                 OutCancel ->
-                    return |> Return.map (\m -> { m | manager = Manager.NoModel })
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
 
                 OutNone ->
                     return
 
-                OutUpdate user ->
+                OutUpdate issue ->
                     let
-                        newUsers model =
-                            user :: (List.filter (\u -> u.id /= user.id) model.users)
+                        newIssues model =
+                            issue :: (List.filter (\u -> u.id /= issue.id) model.issues)
                     in
-                        return |> Return.map (\m -> { m | manager = Manager.NoModel, users = newUsers m })
-
-                OutDelete user ->
-                    let
-                        newUsers model =
-                            (List.filter (\u -> u.id /= user.id) model.users)
-                    in
-                        return |> Return.map (\m -> { m | manager = Manager.NoModel, users = newUsers m })
+                        return |> Return.map (\m -> { m | actions = Actions.NoModel, issues = newIssues m })
     in
         newReturn
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    let
-        subActionMenu =
-            Sub.map ActionMenu (Ui.DropdownMenu.subscriptions model.actionMenu)
-    in
-        Sub.batch
-            [ subActionMenu
-            ]
+    Sub.map ActionMenu (Ui.DropdownMenu.subscriptions model.actionMenu)
 
 
 updateSetQuery : Model -> String -> Return Msg Model
@@ -124,10 +110,10 @@ updateSetTableState model newState =
     ( { model | tableState = newState }, Cmd.none )
 
 
-updateToggleUser : Model -> NodeId -> Return Msg Model
-updateToggleUser model nodeId =
+updateToggleIssue : Model -> NodeId -> Return Msg Model
+updateToggleIssue model nodeId =
     let
-        newUsers =
+        newIssues =
             List.map
                 (\u ->
                     if (u.id == nodeId || u.checked) then
@@ -135,9 +121,9 @@ updateToggleUser model nodeId =
                     else
                         u
                 )
-                model.users
+                model.issues
     in
-        ( { model | users = newUsers }, Cmd.none )
+        ( { model | issues = newIssues }, Cmd.none )
 
 
 

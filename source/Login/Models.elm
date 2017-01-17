@@ -47,6 +47,7 @@ loginForm =
             [ ( "Email", 1, "Email address", "", Just "email", [] )
             , ( "Password", 2, "Password", "", Just "password", [] )
             ]
+        , fileInputs = []
         , numberRanges = []
         , textareas = []
         , choosers = []

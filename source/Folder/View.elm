@@ -4,12 +4,10 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Helpers.Models exposing (..)
+import Helpers.Table exposing (..)
 import Folder.Models exposing (..)
 import Tree.View
 import Table
-import Date
-import Date.Extra.Config.Config_en_us as Config
-import Date.Extra.Format as Format exposing (format)
 import Dict
 import Ui
 import Ui.Button
@@ -109,22 +107,6 @@ viewFooter token folder =
             text ""
 
 
-checkColumn : String -> (data -> Bool) -> (data -> NodeId) -> Table.Column data Msg
-checkColumn name toCheck toId =
-    Table.veryCustomColumn
-        { name = name
-        , viewData = \data -> viewCheck (toCheck data) (toId data)
-        , sorter = Table.unsortable
-        }
-
-
-viewCheck : Bool -> NodeId -> Table.HtmlDetails Msg
-viewCheck selected nodeId =
-    Table.HtmlDetails [ class "checkbox" ]
-        [ input [ type_ "checkbox", checked selected, onClick (ToggleFile nodeId) ] []
-        ]
-
-
 nameColumn : String -> (data -> String) -> (data -> String) -> Table.Column data Msg
 nameColumn name toName toUrl =
     Table.veryCustomColumn
@@ -149,35 +131,13 @@ viewName name url =
             ]
 
 
-datetimeColumn : String -> (data -> Float) -> Table.Column data Msg
-datetimeColumn name toDatetime =
-    Table.veryCustomColumn
-        { name = name
-        , viewData = \data -> viewDatetime (toDatetime data)
-        , sorter = Table.increasingOrDecreasingBy toDatetime
-        }
-
-
-viewDatetime : Float -> Table.HtmlDetails Msg
-viewDatetime datetime =
-    let
-        date =
-            Date.fromTime datetime
-
-        cfg =
-            Config.config
-    in
-        Table.HtmlDetails [ class "datetime" ]
-            [ text (format cfg cfg.format.dateTime date) ]
-
-
 config : Table.Config File Msg
 config =
     Table.customConfig
         { toId = .id
         , toMsg = SetTableState
         , columns =
-            [ checkColumn "select" .checked .id
+            [ checkColumn "select" .checked .id ToggleFile
             , nameColumn "name" .name .url
             , datetimeColumn "date" .datetime
             ]

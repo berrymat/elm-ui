@@ -1,21 +1,33 @@
 module Content.Update exposing (..)
 
 import Content.Models exposing (..)
-import Folders.Models
 import Folders.Update
-import Users.Models
+import Issues.Update
 import Users.Update
 import Return exposing (..)
 
 
 update : Msg -> Content -> Return Msg Content
 update message content =
-    case message of
-        FoldersMsg foldersMsg ->
-            updateFolders foldersMsg content
+    case ( message, content ) of
+        ( FoldersMsg foldersMsg, FoldersContent folders ) ->
+            Folders.Update.update foldersMsg folders
+                |> Return.mapBoth FoldersMsg FoldersContent
 
-        UsersMsg usersMsg ->
-            updateUsers usersMsg content
+        ( IssuesMsg issuesMsg, IssuesContent issues ) ->
+            Issues.Update.update issuesMsg issues
+                |> Return.mapBoth IssuesMsg IssuesContent
+
+        ( UsersMsg usersMsg, UsersContent users ) ->
+            Users.Update.update usersMsg users
+                |> Return.mapBoth UsersMsg UsersContent
+
+        x ->
+            let
+                _ =
+                    Debug.log "Stray found" x
+            in
+                singleton content
 
 
 subscriptions : Content -> Sub Msg
@@ -24,30 +36,11 @@ subscriptions content =
         FoldersContent folders ->
             Sub.map FoldersMsg (Folders.Update.subscriptions folders)
 
+        IssuesContent issues ->
+            Sub.map IssuesMsg (Issues.Update.subscriptions issues)
+
         UsersContent users ->
             Sub.map UsersMsg (Users.Update.subscriptions users)
 
         _ ->
             Sub.none
-
-
-updateFolders : Folders.Models.Msg -> Content -> Return Msg Content
-updateFolders foldersMsg content =
-    case content of
-        FoldersContent folders ->
-            Folders.Update.update foldersMsg folders
-                |> Return.mapBoth FoldersMsg FoldersContent
-
-        _ ->
-            singleton content
-
-
-updateUsers : Users.Models.Msg -> Content -> Return Msg Content
-updateUsers usersMsg content =
-    case content of
-        UsersContent model ->
-            Users.Update.update usersMsg model
-                |> Return.mapBoth UsersMsg UsersContent
-
-        _ ->
-            singleton content

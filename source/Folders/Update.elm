@@ -128,9 +128,6 @@ updateInner msg folders =
 
                         _ ->
                             ( folders.folderRequest, folder )
-
-                x =
-                    Debug.log "GetFolderProgress" folder
             in
                 ( { folders | folder = newFolder, folderRequest = folderRequest }, Cmd.none )
 
@@ -567,6 +564,6 @@ upload token folders folderId files decoder =
                 ++ (List.indexedMap part files)
 
         request =
-            Helpers.Helpers.multipartRequest token "Upload" parts decoder
+            Helpers.Helpers.multipartRequest token "Upload" folderId Post parts decoder
     in
         ( { folders | folder = Progress.None, folderRequest = Just request }, Cmd.none )

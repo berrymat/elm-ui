@@ -37,6 +37,7 @@ resetForm =
             [ ( "New Password", 1, "New Password", "", Just "password", [] )
             , ( "Confirm Password", 2, "Confirm Password", "", Just "password", [] )
             ]
+        , fileInputs = []
         , numberRanges = []
         , textareas = []
         , choosers = []

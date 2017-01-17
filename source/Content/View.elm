@@ -5,6 +5,8 @@ import Html.Attributes exposing (..)
 import Content.Models exposing (..)
 import Folders.Models
 import Folders.View
+import Issues.Models
+import Issues.View
 import Users.Models
 import Users.View
 import Helpers.Models exposing (..)
@@ -19,9 +21,8 @@ view token content =
         UsersContent model ->
             viewUsers token model
 
-        CasesContent cases ->
-            div [ class "body-content" ]
-                (contentCases cases)
+        IssuesContent model ->
+            viewIssues token model
 
         EmptyContent ->
             div [ class "body-content" ]
@@ -46,11 +47,13 @@ viewUsers token model =
         Html.map UsersMsg htmlUsers
 
 
-contentCases : Cases -> List (Html Msg)
-contentCases cases =
-    [ div [ class "body-content-content" ]
-        [ text "Cases" ]
-    ]
+viewIssues : AuthToken -> Issues.Models.Model -> Html Msg
+viewIssues token model =
+    let
+        htmlIssues =
+            Issues.View.view token model
+    in
+        Html.map IssuesMsg htmlIssues
 
 
 contentEmpty : List (Html Msg)

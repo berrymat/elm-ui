@@ -8,5 +8,7 @@
 
 + Make common table functions
 
-+ 
++ Why is refresh redirecting to root?
+
+
 

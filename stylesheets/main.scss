@@ -113,6 +113,16 @@ ui-modal {
         ui-form {
           width: 100%;
         }
+
+        ui-form-block {
+            ui-file-input {
+                max-width: inherit;
+
+                ui-button {
+                    width: auto;
+                }
+            }
+        }
     }
     ui-modal-footer {
         flex: 0 0 auto;
@@ -641,12 +651,16 @@ div.body-path {
     th,
     td {
         padding: 6px 15px;
-
+        min-width: 100px;
+        
         &.checkbox, &.radio {
             width: 50px;
         }
         &.datetime {
             width: 200px;
+        }
+        &.photo img {
+            width: 100px;            
         }
     }
     th {

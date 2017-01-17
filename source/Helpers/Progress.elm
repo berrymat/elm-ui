@@ -38,10 +38,6 @@ view progress viewSuccess viewPending =
             (viewPending "fa fa-spin fa-spinner")
 
         Some info ->
-            let
-                x =
-                    Debug.log "progress" info
-            in
                 (viewPending "fa fa-spin fa-refresh")
 
         Fail err ->

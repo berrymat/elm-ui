@@ -38,7 +38,7 @@ type alias Notification =
 type TabType
     = FoldersType
     | UsersType
-    | CasesType
+    | IssuesType
     | EmptyTab
 
 

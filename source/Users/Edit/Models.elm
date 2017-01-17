@@ -1,7 +1,6 @@
 module Users.Edit.Models exposing (..)
 
 import Helpers.Models exposing (..)
-import Helpers.Helpers exposing (..)
 import Components.Form as Form exposing (ValidationError)
 import Components.Validators exposing (..)
 import Ui.Modal
@@ -78,13 +77,14 @@ userForm user =
             , ( "First Name", 2, "First Name", user.firstName, Nothing, [ Form.Validator requiredInput ] )
             , ( "Last Name", 3, "Last Name", user.lastName, Nothing, [ Form.Validator requiredInput ] )
             ]
+        , fileInputs = []
         , numberRanges = []
         , textareas = []
         , choosers = []
         , colors = []
         , dates = []
         , titles =
-            [ ( "access", 10, "Access - TODO" )
+            [ ( "access", 10, "Access" )
             ]
         }
 

@@ -151,6 +151,7 @@ folderForm folderInfo =
         , inputs =
             [ ( "name", 1, "Name", folderInfo.name, Nothing, [ Form.Validator requiredInput ] )
             ]
+        , fileInputs = []
         , numberRanges = []
         , textareas = []
         , choosers = []

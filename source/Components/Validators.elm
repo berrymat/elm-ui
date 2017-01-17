@@ -1,13 +1,39 @@
-module Components.Validators exposing (requiredInput, requiredValidEmail, optionalValidEmail)
+module Components.Validators
+    exposing
+        ( requiredInput
+        , requiredChooser
+        , requiredTextarea
+        , requiredValidEmail
+        , optionalValidEmail
+        )
 
 import Components.Form as Form exposing (ValidationError)
+import Ui.Chooser
 import Ui.Input
+import Ui.Textarea
 import Regex
+import Set
 
 
 requiredInput : Form.Model -> Ui.Input.Model -> ValidationError
 requiredInput model input =
     if (String.length input.value) == 0 then
+        Just "Value is required"
+    else
+        Nothing
+
+
+requiredChooser : Form.Model -> Ui.Chooser.Model -> ValidationError
+requiredChooser model chooser =
+    if (Set.isEmpty chooser.selected) then
+        Just "Value is required"
+    else
+        Nothing
+
+
+requiredTextarea : Form.Model -> Ui.Textarea.Model -> ValidationError
+requiredTextarea model textarea =
+    if (String.isEmpty textarea.value) then
         Just "Value is required"
     else
         Nothing

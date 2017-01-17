@@ -16,6 +16,8 @@ import Ui.Textarea
 import Ui.Checkbox
 import Ui.Chooser
 import Ui.Input
+import Ui.FileInput
+import Ui.Native.FileManager exposing (..)
 
 
 type Msg
@@ -26,6 +28,7 @@ type Msg
     | Textareas String Ui.Textarea.Msg
     | Choosers String Ui.Chooser.Msg
     | Inputs String Ui.Input.Msg
+    | FileInputs String Ui.FileInput.Msg
     | Validate
 
 
@@ -49,6 +52,7 @@ type alias Model =
     , choosers : Dict String (ModelItem Ui.Chooser.Model)
     , dates : Dict String (ModelItem Ui.DatePicker.Model)
     , inputs : Dict String (ModelItem Ui.Input.Model)
+    , fileInputs : Dict String (ModelItem Ui.FileInput.Model)
     , titles : Dict String ( Int, String )
     , valid : Maybe Bool
     , uid : String
@@ -63,6 +67,7 @@ type alias TempModel =
     , choosers : List ( String, Int, List Ui.Chooser.Item, String, String, List (Validator Ui.Chooser.Model) )
     , dates : List ( String, Int, Date.Date, List (Validator Ui.DatePicker.Model) )
     , inputs : List ( String, Int, String, String, Maybe String, List (Validator Ui.Input.Model) )
+    , fileInputs : List ( String, Int, String, List (Validator Ui.FileInput.Model) )
     , titles : List ( String, Int, String )
     }
 
@@ -77,7 +82,14 @@ init data =
             ( name, ( index, Ui.Checkbox.init value, validators, Nothing ) )
 
         initChooser ( name, index, data, placeholder, value, validators ) =
-            ( name, ( index, Ui.Chooser.init data placeholder value, validators, Nothing ) )
+            let
+                initChooser =
+                    Ui.Chooser.init data placeholder value
+
+                chooser =
+                    { initChooser | closeOnSelect = True }
+            in
+                ( name, ( index, chooser, validators, Nothing ) )
 
         initInput ( name, index, placeholder, value, maybeKind, validators ) =
             let
@@ -113,6 +125,9 @@ init data =
             in
                 ( name, ( index, numberRange, validators, Nothing ) )
 
+        initFileInput ( name, index, accept, validators ) =
+            ( name, ( index, Ui.FileInput.init accept, validators, Nothing ) )
+
         initTitle ( name, index, value ) =
             ( name, ( index, value ) )
     in
@@ -124,6 +139,7 @@ init data =
             , dates = Dict.fromList (List.map initDatePickers data.dates)
             , colors = Dict.fromList (List.map initColors data.colors)
             , inputs = Dict.fromList (List.map initInput data.inputs)
+            , fileInputs = Dict.fromList (List.map initFileInput data.fileInputs)
             , titles = Dict.fromList (List.map initTitle data.titles)
             , valid = Nothing
             , uid = Uid.uid ()
@@ -141,6 +157,7 @@ validateModel model =
     in
         { model
             | inputs = (validateDict model.inputs)
+            , fileInputs = (validateDict model.fileInputs)
             , numberRanges = (validateDict model.numberRanges)
             , checkboxes = (validateDict model.checkboxes)
             , textareas = (validateDict model.textareas)
@@ -163,6 +180,7 @@ isFormValid model =
             Dict.foldl isItemValid True dict
     in
         (isDictValid model.inputs)
+            && (isDictValid model.fileInputs)
             && (isDictValid model.numberRanges)
             && (isDictValid model.checkboxes)
             && (isDictValid model.textareas)
@@ -180,6 +198,7 @@ nextPosition model =
         + (Dict.size model.dates)
         + (Dict.size model.colors)
         + (Dict.size model.inputs)
+        + (Dict.size model.fileInputs)
         + (Dict.size model.titles)
 
 
@@ -224,6 +243,11 @@ valueOfCheckbox name default model =
 valueOfInput : String -> String -> Model -> String
 valueOfInput name default model =
     valueOfSimple name default .value model.inputs
+
+
+valueOfFileInput : String -> Maybe File -> Model -> Maybe File
+valueOfFileInput name default model =
+    valueOfSimple name default .file model.fileInputs
 
 
 valueOfNumberRange : String -> Float -> Model -> Float
@@ -432,6 +456,15 @@ update action model =
                 , Cmd.map (Inputs name) effect
                 )
 
+        FileInputs name act ->
+            let
+                ( effect, updatedFileInputs ) =
+                    updateDict model name act Ui.FileInput.update model.fileInputs
+            in
+                ( { model | fileInputs = updatedFileInputs }
+                , Cmd.map (FileInputs name) effect
+                )
+
         Colors name act ->
             let
                 ( effect, updatedColors ) =
@@ -487,6 +520,12 @@ view address fields =
         renderInput name ( data, error, valid ) =
             blockField name
                 (Html.map (address << (Inputs name)) (Ui.Input.view data))
+                error
+                valid
+
+        renderFileInput name ( data, error, valid ) =
+            blockField name
+                (Html.map (address << (FileInputs name)) (Ui.FileInput.view data))
                 error
                 valid
 
@@ -558,6 +597,7 @@ view address fields =
                 ++ (renderMap (Html.Lazy.lazy2 renderChooser) fields.choosers)
                 ++ (renderMap (Html.Lazy.lazy2 renderDatePicker) fields.dates)
                 ++ (renderMap (Html.Lazy.lazy2 renderInput) fields.inputs)
+                ++ (renderMap (Html.Lazy.lazy2 renderFileInput) fields.fileInputs)
                 ++ (renderMap (Html.Lazy.lazy2 renderTextarea) fields.textareas)
                 ++ (renderMap (Html.Lazy.lazy2 renderNumberRange) fields.numberRanges)
                 ++ (renderTitleMap (Html.Lazy.lazy2 renderTitle) fields.titles)

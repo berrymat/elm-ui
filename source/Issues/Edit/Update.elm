@@ -1,14 +1,14 @@
-module Users.ChangePassword.Update exposing (..)
+module Issues.Edit.Update exposing (..)
 
-import Users.ChangePassword.Models exposing (..)
+import Issues.Edit.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Return exposing (..)
 import RemoteData exposing (..)
 import Components.Form as Form
 import Ui.Modal
-import Users.Manager.Out exposing (..)
-import Users.Manager.User exposing (..)
+import Issues.Actions.Out exposing (..)
+import Issues.Issue exposing (..)
 
 
 update : Msg -> Model -> ( Return Msg Model, OutMsg )
@@ -58,16 +58,16 @@ updateValidate model token =
 updateSave : Model -> AuthToken -> ( Return Msg Model, OutMsg )
 updateSave model authToken =
     let
-        newChangePassword =
-            updateChangePassword model.form model.changePassword
+        newIssue =
+            updateIssue model.form model.issue
 
         saveCmd =
-            Helpers.Helpers.requester authToken
-                "ChangePassword"
+            Helpers.Helpers.multipartRequester authToken
+                "Issues"
                 model.id
-                Put
-                (encodeChangePassword newChangePassword)
-                userDecoder
+                model.method
+                (issueParts newIssue)
+                issueDecoder
                 (SaveResponse << RemoteData.fromResult)
     in
         ( return model saveCmd, OutNone )
@@ -91,7 +91,7 @@ updateFormMsg model formMsg =
     )
 
 
-updateSaveResponse : Model -> WebData User -> ( Return Msg Model, OutMsg )
+updateSaveResponse : Model -> WebData Issue -> ( Return Msg Model, OutMsg )
 updateSaveResponse model response =
     let
         newModel =
@@ -100,9 +100,9 @@ updateSaveResponse model response =
         cmd =
             Helpers.Helpers.errorCmd response
 
-        updateSaveResponseSuccess user =
+        updateSaveResponseSuccess issue =
             ( singleton { newModel | modal = Ui.Modal.close model.modal }
-            , OutUpdate user
+            , OutUpdate issue
             )
     in
         RemoteData.map updateSaveResponseSuccess response

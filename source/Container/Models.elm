@@ -5,6 +5,7 @@ import Tree.Messages
 import Tree.Models exposing (Tree, initialTree, Node)
 import Header.Models
 import Folders.Models
+import Issues.Models
 import Users.Models
 import Content.Models exposing (Content, initialContent)
 import RemoteData exposing (..)
@@ -22,7 +23,7 @@ type Msg
     | FetchHeaderResponse Bool (WebData Header.Models.Model)
     | FetchFoldersResponse NodeId (WebData Folders.Models.Folders)
     | FetchUsersResponse NodeId (WebData Users.Models.Model)
-    | FetchCasesResponse NodeId (WebData Content.Models.Cases)
+    | FetchIssuesResponse NodeId (WebData Issues.Models.Model)
 
 
 type alias Container =
