@@ -1,4 +1,4 @@
-module Users.Manager.User exposing (..)
+module Users.User exposing (..)
 
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)

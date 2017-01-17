@@ -5,8 +5,8 @@ import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Table
 import Ui.DropdownMenu
-import Users.Manager.Models as Manager
-import Users.Manager.User exposing (..)
+import Users.Actions.Models as Actions
+import Users.User exposing (..)
 
 
 type Msg
@@ -18,8 +18,8 @@ type Msg
     | CloseActionMenu
     | NoAction
       -- MODALS
-    | ModalAction AuthToken Manager.ModalType
-    | ManagerMsg Manager.Msg
+    | ModalAction AuthToken Actions.ModalType
+    | ActionsMsg Actions.Msg
 
 
 type alias Model =
@@ -34,7 +34,7 @@ type alias Model =
     , tableState : Table.State
     , query : String
     , actionMenu : Ui.DropdownMenu.Model
-    , manager : Manager.Model
+    , actions : Actions.Model
     }
 
 
@@ -57,4 +57,4 @@ modelDecoder =
         |> hardcoded (Table.initialSort "Email")
         |> hardcoded ""
         |> hardcoded Ui.DropdownMenu.init
-        |> hardcoded Manager.init
+        |> hardcoded Actions.init

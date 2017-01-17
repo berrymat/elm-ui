@@ -1,6 +1,6 @@
-module Users.Manager.View exposing (..)
+module Users.Actions.View exposing (..)
 
-import Users.Manager.Models exposing (..)
+import Users.Actions.Models exposing (..)
 import Helpers.Models exposing (..)
 import Html exposing (..)
 import Users.Edit.View as Edit

@@ -7,8 +7,8 @@ import Return exposing (..)
 import RemoteData exposing (..)
 import Components.Form as Form
 import Ui.Modal
-import Users.Manager.Out exposing (..)
-import Users.Manager.User exposing (..)
+import Users.Actions.Out exposing (..)
+import Users.User exposing (..)
 
 
 update : Msg -> Model -> ( Return Msg Model, OutMsg )

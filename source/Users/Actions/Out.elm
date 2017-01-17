@@ -1,6 +1,6 @@
-module Users.Manager.Out exposing (..)
+module Users.Actions.Out exposing (..)
 
-import Users.Manager.User exposing (..)
+import Users.User exposing (..)
 
 
 type OutMsg

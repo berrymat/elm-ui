@@ -7,7 +7,7 @@ import RemoteData exposing (..)
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
-import Users.Manager.User exposing (..)
+import Users.User exposing (..)
 import Return exposing (..)
 import Helpers.Helpers exposing (..)
 

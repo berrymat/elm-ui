@@ -5,10 +5,10 @@ import Table
 import Ui.DropdownMenu
 import Return exposing (..)
 import Helpers.Models exposing (..)
-import Users.Manager.User exposing (..)
-import Users.Manager.Out exposing (..)
-import Users.Manager.Models as Manager exposing (ModalType(..))
-import Users.Manager.Update as ManagerUpdate
+import Users.User exposing (..)
+import Users.Actions.Out exposing (..)
+import Users.Actions.Models as Actions exposing (ModalType(..))
+import Users.Actions.Update as ActionsUpdate
 
 
 update : Msg -> Model -> Return Msg Model
@@ -42,8 +42,8 @@ update msg model =
             ModalAction token modalType ->
                 updateModalAction token model modalType user
 
-            ManagerMsg managerMsg ->
-                updateManagerMsg model managerMsg
+            ActionsMsg actionsMsg ->
+                updateActionsMsg model actionsMsg
 
 
 updateModalAction : AuthToken -> Model -> ModalType -> User -> Return Msg Model
@@ -62,26 +62,26 @@ updateModalAction token model modalType user =
                 user
 
         ( return, out ) =
-            ManagerUpdate.update (Manager.Open modalType newUser) model.manager
+            ActionsUpdate.update (Actions.Open modalType newUser) model.actions
     in
         return
-            |> mapBoth ManagerMsg (\nm -> { newModel | manager = nm })
+            |> mapBoth ActionsMsg (\nm -> { newModel | actions = nm })
 
 
-updateManagerMsg : Model -> Manager.Msg -> Return Msg Model
-updateManagerMsg model managerMsg =
+updateActionsMsg : Model -> Actions.Msg -> Return Msg Model
+updateActionsMsg model actionsMsg =
     let
         mapBothEx msg cmd ( return, out ) =
             ( Return.mapBoth msg cmd return, out )
 
         ( return, out ) =
-            ManagerUpdate.update managerMsg model.manager
-                |> mapBothEx ManagerMsg (\nm -> { model | manager = nm })
+            ActionsUpdate.update actionsMsg model.actions
+                |> mapBothEx ActionsMsg (\nm -> { model | actions = nm })
 
         newReturn =
             case out of
                 OutCancel ->
-                    return |> Return.map (\m -> { m | manager = Manager.NoModel })
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
 
                 OutNone ->
                     return
@@ -91,14 +91,14 @@ updateManagerMsg model managerMsg =
                         newUsers model =
                             user :: (List.filter (\u -> u.id /= user.id) model.users)
                     in
-                        return |> Return.map (\m -> { m | manager = Manager.NoModel, users = newUsers m })
+                        return |> Return.map (\m -> { m | actions = Actions.NoModel, users = newUsers m })
 
                 OutDelete user ->
                     let
                         newUsers model =
                             (List.filter (\u -> u.id /= user.id) model.users)
                     in
-                        return |> Return.map (\m -> { m | manager = Manager.NoModel, users = newUsers m })
+                        return |> Return.map (\m -> { m | actions = Actions.NoModel, users = newUsers m })
     in
         newReturn
 

@@ -1,11 +1,11 @@
-module Users.Manager.Models exposing (..)
+module Users.Actions.Models exposing (..)
 
 import Users.Edit.Models as Edit
 import Users.Restrict.Models as Restrict
 import Users.ResetPassword.Models as ResetPassword
 import Users.ChangePassword.Models as ChangePassword
 import Users.Delete.Models as Delete
-import Users.Manager.User exposing (..)
+import Users.User exposing (..)
 
 
 type ModalType

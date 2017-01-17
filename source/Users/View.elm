@@ -10,9 +10,9 @@ import Dict
 import Ui
 import Ui.DropdownMenu
 import Ui.IconButton
-import Users.Manager.User exposing (..)
-import Users.Manager.View as Manager
-import Users.Manager.Models exposing (ModalType(..))
+import Users.User exposing (..)
+import Users.Actions.View as Actions
+import Users.Actions.Models exposing (ModalType(..))
 import Helpers.Table exposing (..)
 
 
@@ -152,5 +152,5 @@ viewActionMenu token model =
                     [ Ui.DropdownMenu.view (actionDropdownViewModel actions token)
                         ActionMenu
                         model.actionMenu
-                    , Html.map ManagerMsg (Manager.view token model.manager)
+                    , Html.map ActionsMsg (Actions.view token model.actions)
                     ]

@@ -1,10 +1,10 @@
-module Users.Manager.Update exposing (..)
+module Users.Actions.Update exposing (..)
 
-import Users.Manager.Models exposing (..)
+import Users.Actions.Models exposing (..)
 import Return exposing (..)
 import Helpers.Models exposing (..)
-import Users.Manager.Out exposing (..)
-import Users.Manager.User exposing (..)
+import Users.Actions.Out exposing (..)
+import Users.User exposing (..)
 import Users.Edit.Models as EditModels
 import Users.Restrict.Models as RestrictModels
 import Users.ResetPassword.Models as ResetPasswordModels

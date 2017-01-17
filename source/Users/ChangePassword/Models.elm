@@ -6,7 +6,7 @@ import Ui.Input
 import Ui.Modal
 import RemoteData exposing (..)
 import Char
-import Users.Manager.User exposing (..)
+import Users.User exposing (..)
 
 
 type Msg

@@ -5,7 +5,7 @@ import Components.Form as Form exposing (ValidationError)
 import Components.Validators exposing (..)
 import Ui.Modal
 import RemoteData exposing (..)
-import Users.Manager.User exposing (..)
+import Users.User exposing (..)
 
 
 type Msg
