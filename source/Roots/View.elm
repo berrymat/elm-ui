@@ -1,19 +1,19 @@
-module Header.Customer.View exposing (..)
+module Roots.View exposing (..)
 
-import Header.Customer.Models exposing (..)
+import Roots.Models exposing (..)
 import Html exposing (..)
 import Helpers.Helpers exposing (..)
 import Header.Utils exposing (headerItem)
 
 
-headerItems : Customer -> List (Html msg)
-headerItems customer =
+headerItems : Model -> List (Html msg)
+headerItems model =
     let
         access =
-            customer.access
+            model.access
 
         values =
-            customer.values
+            model.root
 
         address =
             fullAddress values.address1 values.address2 values.address3 values.address4 values.postcode

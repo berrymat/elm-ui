@@ -1,19 +1,19 @@
-module Header.Client.View exposing (..)
+module Staffs.View exposing (..)
 
-import Header.Client.Models exposing (..)
+import Staffs.Models exposing (..)
 import Html exposing (..)
 import Helpers.Helpers exposing (..)
 import Header.Utils exposing (headerItem)
 
 
-headerItems : Client -> List (Html msg)
-headerItems client =
+headerItems : Staff -> List (Html msg)
+headerItems staff =
     let
         access =
-            client.access
+            staff.access
 
         values =
-            client.values
+            staff.values
 
         address =
             fullAddress values.address1 values.address2 values.address3 values.address4 values.postcode
@@ -21,7 +21,7 @@ headerItems client =
         [ headerItem "Ref" "wrench" access.name values.no
         , headerItem "Name" "globe" access.name values.name
         , headerItem "Address" "home" access.address address
-        , headerItem "Contact" "user-o" access.contact values.contact
-        , headerItem "Phone" "phone" access.contact values.tel
+        , headerItem "Tel" "phone" access.contact values.tel
+        , headerItem "Mob" "phone" access.contact values.mob
         , headerItem "Email" "envelope" access.contact values.email
         ]

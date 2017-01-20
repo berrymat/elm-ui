@@ -37,19 +37,20 @@ init root method =
     }
 
 
-accessName : String
-accessName =
-    "Access?"
-
-
 rootForm : Root -> Form.Model
 rootForm root =
     Form.init
-        { checkboxes =
-            [ ( accessName, 11, root.access, [] )
-            ]
+        { checkboxes = []
         , inputs =
-            [ ( "Name", 1, "Name", root.name, Nothing, [ Form.Validator requiredInput ] )
+            [ ( "name", 0, "Name", (Maybe.withDefault "" root.name), Nothing, [ Form.Validator requiredInput ] )
+            , ( "address1", 1, "Address Line 1", (Maybe.withDefault "" root.address1), Nothing, [] )
+            , ( "address2", 2, "Address Line 2", (Maybe.withDefault "" root.address2), Nothing, [] )
+            , ( "address3", 3, "Address Line 3", (Maybe.withDefault "" root.address3), Nothing, [] )
+            , ( "address4", 4, "Address Line 4", (Maybe.withDefault "" root.address4), Nothing, [] )
+            , ( "postcode", 5, "Postcode", (Maybe.withDefault "" root.postcode), Nothing, [] )
+            , ( "contact", 6, "Contact", (Maybe.withDefault "" root.contact), Nothing, [] )
+            , ( "phone", 7, "Phone", (Maybe.withDefault "" root.tel), Nothing, [] )
+            , ( "email", 8, "Email", (Maybe.withDefault "" root.email), Nothing, [ Form.Validator optionalValidEmail ] )
             ]
         , fileInputs = []
         , numberRanges = []
@@ -57,15 +58,20 @@ rootForm root =
         , choosers = []
         , colors = []
         , dates = []
-        , titles =
-            [ ( "title", 10, "Title" )
-            ]
+        , titles = []
         }
 
 
 updateRoot : Form.Model -> Root -> Root
 updateRoot form root =
     { root
-        | name = Form.valueOfInput "Name" root.name form
-        , access = Form.valueOfCheckbox accessName root.access form
+        | name = Just (Form.valueOfInput "name" "" form)
+        , address1 = Just (Form.valueOfInput "address1" "" form)
+        , address2 = Just (Form.valueOfInput "address2" "" form)
+        , address3 = Just (Form.valueOfInput "address3" "" form)
+        , address4 = Just (Form.valueOfInput "address4" "" form)
+        , postcode = Just (Form.valueOfInput "postcode" "" form)
+        , contact = Just (Form.valueOfInput "contact" "" form)
+        , tel = Just (Form.valueOfInput "phone" "" form)
+        , email = Just (Form.valueOfInput "email" "" form)
     }

@@ -6,11 +6,11 @@ import Html.Events exposing (..)
 import Header.Models exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (..)
-import Header.Root.View
-import Header.Customer.View
-import Header.Client.View
-import Header.Site.View
-import Header.Staff.View
+import Roots.View
+import Customers.View
+import Clients.View
+import Sites.View
+import Staffs.View
 import Ui
 import Ui.Button
 import Ui.Container
@@ -143,19 +143,19 @@ headerContent token model =
         headerItems =
             case model.header of
                 RootHeader root ->
-                    Header.Root.View.headerItems root
+                    Roots.View.headerItems root
 
                 CustomerHeader customer ->
-                    Header.Customer.View.headerItems customer
+                    Customers.View.headerItems customer
 
                 ClientHeader client ->
-                    Header.Client.View.headerItems client
+                    Clients.View.headerItems client
 
                 SiteHeader site ->
-                    Header.Site.View.headerItems site
+                    Sites.View.headerItems site
 
                 StaffHeader staff ->
-                    Header.Staff.View.headerItems staff
+                    Staffs.View.headerItems staff
 
                 Empty ->
                     []

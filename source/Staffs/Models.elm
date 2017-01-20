@@ -1,4 +1,4 @@
-module Header.Staff.Models exposing (..)
+module Staffs.Models exposing (..)
 
 import Helpers.Models exposing (..)
 import Components.Form as Form
@@ -6,6 +6,10 @@ import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Components.Validators exposing (..)
+
+
+type Msg
+    = Todo
 
 
 type alias Staff =

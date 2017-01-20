@@ -1,4 +1,4 @@
-module Header.Site.Models exposing (..)
+module Customers.Models exposing (..)
 
 import Helpers.Models exposing (..)
 import Components.Form as Form
@@ -7,17 +7,31 @@ import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Components.Validators exposing (..)
 
+type Msg 
+    = Todo
 
-type alias Site =
+type alias Customer =
     { id : NodeId
-    , access : SiteAccess
-    , values : SiteValues
+    , access : CustomerAccess
+    , values : CustomerValues
     }
 
 
-type alias SiteValues =
-    { no : Maybe String
-    , name : Maybe String
+customer : NodeId -> CustomerAccess -> CustomerValues -> Customer
+customer id access values =
+    Customer id access values
+
+
+type alias CustomerAccess =
+    { name : AccessType
+    , image : AccessType
+    , address : AccessType
+    , contact : AccessType
+    }
+
+
+type alias CustomerValues =
+    { name : Maybe String
     , image : Maybe String
     , address1 : Maybe String
     , address2 : Maybe String
@@ -27,26 +41,14 @@ type alias SiteValues =
     , contact : Maybe String
     , tel : Maybe String
     , email : Maybe String
-    , divisionMgr : Maybe String
-    , areaMgr : Maybe String
-    , supervisor : Maybe String
     }
 
 
-type alias SiteAccess =
-    { name : AccessType
-    , image : AccessType
-    , address : AccessType
-    , contact : AccessType
-    , managers : AccessType
-    }
-
-
-initEditForm : Site -> Form.Model
-initEditForm site =
+initEditForm : Customer -> Form.Model
+initEditForm customer =
     let
         values =
-            site.values
+            customer.values
     in
         Form.init
             { checkboxes = []
@@ -71,8 +73,8 @@ initEditForm site =
             }
 
 
-updateState : Form.Model -> Site -> Site
-updateState form site =
+updateState : Form.Model -> Customer -> Customer
+updateState form customer =
     let
         updatedValues values =
             { values
@@ -87,52 +89,49 @@ updateState form site =
                 , email = Just (Form.valueOfInput "email" "" form)
             }
     in
-        { site | values = updatedValues site.values }
+        { customer | values = updatedValues customer.values }
 
 
-encodeSite : Site -> Encode.Value
-encodeSite site =
+encodeCustomer : Customer -> Encode.Value
+encodeCustomer customer =
     Encode.object
         [ ( "values"
           , Encode.object
-                [ ( "name", Encode.string (Maybe.withDefault "" site.values.name) )
-                , ( "address1", Encode.string (Maybe.withDefault "" site.values.address1) )
-                , ( "address2", Encode.string (Maybe.withDefault "" site.values.address2) )
-                , ( "address3", Encode.string (Maybe.withDefault "" site.values.address3) )
-                , ( "address4", Encode.string (Maybe.withDefault "" site.values.address4) )
-                , ( "postcode", Encode.string (Maybe.withDefault "" site.values.postcode) )
-                , ( "contact", Encode.string (Maybe.withDefault "" site.values.contact) )
-                , ( "tel", Encode.string (Maybe.withDefault "" site.values.tel) )
-                , ( "email", Encode.string (Maybe.withDefault "" site.values.email) )
+                [ ( "name", Encode.string (Maybe.withDefault "" customer.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" customer.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" customer.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" customer.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" customer.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" customer.values.postcode) )
+                , ( "contact", Encode.string (Maybe.withDefault "" customer.values.contact) )
+                , ( "tel", Encode.string (Maybe.withDefault "" customer.values.tel) )
+                , ( "email", Encode.string (Maybe.withDefault "" customer.values.email) )
                 ]
           )
         ]
 
 
-siteAccessDecoder : Decode.Decoder SiteAccess
-siteAccessDecoder =
-    decode createSiteAccess
+customerAccessDecoder : Decode.Decoder CustomerAccess
+customerAccessDecoder =
+    decode createCustomerAccess
         |> required "name" Decode.string
         |> required "image" Decode.string
         |> required "address" Decode.string
         |> required "contact" Decode.string
-        |> required "managers" Decode.string
 
 
-createSiteAccess : String -> String -> String -> String -> String -> SiteAccess
-createSiteAccess name image address contact managers =
-    SiteAccess
+createCustomerAccess : String -> String -> String -> String -> CustomerAccess
+createCustomerAccess name image address contact =
+    CustomerAccess
         (convertAccessType name)
         (convertAccessType image)
         (convertAccessType address)
         (convertAccessType contact)
-        (convertAccessType managers)
 
 
-siteValuesDecoder : Decode.Decoder SiteValues
-siteValuesDecoder =
-    decode SiteValues
-        |> required "no" (Decode.nullable Decode.string)
+customerValuesDecoder : Decode.Decoder CustomerValues
+customerValuesDecoder =
+    decode CustomerValues
         |> required "name" (Decode.nullable Decode.string)
         |> required "image" (Decode.nullable Decode.string)
         |> required "address1" (Decode.nullable Decode.string)
@@ -143,6 +142,3 @@ siteValuesDecoder =
         |> required "contact" (Decode.nullable Decode.string)
         |> required "tel" (Decode.nullable Decode.string)
         |> required "email" (Decode.nullable Decode.string)
-        |> required "divisionMgr" (Decode.nullable Decode.string)
-        |> required "areaMgr" (Decode.nullable Decode.string)
-        |> required "supervisor" (Decode.nullable Decode.string)

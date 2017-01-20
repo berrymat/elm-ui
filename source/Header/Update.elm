@@ -7,42 +7,74 @@ import Return exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
-import Header.Root.Models exposing (..)
-import Header.Customer.Models exposing (..)
-import Header.Client.Models exposing (..)
-import Header.Site.Models exposing (..)
-import Header.Staff.Models exposing (..)
+import Roots.Models exposing (Root, encodeRoot, rootAccessDecoder, rootValuesDecoder)
+import Customers.Models exposing (Customer, encodeCustomer, customerAccessDecoder, customerValuesDecoder)
+import Clients.Models exposing (Client, encodeClient, clientAccessDecoder, clientValuesDecoder)
+import Sites.Models exposing (Site, encodeSite, siteAccessDecoder, siteValuesDecoder)
+import Staffs.Models exposing (Staff, encodeStaff, staffAccessDecoder, staffValuesDecoder)
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import RemoteData exposing (..)
+import Roots.Update
+import Customers.Update
+import Clients.Update
+import Sites.Update
+import Staffs.Update
 
 
 update : Msg -> Model -> Return Msg Model
 update msg model =
-    case msg of
+    case ( msg, model.header ) of
+        ( RootsMsg rootsMsg, RootHeader root ) ->
+            Roots.Update.update rootsMsg root
+                |> Return.mapBoth RootsMsg (\r -> { model | header = RootHeader r })
+
+        ( CustomersMsg customersMsg, CustomerHeader customer ) ->
+            Customers.Update.update customersMsg customer
+                |> Return.mapBoth CustomersMsg (\r -> { model | header = CustomerHeader r })
+
+        ( ClientsMsg clientsMsg, ClientHeader client ) ->
+            Clients.Update.update clientsMsg client
+                |> Return.mapBoth ClientsMsg (\r -> { model | header = ClientHeader r })
+
+        ( SitesMsg sitesMsg, SiteHeader site ) ->
+            Sites.Update.update sitesMsg site
+                |> Return.mapBoth SitesMsg (\r -> { model | header = SiteHeader r })
+
+        ( StaffsMsg staffsMsg, StaffHeader staff ) ->
+            Staffs.Update.update staffsMsg staff
+                |> Return.mapBoth StaffsMsg (\r -> { model | header = StaffHeader r })
+
         -- ACTION MENU
-        ActionMenu action ->
+        ( ActionMenu action, _ ) ->
             updateActionMenu model action
 
-        CloseActionMenu ->
+        ( CloseActionMenu, _ ) ->
             updateCloseActionMenu model
 
-        NoAction ->
+        ( NoAction, _ ) ->
             singleton model
 
         -- EDIT MODAL
-        ModalAction token EditHeader action ->
+        ( ModalAction token EditHeader action, _ ) ->
             updateEditModalAction token model action
 
-        ModalMsg EditHeader msg ->
+        ( ModalMsg EditHeader msg, _ ) ->
             updateEditModalMsg model msg
 
         -- FORM
-        EditFormMsg msg ->
+        ( EditFormMsg msg, _ ) ->
             updateEditFormMsg model msg
 
-        HeaderSaveResponse webdata ->
+        ( HeaderSaveResponse webdata, _ ) ->
             handleWebDataResponse model webdata "Changes saved" singleton
+
+        x ->
+            let
+                _ =
+                    Debug.log "Stray found" x
+            in
+                singleton model
 
 
 subscriptions : Model -> Sub Msg

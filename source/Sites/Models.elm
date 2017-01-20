@@ -1,4 +1,4 @@
-module Header.Client.Models exposing (..)
+module Sites.Models exposing (..)
 
 import Helpers.Models exposing (..)
 import Components.Form as Form
@@ -7,15 +7,17 @@ import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Components.Validators exposing (..)
 
+type Msg 
+    = Todo
 
-type alias Client =
+type alias Site =
     { id : NodeId
-    , access : ClientAccess
-    , values : ClientValues
+    , access : SiteAccess
+    , values : SiteValues
     }
 
 
-type alias ClientValues =
+type alias SiteValues =
     { no : Maybe String
     , name : Maybe String
     , image : Maybe String
@@ -27,22 +29,26 @@ type alias ClientValues =
     , contact : Maybe String
     , tel : Maybe String
     , email : Maybe String
+    , divisionMgr : Maybe String
+    , areaMgr : Maybe String
+    , supervisor : Maybe String
     }
 
 
-type alias ClientAccess =
+type alias SiteAccess =
     { name : AccessType
     , image : AccessType
     , address : AccessType
     , contact : AccessType
+    , managers : AccessType
     }
 
 
-initEditForm : Client -> Form.Model
-initEditForm client =
+initEditForm : Site -> Form.Model
+initEditForm site =
     let
         values =
-            client.values
+            site.values
     in
         Form.init
             { checkboxes = []
@@ -67,8 +73,8 @@ initEditForm client =
             }
 
 
-updateState : Form.Model -> Client -> Client
-updateState form client =
+updateState : Form.Model -> Site -> Site
+updateState form site =
     let
         updatedValues values =
             { values
@@ -83,49 +89,51 @@ updateState form client =
                 , email = Just (Form.valueOfInput "email" "" form)
             }
     in
-        { client | values = updatedValues client.values }
+        { site | values = updatedValues site.values }
 
 
-encodeClient : Client -> Encode.Value
-encodeClient client =
+encodeSite : Site -> Encode.Value
+encodeSite site =
     Encode.object
         [ ( "values"
           , Encode.object
-                [ ( "name", Encode.string (Maybe.withDefault "" client.values.name) )
-                , ( "address1", Encode.string (Maybe.withDefault "" client.values.address1) )
-                , ( "address2", Encode.string (Maybe.withDefault "" client.values.address2) )
-                , ( "address3", Encode.string (Maybe.withDefault "" client.values.address3) )
-                , ( "address4", Encode.string (Maybe.withDefault "" client.values.address4) )
-                , ( "postcode", Encode.string (Maybe.withDefault "" client.values.postcode) )
-                , ( "contact", Encode.string (Maybe.withDefault "" client.values.contact) )
-                , ( "tel", Encode.string (Maybe.withDefault "" client.values.tel) )
-                , ( "email", Encode.string (Maybe.withDefault "" client.values.email) )
+                [ ( "name", Encode.string (Maybe.withDefault "" site.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" site.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" site.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" site.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" site.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" site.values.postcode) )
+                , ( "contact", Encode.string (Maybe.withDefault "" site.values.contact) )
+                , ( "tel", Encode.string (Maybe.withDefault "" site.values.tel) )
+                , ( "email", Encode.string (Maybe.withDefault "" site.values.email) )
                 ]
           )
         ]
 
 
-clientAccessDecoder : Decode.Decoder ClientAccess
-clientAccessDecoder =
-    decode createClientAccess
+siteAccessDecoder : Decode.Decoder SiteAccess
+siteAccessDecoder =
+    decode createSiteAccess
         |> required "name" Decode.string
         |> required "image" Decode.string
         |> required "address" Decode.string
         |> required "contact" Decode.string
+        |> required "managers" Decode.string
 
 
-createClientAccess : String -> String -> String -> String -> ClientAccess
-createClientAccess name image address contact =
-    ClientAccess
+createSiteAccess : String -> String -> String -> String -> String -> SiteAccess
+createSiteAccess name image address contact managers =
+    SiteAccess
         (convertAccessType name)
         (convertAccessType image)
         (convertAccessType address)
         (convertAccessType contact)
+        (convertAccessType managers)
 
 
-clientValuesDecoder : Decode.Decoder ClientValues
-clientValuesDecoder =
-    decode ClientValues
+siteValuesDecoder : Decode.Decoder SiteValues
+siteValuesDecoder =
+    decode SiteValues
         |> required "no" (Decode.nullable Decode.string)
         |> required "name" (Decode.nullable Decode.string)
         |> required "image" (Decode.nullable Decode.string)
@@ -137,3 +145,6 @@ clientValuesDecoder =
         |> required "contact" (Decode.nullable Decode.string)
         |> required "tel" (Decode.nullable Decode.string)
         |> required "email" (Decode.nullable Decode.string)
+        |> required "divisionMgr" (Decode.nullable Decode.string)
+        |> required "areaMgr" (Decode.nullable Decode.string)
+        |> required "supervisor" (Decode.nullable Decode.string)

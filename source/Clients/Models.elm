@@ -1,4 +1,4 @@
-module Header.Customer.Models exposing (..)
+module Clients.Models exposing (..)
 
 import Helpers.Models exposing (..)
 import Components.Form as Form
@@ -7,29 +7,19 @@ import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Components.Validators exposing (..)
 
+type Msg 
+    = Todo
 
-type alias Customer =
+type alias Client =
     { id : NodeId
-    , access : CustomerAccess
-    , values : CustomerValues
+    , access : ClientAccess
+    , values : ClientValues
     }
 
 
-customer : NodeId -> CustomerAccess -> CustomerValues -> Customer
-customer id access values =
-    Customer id access values
-
-
-type alias CustomerAccess =
-    { name : AccessType
-    , image : AccessType
-    , address : AccessType
-    , contact : AccessType
-    }
-
-
-type alias CustomerValues =
-    { name : Maybe String
+type alias ClientValues =
+    { no : Maybe String
+    , name : Maybe String
     , image : Maybe String
     , address1 : Maybe String
     , address2 : Maybe String
@@ -42,11 +32,19 @@ type alias CustomerValues =
     }
 
 
-initEditForm : Customer -> Form.Model
-initEditForm customer =
+type alias ClientAccess =
+    { name : AccessType
+    , image : AccessType
+    , address : AccessType
+    , contact : AccessType
+    }
+
+
+initEditForm : Client -> Form.Model
+initEditForm client =
     let
         values =
-            customer.values
+            client.values
     in
         Form.init
             { checkboxes = []
@@ -71,8 +69,8 @@ initEditForm customer =
             }
 
 
-updateState : Form.Model -> Customer -> Customer
-updateState form customer =
+updateState : Form.Model -> Client -> Client
+updateState form client =
     let
         updatedValues values =
             { values
@@ -87,49 +85,50 @@ updateState form customer =
                 , email = Just (Form.valueOfInput "email" "" form)
             }
     in
-        { customer | values = updatedValues customer.values }
+        { client | values = updatedValues client.values }
 
 
-encodeCustomer : Customer -> Encode.Value
-encodeCustomer customer =
+encodeClient : Client -> Encode.Value
+encodeClient client =
     Encode.object
         [ ( "values"
           , Encode.object
-                [ ( "name", Encode.string (Maybe.withDefault "" customer.values.name) )
-                , ( "address1", Encode.string (Maybe.withDefault "" customer.values.address1) )
-                , ( "address2", Encode.string (Maybe.withDefault "" customer.values.address2) )
-                , ( "address3", Encode.string (Maybe.withDefault "" customer.values.address3) )
-                , ( "address4", Encode.string (Maybe.withDefault "" customer.values.address4) )
-                , ( "postcode", Encode.string (Maybe.withDefault "" customer.values.postcode) )
-                , ( "contact", Encode.string (Maybe.withDefault "" customer.values.contact) )
-                , ( "tel", Encode.string (Maybe.withDefault "" customer.values.tel) )
-                , ( "email", Encode.string (Maybe.withDefault "" customer.values.email) )
+                [ ( "name", Encode.string (Maybe.withDefault "" client.values.name) )
+                , ( "address1", Encode.string (Maybe.withDefault "" client.values.address1) )
+                , ( "address2", Encode.string (Maybe.withDefault "" client.values.address2) )
+                , ( "address3", Encode.string (Maybe.withDefault "" client.values.address3) )
+                , ( "address4", Encode.string (Maybe.withDefault "" client.values.address4) )
+                , ( "postcode", Encode.string (Maybe.withDefault "" client.values.postcode) )
+                , ( "contact", Encode.string (Maybe.withDefault "" client.values.contact) )
+                , ( "tel", Encode.string (Maybe.withDefault "" client.values.tel) )
+                , ( "email", Encode.string (Maybe.withDefault "" client.values.email) )
                 ]
           )
         ]
 
 
-customerAccessDecoder : Decode.Decoder CustomerAccess
-customerAccessDecoder =
-    decode createCustomerAccess
+clientAccessDecoder : Decode.Decoder ClientAccess
+clientAccessDecoder =
+    decode createClientAccess
         |> required "name" Decode.string
         |> required "image" Decode.string
         |> required "address" Decode.string
         |> required "contact" Decode.string
 
 
-createCustomerAccess : String -> String -> String -> String -> CustomerAccess
-createCustomerAccess name image address contact =
-    CustomerAccess
+createClientAccess : String -> String -> String -> String -> ClientAccess
+createClientAccess name image address contact =
+    ClientAccess
         (convertAccessType name)
         (convertAccessType image)
         (convertAccessType address)
         (convertAccessType contact)
 
 
-customerValuesDecoder : Decode.Decoder CustomerValues
-customerValuesDecoder =
-    decode CustomerValues
+clientValuesDecoder : Decode.Decoder ClientValues
+clientValuesDecoder =
+    decode ClientValues
+        |> required "no" (Decode.nullable Decode.string)
         |> required "name" (Decode.nullable Decode.string)
         |> required "image" (Decode.nullable Decode.string)
         |> required "address1" (Decode.nullable Decode.string)

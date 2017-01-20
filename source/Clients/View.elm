@@ -1,24 +1,25 @@
-module Header.Root.View exposing (..)
+module Clients.View exposing (..)
 
-import Header.Root.Models exposing (..)
+import Clients.Models exposing (..)
 import Html exposing (..)
 import Helpers.Helpers exposing (..)
 import Header.Utils exposing (headerItem)
 
 
-headerItems : Root -> List (Html msg)
-headerItems root =
+headerItems : Client -> List (Html msg)
+headerItems client =
     let
         access =
-            root.access
+            client.access
 
         values =
-            root.values
+            client.values
 
         address =
             fullAddress values.address1 values.address2 values.address3 values.address4 values.postcode
     in
-        [ headerItem "Name" "globe" access.name values.name
+        [ headerItem "Ref" "wrench" access.name values.no
+        , headerItem "Name" "globe" access.name values.name
         , headerItem "Address" "home" access.address address
         , headerItem "Contact" "user-o" access.contact values.contact
         , headerItem "Phone" "phone" access.contact values.tel

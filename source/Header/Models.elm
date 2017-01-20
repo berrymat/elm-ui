@@ -5,11 +5,11 @@ import RemoteData exposing (..)
 import Ui.DropdownMenu
 import Ui.Modal
 import Components.Form as Form
-import Header.Root.Models
-import Header.Customer.Models
-import Header.Client.Models
-import Header.Site.Models
-import Header.Staff.Models
+import Roots.Models
+import Customers.Models
+import Clients.Models
+import Sites.Models
+import Staffs.Models
 
 
 type ModalType
@@ -32,6 +32,12 @@ type Msg
       -- EDIT FORM
     | EditFormMsg Form.Msg
     | HeaderSaveResponse (WebData Model)
+      -- TYPES
+    | RootsMsg Roots.Models.Msg
+    | CustomersMsg Customers.Models.Msg
+    | ClientsMsg Clients.Models.Msg
+    | SitesMsg Sites.Models.Msg
+    | StaffsMsg Staffs.Models.Msg
 
 
 type alias Model =
@@ -46,11 +52,11 @@ type alias Model =
 
 
 type Header
-    = RootHeader Header.Root.Models.Root
-    | CustomerHeader Header.Customer.Models.Customer
-    | ClientHeader Header.Client.Models.Client
-    | SiteHeader Header.Site.Models.Site
-    | StaffHeader Header.Staff.Models.Staff
+    = RootHeader Roots.Models.Model
+    | CustomerHeader Customers.Models.Customer
+    | ClientHeader Clients.Models.Client
+    | SiteHeader Sites.Models.Site
+    | StaffHeader Staffs.Models.Staff
     | Empty
 
 
@@ -90,55 +96,58 @@ getTabFromType tabType model =
             |> Maybe.withDefault firstTab
 
 
-initEditForm : Model -> Maybe Form.Model
-initEditForm model =
-    case model.header of
-        RootHeader root ->
-            Just (Header.Root.Models.initEditForm root)
 
-        CustomerHeader customer ->
-            Just (Header.Customer.Models.initEditForm customer)
+{-
+   initEditForm : Model -> Maybe Form.Model
+   initEditForm model =
+       case model.header of
+           RootHeader root ->
+               Just (Roots.Models.initEditForm root)
 
-        ClientHeader client ->
-            Just (Header.Client.Models.initEditForm client)
+           CustomerHeader customer ->
+               Just (Customers.Models.initEditForm customer)
 
-        SiteHeader site ->
-            Just (Header.Site.Models.initEditForm site)
+           ClientHeader client ->
+               Just (Clients.Models.initEditForm client)
 
-        StaffHeader staff ->
-            Just (Header.Staff.Models.initEditForm staff)
+           SiteHeader site ->
+               Just (Sites.Models.initEditForm site)
 
-        Empty ->
-            Nothing
+           StaffHeader staff ->
+               Just (Staffs.Models.initEditForm staff)
+
+           Empty ->
+               Nothing
 
 
-updateState : Form.Model -> Model -> Model
-updateState form model =
-    case model.header of
-        RootHeader root ->
-            { model
-                | header = RootHeader (Header.Root.Models.updateState form root)
-            }
+   updateState : Form.Model -> Model -> Model
+   updateState form model =
+       case model.header of
+           RootHeader root ->
+               { model
+                   | header = RootHeader (Roots.Models.updateState form root)
+               }
 
-        CustomerHeader customer ->
-            { model
-                | header = CustomerHeader (Header.Customer.Models.updateState form customer)
-            }
+           CustomerHeader customer ->
+               { model
+                   | header = CustomerHeader (Customers.Models.updateState form customer)
+               }
 
-        ClientHeader client ->
-            { model
-                | header = ClientHeader (Header.Client.Models.updateState form client)
-            }
+           ClientHeader client ->
+               { model
+                   | header = ClientHeader (Clients.Models.updateState form client)
+               }
 
-        SiteHeader site ->
-            { model
-                | header = SiteHeader (Header.Site.Models.updateState form site)
-            }
+           SiteHeader site ->
+               { model
+                   | header = SiteHeader (Sites.Models.updateState form site)
+               }
 
-        StaffHeader staff ->
-            { model
-                | header = StaffHeader (Header.Staff.Models.updateState form staff)
-            }
+           StaffHeader staff ->
+               { model
+                   | header = StaffHeader (Staffs.Models.updateState form staff)
+               }
 
-        Empty ->
-            model
+           Empty ->
+               model
+-}
