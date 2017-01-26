@@ -34,6 +34,16 @@ type alias RootAccess =
     }
 
 
+modelDecoder : Decode.Decoder Model
+modelDecoder =
+    decode Model
+        |> required "id" Decode.string
+        |> required "access" rootAccessDecoder
+        |> required "values" rootDecoder
+        |> hardcoded Ui.DropdownMenu.init
+        |> hardcoded Actions.init
+
+
 rootAccessDecoder : Decode.Decoder RootAccess
 rootAccessDecoder =
     decode createRootAccess

@@ -45,7 +45,7 @@ headerImage header =
         backgroundImage =
             (case header of
                 RootHeader root ->
-                    Maybe.map backgroundStyle root.values.image
+                    Maybe.map backgroundStyle root.root.image
 
                 CustomerHeader customer ->
                     Maybe.map backgroundStyle customer.values.image
@@ -71,70 +71,73 @@ headerImage header =
             []
 
 
-dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
-dropdownMenuItem token icon name type_ =
-    Ui.DropdownMenu.item [ onClick (ModalAction token type_ Open) ]
-        [ Ui.icon icon True []
-        , node "span" [] [ text name ]
-        ]
+
+{-
+   dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
+   dropdownMenuItem token icon name type_ =
+       Ui.DropdownMenu.item [ onClick (ModalAction token type_ Open) ]
+           [ Ui.icon icon True []
+           , node "span" [] [ text name ]
+           ]
 
 
-actionDropdownViewModel : AuthToken -> Model -> Ui.DropdownMenu.ViewModel Msg
-actionDropdownViewModel token model =
-    let
-        actions =
-            [ ( "android-download", "Edit", EditHeader )
-            ]
+   actionDropdownViewModel : AuthToken -> Model -> Ui.DropdownMenu.ViewModel Msg
+   actionDropdownViewModel token model =
+       let
+           actions =
+               [ ( "android-download", "Edit", EditHeader )
+               ]
 
-        useraccess =
-            model.useraccess
+           useraccess =
+               model.useraccess
 
-        actionFilter ( _, _, type_ ) =
-            case type_ of
-                EditHeader ->
-                    useraccess.admin || useraccess.owner
+           actionFilter ( _, _, type_ ) =
+               case type_ of
+                   EditHeader ->
+                       useraccess.admin || useraccess.owner
 
-        accessibleActions =
-            List.filter actionFilter actions
-    in
-        { element =
-            Ui.IconButton.secondary "Actions"
-                "chevron-down"
-                "right"
-                NoAction
-        , items =
-            List.map (\( icon, name, type_ ) -> dropdownMenuItem token icon name type_) accessibleActions
-        }
+           accessibleActions =
+               List.filter actionFilter actions
+       in
+           { element =
+               Ui.IconButton.secondary "Actions"
+                   "chevron-down"
+                   "right"
+                   NoAction
+           , items =
+               List.map (\( icon, name, type_ ) -> dropdownMenuItem token icon name type_) accessibleActions
+           }
 
 
-headerActions : AuthToken -> Model -> List (Html Msg)
-headerActions token model =
-    let
-        dropdownViewModel =
-            actionDropdownViewModel token model
+   headerActions : AuthToken -> Model -> List (Html Msg)
+   headerActions token model =
+       let
+           dropdownViewModel =
+               actionDropdownViewModel token model
 
-        modalContent =
-            case model.editForm of
-                Just form ->
-                    [ Form.view EditFormMsg form ]
+           modalContent =
+               case model.editForm of
+                   Just form ->
+                       [ Form.view EditFormMsg form ]
 
-                Nothing ->
-                    [ text "Edit Modal" ]
+                   Nothing ->
+                       [ text "Edit Modal" ]
 
-        editModalViewModel =
-            { content = modalContent
-            , title = "Edit Details"
-            , footer =
-                [ Ui.Container.rowEnd []
-                    [ Ui.Button.primary "Save" (ModalAction token EditHeader Save)
-                    , Ui.Button.secondary "Cancel" (ModalAction token EditHeader Cancel)
-                    ]
-                ]
-            }
-    in
-        [ Ui.DropdownMenu.view dropdownViewModel ActionMenu model.actionMenu
-        , Ui.Modal.view (ModalMsg EditHeader) editModalViewModel model.editModal
-        ]
+           editModalViewModel =
+               { content = modalContent
+               , title = "Edit Details"
+               , footer =
+                   [ Ui.Container.rowEnd []
+                       [ Ui.Button.primary "Save" (ModalAction token EditHeader Save)
+                       , Ui.Button.secondary "Cancel" (ModalAction token EditHeader Cancel)
+                       ]
+                   ]
+               }
+       in
+           [ Ui.DropdownMenu.view dropdownViewModel ActionMenu model.actionMenu
+           , Ui.Modal.view (ModalMsg EditHeader) editModalViewModel model.editModal
+           ]
+-}
 
 
 headerContent : AuthToken -> Model -> Html Msg
@@ -159,11 +162,28 @@ headerContent token model =
 
                 Empty ->
                     []
-
-        headerContent =
-            List.append
-                headerItems
-                (headerActions token model)
     in
         div [ class "body-header-content" ]
-            headerContent
+            headerItems
+
+
+viewActions : AuthToken -> Model -> Html Msg
+viewActions token model =
+    case model.header of
+        RootHeader root ->
+            Html.map RootsMsg (Roots.View.viewActionMenu token root)
+
+        CustomerHeader customer ->
+            div [] [ text "Customer TODO" ]
+
+        ClientHeader client ->
+            div [] [ text "Client TODO" ]
+
+        SiteHeader site ->
+            div [] [ text "Site TODO" ]
+
+        StaffHeader staff ->
+            div [] [ text "Staff TODO" ]
+
+        Empty ->
+            div [] []

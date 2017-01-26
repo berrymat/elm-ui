@@ -12,9 +12,12 @@ import Html.Attributes exposing (..)
 view : AuthToken -> Model -> Html Msg
 view token model =
     let
+        name =
+            Maybe.withDefault "" model.root.name
+
         modalContent =
             [ div [ class "padded-modal-content" ]
-                [ text ("Confirm deletion of root '" ++ model.root.name ++ "'?") ]
+                [ text ("Confirm deletion of root '" ++ name ++ "'?") ]
             ]
 
         modalViewModel =

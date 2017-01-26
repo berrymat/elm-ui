@@ -20,7 +20,7 @@ view token container =
             [ div [ class "sidebar-content" ]
                 [ viewTree container ]
             , div [ class "sidebar-footer" ]
-                [ viewTreeFooter container ]
+                [ viewTreeFooter token container ]
             ]
         , div [ class "body" ]
             [ viewHeader token container
@@ -45,9 +45,16 @@ viewTree container =
         Html.map TreeMsg htmlTree
 
 
-viewTreeFooter : Container -> Html Msg
-viewTreeFooter container =
-    text "Footer"
+viewTreeFooter : AuthToken -> Container -> Html Msg
+viewTreeFooter token container =
+    let
+        htmlContent =
+            Helpers.RemoteData.view
+                container.header
+                (Header.View.viewActions token)
+                (Helpers.RemoteData.viewPendingDefault "")
+    in
+        Html.map HeaderMsg htmlContent
 
 
 viewHeader : AuthToken -> Container -> Html Msg

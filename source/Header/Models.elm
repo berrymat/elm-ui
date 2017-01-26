@@ -23,17 +23,7 @@ type ModalAction
 
 
 type Msg
-    = ActionMenu Ui.DropdownMenu.Msg
-    | CloseActionMenu
-    | NoAction
-      -- MODALS
-    | ModalAction AuthToken ModalType ModalAction
-    | ModalMsg ModalType Ui.Modal.Msg
-      -- EDIT FORM
-    | EditFormMsg Form.Msg
-    | HeaderSaveResponse (WebData Model)
-      -- TYPES
-    | RootsMsg Roots.Models.Msg
+    = RootsMsg Roots.Models.Msg
     | CustomersMsg Customers.Models.Msg
     | ClientsMsg Clients.Models.Msg
     | SitesMsg Sites.Models.Msg
@@ -45,9 +35,6 @@ type alias Model =
     , tabs : List Tab
     , childtypes : List Entity
     , useraccess : UserAccess
-    , actionMenu : Ui.DropdownMenu.Model
-    , editModal : Ui.Modal.Model
-    , editForm : Maybe Form.Model
     }
 
 
