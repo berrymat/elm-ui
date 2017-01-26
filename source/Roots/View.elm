@@ -2,7 +2,6 @@ module Roots.View exposing (..)
 
 import Roots.Models exposing (..)
 import Html exposing (..)
-import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Helpers.Helpers exposing (..)
 import Header.Utils exposing (headerItem)

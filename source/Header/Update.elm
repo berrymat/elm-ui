@@ -2,19 +2,14 @@ module Header.Update exposing (..)
 
 import Header.Models exposing (..)
 import Helpers.Helpers exposing (..)
-import Helpers.Models exposing (..)
 import Return exposing (..)
-import Ui.DropdownMenu
-import Ui.Modal
-import Components.Form as Form
-import Roots.Models exposing (rootAccessDecoder)
-import Customers.Models exposing (Customer, encodeCustomer, customerAccessDecoder, customerValuesDecoder)
+import Roots.Models
+import Customers.Models
 import Clients.Models exposing (Client, encodeClient, clientAccessDecoder, clientValuesDecoder)
 import Sites.Models exposing (Site, encodeSite, siteAccessDecoder, siteValuesDecoder)
 import Staffs.Models exposing (Staff, encodeStaff, staffAccessDecoder, staffValuesDecoder)
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
-import RemoteData exposing (..)
 import Roots.Update
 import Customers.Update
 import Clients.Update
@@ -55,7 +50,27 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    case model.header of
+        RootHeader root ->
+            Sub.map RootsMsg (Roots.Update.subscriptions root)
+
+        CustomerHeader customer ->
+            Sub.map CustomersMsg (Customers.Update.subscriptions customer)
+
+        ClientHeader client ->
+            -- TODO Sub.map ClientsMsg (Clients.Update.subscriptions client)
+            Sub.none
+
+        SiteHeader site ->
+            -- TODO Sub.map SitesMsg (Sites.Update.subscriptions site)
+            Sub.none
+
+        StaffHeader staff ->
+            -- TODO Sub.map StaffsMsg (Staffs.Update.subscriptions staff)
+            Sub.none
+
+        Empty ->
+            Sub.none
 
 
 
@@ -126,12 +141,7 @@ rootDecoder =
 
 customerDecoder : Decode.Decoder Header
 customerDecoder =
-    Decode.map CustomerHeader
-        (decode Customer
-            |> required "id" Decode.string
-            |> required "access" customerAccessDecoder
-            |> required "values" customerValuesDecoder
-        )
+    Decode.map CustomerHeader Customers.Models.modelDecoder
 
 
 clientDecoder : Decode.Decoder Header

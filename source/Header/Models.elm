@@ -1,10 +1,6 @@
 module Header.Models exposing (..)
 
 import Helpers.Models exposing (..)
-import RemoteData exposing (..)
-import Ui.DropdownMenu
-import Ui.Modal
-import Components.Form as Form
 import Roots.Models
 import Customers.Models
 import Clients.Models
@@ -40,7 +36,7 @@ type alias Model =
 
 type Header
     = RootHeader Roots.Models.Model
-    | CustomerHeader Customers.Models.Customer
+    | CustomerHeader Customers.Models.Model
     | ClientHeader Clients.Models.Client
     | SiteHeader Sites.Models.Site
     | StaffHeader Staffs.Models.Staff

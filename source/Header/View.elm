@@ -2,7 +2,6 @@ module Header.View exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (..)
 import Header.Models exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (..)
@@ -11,13 +10,6 @@ import Customers.View
 import Clients.View
 import Sites.View
 import Staffs.View
-import Ui
-import Ui.Button
-import Ui.Container
-import Ui.DropdownMenu
-import Ui.IconButton
-import Ui.Modal
-import Components.Form as Form
 import Ui.Helpers.Env
 import Json.Decode as Decode
 
@@ -48,7 +40,7 @@ headerImage header =
                     Maybe.map backgroundStyle root.root.image
 
                 CustomerHeader customer ->
-                    Maybe.map backgroundStyle customer.values.image
+                    Maybe.map backgroundStyle customer.customer.image
 
                 ClientHeader client ->
                     Maybe.map backgroundStyle client.values.image
@@ -174,7 +166,7 @@ viewActions token model =
             Html.map RootsMsg (Roots.View.viewActionMenu token root)
 
         CustomerHeader customer ->
-            div [] [ text "Customer TODO" ]
+            Html.map CustomersMsg (Customers.View.viewActionMenu token customer)
 
         ClientHeader client ->
             div [] [ text "Client TODO" ]
