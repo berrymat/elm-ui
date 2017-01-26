@@ -5,7 +5,7 @@ import Helpers.Helpers exposing (..)
 import Return exposing (..)
 import Roots.Models
 import Customers.Models
-import Clients.Models exposing (Client, encodeClient, clientAccessDecoder, clientValuesDecoder)
+import Clients.Models
 import Sites.Models exposing (Site, encodeSite, siteAccessDecoder, siteValuesDecoder)
 import Staffs.Models exposing (Staff, encodeStaff, staffAccessDecoder, staffValuesDecoder)
 import Json.Decode as Decode exposing (field, at)
@@ -58,8 +58,7 @@ subscriptions model =
             Sub.map CustomersMsg (Customers.Update.subscriptions customer)
 
         ClientHeader client ->
-            -- TODO Sub.map ClientsMsg (Clients.Update.subscriptions client)
-            Sub.none
+            Sub.map ClientsMsg (Clients.Update.subscriptions client)
 
         SiteHeader site ->
             -- TODO Sub.map SitesMsg (Sites.Update.subscriptions site)
@@ -146,12 +145,7 @@ customerDecoder =
 
 clientDecoder : Decode.Decoder Header
 clientDecoder =
-    Decode.map ClientHeader
-        (decode Client
-            |> required "id" Decode.string
-            |> required "access" clientAccessDecoder
-            |> required "values" clientValuesDecoder
-        )
+    Decode.map ClientHeader Clients.Models.modelDecoder
 
 
 siteDecoder : Decode.Decoder Header

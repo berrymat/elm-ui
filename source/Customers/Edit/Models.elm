@@ -65,13 +65,13 @@ customerForm customer =
 updateCustomer : Form.Model -> Customer -> Customer
 updateCustomer form customer =
     { customer
-        | name = Just (Form.valueOfInput "name" "" form)
-        , address1 = Just (Form.valueOfInput "address1" "" form)
-        , address2 = Just (Form.valueOfInput "address2" "" form)
-        , address3 = Just (Form.valueOfInput "address3" "" form)
-        , address4 = Just (Form.valueOfInput "address4" "" form)
-        , postcode = Just (Form.valueOfInput "postcode" "" form)
-        , contact = Just (Form.valueOfInput "contact" "" form)
-        , tel = Just (Form.valueOfInput "phone" "" form)
-        , email = Just (Form.valueOfInput "email" "" form)
+        | name = Just (Form.valueOfInput "name" (Maybe.withDefault "" customer.name) form)
+        , address1 = Just (Form.valueOfInput "address1" (Maybe.withDefault "" customer.address1) form)
+        , address2 = Just (Form.valueOfInput "address2" (Maybe.withDefault "" customer.address2) form)
+        , address3 = Just (Form.valueOfInput "address3" (Maybe.withDefault "" customer.address3) form)
+        , address4 = Just (Form.valueOfInput "address4" (Maybe.withDefault "" customer.address4) form)
+        , postcode = Just (Form.valueOfInput "postcode" (Maybe.withDefault "" customer.postcode) form)
+        , contact = Just (Form.valueOfInput "contact" (Maybe.withDefault "" customer.contact) form)
+        , tel = Just (Form.valueOfInput "phone" (Maybe.withDefault "" customer.tel) form)
+        , email = Just (Form.valueOfInput "email" (Maybe.withDefault "" customer.email) form)
     }

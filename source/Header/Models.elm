@@ -37,7 +37,7 @@ type alias Model =
 type Header
     = RootHeader Roots.Models.Model
     | CustomerHeader Customers.Models.Model
-    | ClientHeader Clients.Models.Client
+    | ClientHeader Clients.Models.Model
     | SiteHeader Sites.Models.Site
     | StaffHeader Staffs.Models.Staff
     | Empty

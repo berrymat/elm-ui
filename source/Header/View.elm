@@ -43,7 +43,7 @@ headerImage header =
                     Maybe.map backgroundStyle customer.customer.image
 
                 ClientHeader client ->
-                    Maybe.map backgroundStyle client.values.image
+                    Maybe.map backgroundStyle client.client.image
 
                 SiteHeader site ->
                     Maybe.map backgroundStyle site.values.image
@@ -169,7 +169,7 @@ viewActions token model =
             Html.map CustomersMsg (Customers.View.viewActionMenu token customer)
 
         ClientHeader client ->
-            div [] [ text "Client TODO" ]
+            Html.map ClientsMsg (Clients.View.viewActionMenu token client)
 
         SiteHeader site ->
             div [] [ text "Site TODO" ]

@@ -65,13 +65,13 @@ rootForm root =
 updateRoot : Form.Model -> Root -> Root
 updateRoot form root =
     { root
-        | name = Just (Form.valueOfInput "name" "" form)
-        , address1 = Just (Form.valueOfInput "address1" "" form)
-        , address2 = Just (Form.valueOfInput "address2" "" form)
-        , address3 = Just (Form.valueOfInput "address3" "" form)
-        , address4 = Just (Form.valueOfInput "address4" "" form)
-        , postcode = Just (Form.valueOfInput "postcode" "" form)
-        , contact = Just (Form.valueOfInput "contact" "" form)
-        , tel = Just (Form.valueOfInput "phone" "" form)
-        , email = Just (Form.valueOfInput "email" "" form)
+        | name = Just (Form.valueOfInput "name" (Maybe.withDefault "" root.name) form)
+        , address1 = Just (Form.valueOfInput "address1" (Maybe.withDefault "" root.address1) form)
+        , address2 = Just (Form.valueOfInput "address2" (Maybe.withDefault "" root.address2) form)
+        , address3 = Just (Form.valueOfInput "address3" (Maybe.withDefault "" root.address3) form)
+        , address4 = Just (Form.valueOfInput "address4" (Maybe.withDefault "" root.address4) form)
+        , postcode = Just (Form.valueOfInput "postcode" (Maybe.withDefault "" root.postcode) form)
+        , contact = Just (Form.valueOfInput "contact" (Maybe.withDefault "" root.contact) form)
+        , tel = Just (Form.valueOfInput "phone" (Maybe.withDefault "" root.tel) form)
+        , email = Just (Form.valueOfInput "email" (Maybe.withDefault "" root.email) form)
     }
