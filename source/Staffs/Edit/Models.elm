@@ -37,19 +37,20 @@ init staff method =
     }
 
 
-accessName : String
-accessName =
-    "Access?"
-
-
 staffForm : Staff -> Form.Model
 staffForm staff =
     Form.init
-        { checkboxes =
-            [ ( accessName, 11, staff.access, [] )
-            ]
+        { checkboxes = []
         , inputs =
-            [ ( "Name", 1, "Name", staff.name, Nothing, [ Form.Validator requiredInput ] )
+            [ ( "name", 0, "Name", (Maybe.withDefault "" staff.name), Nothing, [ Form.Validator requiredInput ] )
+            , ( "address1", 1, "Address Line 1", (Maybe.withDefault "" staff.address1), Nothing, [] )
+            , ( "address2", 2, "Address Line 2", (Maybe.withDefault "" staff.address2), Nothing, [] )
+            , ( "address3", 3, "Address Line 3", (Maybe.withDefault "" staff.address3), Nothing, [] )
+            , ( "address4", 4, "Address Line 4", (Maybe.withDefault "" staff.address4), Nothing, [] )
+            , ( "postcode", 5, "Postcode", (Maybe.withDefault "" staff.postcode), Nothing, [] )
+            , ( "phone", 7, "Phone", (Maybe.withDefault "" staff.tel), Nothing, [] )
+            , ( "mobile", 6, "Mobile", (Maybe.withDefault "" staff.mob), Nothing, [] )
+            , ( "email", 8, "Email", (Maybe.withDefault "" staff.email), Nothing, [ Form.Validator optionalValidEmail ] )
             ]
         , fileInputs = []
         , numberRanges = []
@@ -57,15 +58,20 @@ staffForm staff =
         , choosers = []
         , colors = []
         , dates = []
-        , titles =
-            [ ( "title", 10, "Title" )
-            ]
+        , titles = []
         }
 
 
 updateStaff : Form.Model -> Staff -> Staff
 updateStaff form staff =
     { staff
-        | name = Form.valueOfInput "Name" staff.name form
-        , access = Form.valueOfCheckbox accessName staff.access form
+        | name = Just (Form.valueOfInput "name" (Maybe.withDefault "" staff.name) form)
+        , address1 = Just (Form.valueOfInput "address1" (Maybe.withDefault "" staff.address1) form)
+        , address2 = Just (Form.valueOfInput "address2" (Maybe.withDefault "" staff.address2) form)
+        , address3 = Just (Form.valueOfInput "address3" (Maybe.withDefault "" staff.address3) form)
+        , address4 = Just (Form.valueOfInput "address4" (Maybe.withDefault "" staff.address4) form)
+        , postcode = Just (Form.valueOfInput "postcode" (Maybe.withDefault "" staff.postcode) form)
+        , tel = Just (Form.valueOfInput "phone" (Maybe.withDefault "" staff.tel) form)
+        , mob = Just (Form.valueOfInput "mobile" (Maybe.withDefault "" staff.mob) form)
+        , email = Just (Form.valueOfInput "email" (Maybe.withDefault "" staff.email) form)
     }

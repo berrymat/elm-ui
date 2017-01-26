@@ -6,8 +6,8 @@ import Return exposing (..)
 import Roots.Models
 import Customers.Models
 import Clients.Models
-import Sites.Models exposing (Site, encodeSite, siteAccessDecoder, siteValuesDecoder)
-import Staffs.Models exposing (Staff, encodeStaff, staffAccessDecoder, staffValuesDecoder)
+import Sites.Models
+import Staffs.Models
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Roots.Update
@@ -61,12 +61,10 @@ subscriptions model =
             Sub.map ClientsMsg (Clients.Update.subscriptions client)
 
         SiteHeader site ->
-            -- TODO Sub.map SitesMsg (Sites.Update.subscriptions site)
-            Sub.none
+            Sub.map SitesMsg (Sites.Update.subscriptions site)
 
         StaffHeader staff ->
-            -- TODO Sub.map StaffsMsg (Staffs.Update.subscriptions staff)
-            Sub.none
+            Sub.map StaffsMsg (Staffs.Update.subscriptions staff)
 
         Empty ->
             Sub.none
@@ -150,19 +148,9 @@ clientDecoder =
 
 siteDecoder : Decode.Decoder Header
 siteDecoder =
-    Decode.map SiteHeader
-        (decode Site
-            |> required "id" Decode.string
-            |> required "access" siteAccessDecoder
-            |> required "values" siteValuesDecoder
-        )
+    Decode.map SiteHeader Sites.Models.modelDecoder
 
 
 staffDecoder : Decode.Decoder Header
 staffDecoder =
-    Decode.map StaffHeader
-        (decode Staff
-            |> required "id" Decode.string
-            |> required "access" staffAccessDecoder
-            |> required "values" staffValuesDecoder
-        )
+    Decode.map StaffHeader Staffs.Models.modelDecoder

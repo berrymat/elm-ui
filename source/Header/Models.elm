@@ -38,8 +38,8 @@ type Header
     = RootHeader Roots.Models.Model
     | CustomerHeader Customers.Models.Model
     | ClientHeader Clients.Models.Model
-    | SiteHeader Sites.Models.Site
-    | StaffHeader Staffs.Models.Staff
+    | SiteHeader Sites.Models.Model
+    | StaffHeader Staffs.Models.Model
     | Empty
 
 

@@ -46,10 +46,10 @@ headerImage header =
                     Maybe.map backgroundStyle client.client.image
 
                 SiteHeader site ->
-                    Maybe.map backgroundStyle site.values.image
+                    Maybe.map backgroundStyle site.site.image
 
                 StaffHeader staff ->
-                    Maybe.map backgroundStyle staff.values.image
+                    Maybe.map backgroundStyle staff.staff.image
 
                 Empty ->
                     Maybe.Nothing
@@ -172,10 +172,10 @@ viewActions token model =
             Html.map ClientsMsg (Clients.View.viewActionMenu token client)
 
         SiteHeader site ->
-            div [] [ text "Site TODO" ]
+            Html.map SitesMsg (Sites.View.viewActionMenu token site)
 
         StaffHeader staff ->
-            div [] [ text "Staff TODO" ]
+            Html.map StaffsMsg (Staffs.View.viewActionMenu token staff)
 
         Empty ->
             div [] []
