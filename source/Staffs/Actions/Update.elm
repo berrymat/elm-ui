@@ -3,7 +3,7 @@ module Staffs.Actions.Update exposing (..)
 import Staffs.Actions.Models exposing (..)
 import Return exposing (..)
 import Helpers.Models exposing (..)
-import Staffs.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Staffs.Staff exposing (..)
 import Staffs.Edit.Models as EditModels
 import Staffs.Delete.Models as DeleteModels

@@ -6,7 +6,7 @@ import Helpers.Models exposing (..)
 import Return exposing (..)
 import RemoteData exposing (..)
 import Ui.Modal
-import Customers.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Customers.Customer exposing (..)
 
 
@@ -62,7 +62,7 @@ updateSaveResponse model response =
 
         updateSaveResponseSuccess customer =
             ( singleton { newModel | modal = Ui.Modal.close model.modal }
-            , OutDelete customer
+            , OutDeleteCustomer customer
             )
     in
         RemoteData.map updateSaveResponseSuccess response

@@ -3,7 +3,7 @@ module Clients.Actions.Update exposing (..)
 import Clients.Actions.Models exposing (..)
 import Return exposing (..)
 import Helpers.Models exposing (..)
-import Clients.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Clients.Client exposing (..)
 import Clients.Edit.Models as EditModels
 import Clients.Delete.Models as DeleteModels

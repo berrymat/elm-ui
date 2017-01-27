@@ -3,12 +3,18 @@ module Customers.Actions.Update exposing (..)
 import Customers.Actions.Models exposing (..)
 import Return exposing (..)
 import Helpers.Models exposing (..)
-import Customers.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Customers.Customer exposing (..)
-import Customers.Edit.Models as EditModels
-import Customers.Delete.Models as DeleteModels
-import Customers.Edit.Update as Edit
-import Customers.Delete.Update as Delete
+import Customers.Edit.Models
+import Customers.Delete.Models
+import Customers.Edit.Update
+import Customers.Delete.Update
+import Clients.Models
+import Staffs.Models
+import Clients.Edit.Models
+import Staffs.Edit.Models
+import Clients.Edit.Update
+import Staffs.Edit.Update
 
 
 update : Msg -> Model -> ( Return Msg Model, OutMsg )
@@ -21,13 +27,21 @@ update msg model =
             ( _, Open modalType customer ) ->
                 ( updateOpen model modalType customer, OutNone )
 
-            ( EditModel model_, EditMsg msg_ ) ->
-                Edit.update msg_ model_
-                    |> mapBothEx EditMsg EditModel
+            ( EditCustomerModel model_, EditCustomerMsg msg_ ) ->
+                Customers.Edit.Update.update msg_ model_
+                    |> mapBothEx EditCustomerMsg EditCustomerModel
 
-            ( DeleteModel model_, DeleteMsg msg_ ) ->
-                Delete.update msg_ model_
-                    |> mapBothEx DeleteMsg DeleteModel
+            ( DeleteCustomerModel model_, DeleteCustomerMsg msg_ ) ->
+                Customers.Delete.Update.update msg_ model_
+                    |> mapBothEx DeleteCustomerMsg DeleteCustomerModel
+
+            ( EditClientModel model_, EditClientMsg msg_ ) ->
+                Clients.Edit.Update.update msg_ model_
+                    |> mapBothEx EditClientMsg EditClientModel
+
+            ( EditStaffModel model_, EditStaffMsg msg_ ) ->
+                Staffs.Edit.Update.update msg_ model_
+                    |> mapBothEx EditStaffMsg EditStaffModel
 
             x ->
                 let
@@ -40,13 +54,30 @@ update msg model =
 updateOpen : Model -> ModalType -> Customer -> Return Msg Model
 updateOpen model modalType customer =
     case modalType of
-        NewCustomer ->
-            singleton
-                (EditModel (EditModels.init customer Post))
-
+        {-
+           NewCustomer ->
+               singleton
+                   (EditModel (EditModels.init customer Post))
+        -}
         EditCustomer ->
             singleton
-                (EditModel (EditModels.init customer Put))
+                (EditCustomerModel (Customers.Edit.Models.init customer Put))
 
         DeleteCustomer ->
-            singleton (DeleteModel (DeleteModels.init customer))
+            singleton (DeleteCustomerModel (Customers.Delete.Models.init customer))
+
+        NewClient ->
+            let
+                client =
+                    Clients.Models.initClient customer.id
+            in
+                singleton
+                    (EditClientModel (Clients.Edit.Models.init client Post))
+
+        NewStaff ->
+            let
+                staff =
+                    Staffs.Models.initStaff customer.id
+            in
+                singleton
+                    (EditStaffModel (Staffs.Edit.Models.init staff Post))

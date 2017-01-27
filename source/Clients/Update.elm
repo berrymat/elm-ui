@@ -5,7 +5,7 @@ import Return exposing (..)
 import Helpers.Models exposing (..)
 import Ui.DropdownMenu
 import Clients.Client exposing (..)
-import Clients.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Clients.Actions.Models as Actions exposing (ModalType(..))
 import Clients.Actions.Update as ActionsUpdate
 
@@ -63,18 +63,14 @@ updateActionsMsg model actionsMsg =
 
         newReturn =
             case out of
-                OutCancel ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
+                OutUpdateClient method client ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel, client = client })
 
                 OutNone ->
                     return
 
-                OutUpdate client ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel, client = client })
-
-                OutDelete client ->
-                    -- TODO
-                    return
+                _ ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
     in
         newReturn
 

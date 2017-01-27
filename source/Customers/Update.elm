@@ -5,7 +5,7 @@ import Return exposing (..)
 import Helpers.Models exposing (..)
 import Ui.DropdownMenu
 import Customers.Customer exposing (..)
-import Customers.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Customers.Actions.Models as Actions exposing (ModalType(..))
 import Customers.Actions.Update as ActionsUpdate
 
@@ -39,10 +39,10 @@ updateModalAction token model modalType customer =
             { model | actionMenu = newActionMenu }
 
         newCustomer =
-            if modalType == NewCustomer then
-                (initCustomer model.id)
-            else
-                customer
+            --if modalType == NewCustomer then
+            --    (initCustomer model.id)
+            --else
+            customer
 
         ( return, out ) =
             ActionsUpdate.update (Actions.Open modalType newCustomer) model.actions
@@ -63,18 +63,14 @@ updateActionsMsg model actionsMsg =
 
         newReturn =
             case out of
-                OutCancel ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
+                OutUpdateCustomer method customer ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel, customer = customer })
 
                 OutNone ->
                     return
 
-                OutUpdate customer ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel, customer = customer })
-
-                OutDelete customer ->
-                    -- TODO
-                    return
+                _ ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
     in
         newReturn
 

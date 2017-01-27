@@ -3,7 +3,7 @@ module Roots.Actions.Update exposing (..)
 import Roots.Actions.Models exposing (..)
 import Return exposing (..)
 import Helpers.Models exposing (..)
-import Roots.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Roots.Root exposing (..)
 import Roots.Edit.Models as EditModels
 import Roots.Delete.Models as DeleteModels

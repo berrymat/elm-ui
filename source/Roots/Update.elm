@@ -5,7 +5,7 @@ import Return exposing (..)
 import Helpers.Models exposing (..)
 import Ui.DropdownMenu
 import Roots.Root exposing (..)
-import Roots.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Roots.Actions.Models as Actions exposing (ModalType(..))
 import Roots.Actions.Update as ActionsUpdate
 
@@ -63,18 +63,14 @@ updateActionsMsg model actionsMsg =
 
         newReturn =
             case out of
-                OutCancel ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
+                OutUpdateRoot method root ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel, root = root })
 
                 OutNone ->
                     return
 
-                OutUpdate root ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel, root = root })
-
-                OutDelete root ->
-                    -- TODO
-                    return
+                _ ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
     in
         newReturn
 

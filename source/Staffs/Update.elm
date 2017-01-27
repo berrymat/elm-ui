@@ -5,7 +5,7 @@ import Return exposing (..)
 import Helpers.Models exposing (..)
 import Ui.DropdownMenu
 import Staffs.Staff exposing (..)
-import Staffs.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Staffs.Actions.Models as Actions exposing (ModalType(..))
 import Staffs.Actions.Update as ActionsUpdate
 
@@ -63,18 +63,14 @@ updateActionsMsg model actionsMsg =
 
         newReturn =
             case out of
-                OutCancel ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
+                OutUpdateStaff method staff ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel, staff = staff })
 
                 OutNone ->
                     return
 
-                OutUpdate staff ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel, staff = staff })
-
-                OutDelete staff ->
-                    -- TODO
-                    return
+                _ ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
     in
         newReturn
 

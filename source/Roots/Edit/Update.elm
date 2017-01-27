@@ -7,7 +7,7 @@ import Return exposing (..)
 import RemoteData exposing (..)
 import Components.Form as Form
 import Ui.Modal
-import Roots.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Roots.Root exposing (..)
 
 
@@ -102,7 +102,7 @@ updateSaveResponse model response =
 
         updateSaveResponseSuccess root =
             ( singleton { newModel | modal = Ui.Modal.close model.modal }
-            , OutUpdate root
+            , OutUpdateRoot model.method root
             )
     in
         RemoteData.map updateSaveResponseSuccess response

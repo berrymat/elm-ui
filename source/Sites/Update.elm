@@ -5,7 +5,7 @@ import Return exposing (..)
 import Helpers.Models exposing (..)
 import Ui.DropdownMenu
 import Sites.Site exposing (..)
-import Sites.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Sites.Actions.Models as Actions exposing (ModalType(..))
 import Sites.Actions.Update as ActionsUpdate
 
@@ -63,18 +63,14 @@ updateActionsMsg model actionsMsg =
 
         newReturn =
             case out of
-                OutCancel ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
+                OutUpdateSite method site ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel, site = site })
 
                 OutNone ->
                     return
 
-                OutUpdate site ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel, site = site })
-
-                OutDelete site ->
-                    -- TODO
-                    return
+                _ ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
     in
         newReturn
 

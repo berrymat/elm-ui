@@ -49,23 +49,28 @@ accessibleActions : Model -> List ( String, String, ModalType )
 accessibleActions model =
     let
         actions =
-            [ ( "plus", "New Customer", NewCustomer )
-            , ( "record", "Edit Customer", EditCustomer )
+            [ ( "record", "Edit Customer", EditCustomer )
             , ( "record", "Delete Customer", DeleteCustomer )
+            , ( "plus", "New Client", NewClient )
+            , ( "plus", "New Staff", NewStaff )
             ]
 
         actionFilter ( _, _, type_ ) =
             case type_ of
-                NewCustomer ->
-                    -- TODO model.canAdd
-                    True
-
                 EditCustomer ->
                     -- TODO model.canEdit
                     True
 
                 DeleteCustomer ->
                     -- TODO model.canDelete
+                    True
+
+                NewClient ->
+                    -- TODO model.canEdit
+                    True
+
+                NewStaff ->
+                    -- TODO model.canEdit
                     True
     in
         List.filter actionFilter actions
