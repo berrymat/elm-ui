@@ -20,6 +20,7 @@ type Msg
 type alias Model =
     { id : NodeId
     , changePassword : ChangePassword
+    , method : HttpMethod
     , form : Form.Model
     , modal : Ui.Modal.Model
     , response : WebData User
@@ -30,6 +31,7 @@ init : ChangePassword -> Model
 init changePassword =
     { id = changePassword.id
     , changePassword = changePassword
+    , method = Put
     , form = changePasswordForm changePassword
     , modal = Ui.Modal.open Ui.Modal.init
     , response = NotAsked

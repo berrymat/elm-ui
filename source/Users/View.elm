@@ -71,7 +71,7 @@ config =
 
 dropdownMenuItem : AuthToken -> String -> String -> ModalType -> Html Msg
 dropdownMenuItem token icon name type_ =
-    Ui.DropdownMenu.item [ onClick (ModalAction token type_) ]
+    Ui.DropdownMenu.item [ onClick (OpenModal token type_) ]
         [ Ui.icon icon True []
         , node "span" [] [ text name ]
         ]

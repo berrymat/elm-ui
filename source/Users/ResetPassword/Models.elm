@@ -16,6 +16,7 @@ type Msg
 type alias Model =
     { id : NodeId
     , user : User
+    , method : HttpMethod
     , modal : Ui.Modal.Model
     , response : WebData User
     }
@@ -25,6 +26,7 @@ init : User -> Model
 init user =
     { id = user.id
     , user = user
+    , method = Put
     , modal = Ui.Modal.open Ui.Modal.init
     , response = NotAsked
     }

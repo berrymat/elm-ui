@@ -1,7 +1,7 @@
 module Customers.Update exposing (..)
 
 import Customers.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Models exposing (..)
 import Ui.DropdownMenu
 import Customers.Customer exposing (..)
@@ -10,7 +10,7 @@ import Customers.Actions.Models as Actions exposing (ModalType(..))
 import Customers.Actions.Update as ActionsUpdate
 
 
-update : Msg -> Model -> Return Msg Model
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
     case msg of
         ActionMenu action ->
@@ -20,59 +20,42 @@ update msg model =
             updateCloseActionMenu model
 
         NoAction ->
-            ( model, Cmd.none )
+            singleton model
 
-        ModalAction token modalType ->
-            updateModalAction token model modalType model.customer
+        OpenModal token modalType ->
+            updateOpenModal token model modalType model.customer
 
         ActionsMsg actionsMsg ->
             updateActionsMsg model actionsMsg
 
 
-updateModalAction : AuthToken -> Model -> ModalType -> Customer -> Return Msg Model
-updateModalAction token model modalType customer =
+updateOpenModal : AuthToken -> Model -> ModalType -> Customer -> ReturnOut Msg OutMsg Model
+updateOpenModal token model modalType customer =
     let
         newActionMenu =
             Ui.DropdownMenu.close model.actionMenu
 
         newModel =
             { model | actionMenu = newActionMenu }
-
-        newCustomer =
-            --if modalType == NewCustomer then
-            --    (initCustomer model.id)
-            --else
-            customer
-
-        ( return, out ) =
-            ActionsUpdate.update (Actions.Open modalType newCustomer) model.actions
     in
-        return
+        ActionsUpdate.update (Actions.Open modalType customer) model.actions
             |> mapBoth ActionsMsg (\na -> { newModel | actions = na })
 
 
-updateActionsMsg : Model -> Actions.Msg -> Return Msg Model
+updateActionsMsg : Model -> Actions.Msg -> ReturnOut Msg OutMsg Model
 updateActionsMsg model actionsMsg =
     let
-        mapBothEx msg cmd ( return, out ) =
-            ( Return.mapBoth msg cmd return, out )
-
-        ( return, out ) =
-            ActionsUpdate.update actionsMsg model.actions
-                |> mapBothEx ActionsMsg (\na -> { model | actions = na })
-
-        newReturn =
+        applyOut out return =
             case out of
                 OutUpdateCustomer method customer ->
                     return |> Return.map (\m -> { m | actions = Actions.NoModel, customer = customer })
 
-                OutNone ->
-                    return
-
                 _ ->
                     return |> Return.map (\m -> { m | actions = Actions.NoModel })
     in
-        newReturn
+        ActionsUpdate.update actionsMsg model.actions
+            |> mapBoth ActionsMsg (\na -> { model | actions = na })
+            |> mapOut applyOut
 
 
 subscriptions : Model -> Sub Msg
@@ -84,12 +67,12 @@ subscriptions model =
 -- ACTION MENU UPDATES
 
 
-applyNewActionMenu : Model -> Ui.DropdownMenu.Model -> Return Msg Model
+applyNewActionMenu : Model -> Ui.DropdownMenu.Model -> ReturnOut Msg OutMsg Model
 applyNewActionMenu model newMenu =
-    ( { model | actionMenu = newMenu }, Cmd.none )
+    singleton { model | actionMenu = newMenu }
 
 
-updateActionMenu : Model -> Ui.DropdownMenu.Msg -> Return Msg Model
+updateActionMenu : Model -> Ui.DropdownMenu.Msg -> ReturnOut Msg OutMsg Model
 updateActionMenu model action =
     let
         newActionMenu =
@@ -98,7 +81,7 @@ updateActionMenu model action =
         applyNewActionMenu model newActionMenu
 
 
-updateCloseActionMenu : Model -> Return Msg Model
+updateCloseActionMenu : Model -> ReturnOut Msg OutMsg Model
 updateCloseActionMenu model =
     let
         newActionMenu =

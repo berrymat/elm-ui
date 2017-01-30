@@ -22,6 +22,7 @@ import Task exposing (Task)
 import Ui.Native.FileManager
 import Json.Decode as Decode
 import Return exposing (..)
+import Container.Out exposing (..)
 
 
 update : Msg -> Folders -> Return Msg Folders
@@ -92,10 +93,10 @@ updateInner msg folders =
             let
                 handleNewFolders newFolders =
                     let
-                        ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
+                        ( ( updatedTree, cmdTree ), outmsgs ) =
                             Tree.Update.update (Tree.Messages.SelectNode folders.folderId) (Success newFolders.tree)
                     in
-                        updateMainPathFromTree folders cmdTree maybePath maybeRoot updatedTree
+                        updateMainPathFromTree folders cmdTree outmsgs updatedTree
             in
                 handleWebDataResponse folders webdata "Folders updated" handleNewFolders
 
@@ -144,6 +145,9 @@ updateInner msg folders =
             in
                 ( newFolders, effect )
 
+        UpdateFolder nodeId nodeName ->
+            updateMainTreeMsg folders (Tree.Messages.UpdateNode nodeId nodeName)
+
 
 subscriptions : Folders -> Sub Msg
 subscriptions folders =
@@ -174,22 +178,22 @@ subscriptions folders =
 updateMainTreeMsg : Folders -> Tree.Messages.Msg -> Return Msg Folders
 updateMainTreeMsg folders subMsg =
     let
-        ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
+        ( ( updatedTree, cmdTree ), outmsgs ) =
             Tree.Update.update subMsg (Success folders.tree)
     in
-        updateMainPathFromTree folders cmdTree maybePath maybeRoot updatedTree
+        updateMainPathFromTree folders cmdTree outmsgs updatedTree
 
 
-updateMainPathFromTree : Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> Return Msg Folders
-updateMainPathFromTree folders cmdTree maybePath maybeRoot updatedTree =
-    RemoteData.map (updateMainPathFromTreeSuccess folders cmdTree maybePath maybeRoot) updatedTree
+updateMainPathFromTree : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> WebData Tree -> Return Msg Folders
+updateMainPathFromTree folders cmdTree outmsgs updatedTree =
+    RemoteData.map (updateMainPathFromTreeSuccess folders cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( folders, Cmd.none )
 
 
-updateMainPathFromTreeSuccess : Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> Return Msg Folders
-updateMainPathFromTreeSuccess folders cmdTree maybePath maybeRoot updatedTree =
-    case maybePath of
-        Just path ->
+updateMainPathFromTreeSuccess : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> Return Msg Folders
+updateMainPathFromTreeSuccess folders cmdTree outmsgs updatedTree =
+    let
+        selectPath path ( folders, cmd ) =
             let
                 maybeSelected =
                     List.head path
@@ -212,6 +216,7 @@ updateMainPathFromTreeSuccess folders cmdTree maybePath maybeRoot updatedTree =
                     Cmd.batch
                         [ Cmd.map MainTreeMsg cmdTree
                         , cmdFolder
+                        , cmd
                         ]
             in
                 ( { newFolders
@@ -222,8 +227,15 @@ updateMainPathFromTreeSuccess folders cmdTree maybePath maybeRoot updatedTree =
                 , cmdBatch
                 )
 
-        Nothing ->
-            ( folders, Cmd.none )
+        applyOut outmsg newFolders =
+            case outmsg of
+                OutTreePath path ->
+                    selectPath path newFolders
+
+                _ ->
+                    newFolders
+    in
+        List.foldl applyOut (singleton folders) outmsgs
 
 
 requestFolder : Folders -> NodeId -> Return Msg Folders
@@ -246,33 +258,33 @@ updateMoveTreeMsg folders subMsg =
     case folders.moveTree of
         Just tree ->
             let
-                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
+                ( ( updatedTree, cmdTree ), outmsgs ) =
                     Tree.Update.update subMsg (Success tree)
             in
-                updateMovePathFromTree folders cmdTree maybePath maybeRoot updatedTree
+                updateMovePathFromTree folders cmdTree outmsgs updatedTree
 
         Nothing ->
             ( folders, Cmd.none )
 
 
-updateMovePathFromTree : Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> Return Msg Folders
-updateMovePathFromTree folders cmdTree maybePath maybeRoot updatedTree =
-    RemoteData.map (updateMovePathFromTreeSuccess folders cmdTree maybePath maybeRoot) updatedTree
+updateMovePathFromTree : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> WebData Tree -> Return Msg Folders
+updateMovePathFromTree folders cmdTree outmsgs updatedTree =
+    RemoteData.map (updateMovePathFromTreeSuccess folders cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( folders, Cmd.none )
 
 
-updateMovePathFromTreeSuccess : Folders -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> Return Msg Folders
-updateMovePathFromTreeSuccess folders cmdTree maybePath maybeRoot updatedTree =
-    case maybePath of
-        Just path ->
-            ( { folders
-                | moveTree = Just updatedTree
-              }
-            , Cmd.none
-            )
+updateMovePathFromTreeSuccess : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> Return Msg Folders
+updateMovePathFromTreeSuccess folders cmdTree outmsgs updatedTree =
+    let
+        applyOut outmsg newFolders =
+            case outmsg of
+                OutTreePath _ ->
+                    { newFolders | moveTree = Just updatedTree }
 
-        Nothing ->
-            ( folders, Cmd.none )
+                _ ->
+                    newFolders
+    in
+        List.foldl applyOut folders outmsgs |> singleton
 
 
 

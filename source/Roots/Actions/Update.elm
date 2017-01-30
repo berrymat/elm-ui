@@ -1,7 +1,7 @@
 module Roots.Actions.Update exposing (..)
 
 import Roots.Actions.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Models exposing (..)
 import Container.Out exposing (..)
 import Roots.Root exposing (..)
@@ -11,33 +11,25 @@ import Roots.Edit.Update as Edit
 import Roots.Delete.Update as Delete
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
-    let
-        mapBothEx msg cmd ( return, out ) =
-            ( Return.mapBoth msg cmd return, out )
-    in
-        case ( model, msg ) of
-            ( _, Open modalType root ) ->
-                ( updateOpen model modalType root, OutNone )
+    case ( model, msg ) of
+        ( _, Open modalType root ) ->
+            updateOpen model modalType root
 
-            ( EditModel model_, EditMsg msg_ ) ->
-                Edit.update msg_ model_
-                    |> mapBothEx EditMsg EditModel
+        ( EditModel model_, EditMsg msg_ ) ->
+            Edit.update msg_ model_
+                |> mapBoth EditMsg EditModel
 
-            ( DeleteModel model_, DeleteMsg msg_ ) ->
-                Delete.update msg_ model_
-                    |> mapBothEx DeleteMsg DeleteModel
+        ( DeleteModel model_, DeleteMsg msg_ ) ->
+            Delete.update msg_ model_
+                |> mapBoth DeleteMsg DeleteModel
 
-            x ->
-                let
-                    _ =
-                        Debug.log "Stray found" x
-                in
-                    ( singleton model, OutNone )
+        x ->
+            logStray x model
 
 
-updateOpen : Model -> ModalType -> Root -> Return Msg Model
+updateOpen : Model -> ModalType -> Root -> ReturnOut Msg OutMsg Model
 updateOpen model modalType root =
     case modalType of
         NewRoot ->

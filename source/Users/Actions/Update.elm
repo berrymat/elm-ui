@@ -1,9 +1,9 @@
 module Users.Actions.Update exposing (..)
 
 import Users.Actions.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Models exposing (..)
-import Users.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Users.User exposing (..)
 import Users.Edit.Models as EditModels
 import Users.Restrict.Models as RestrictModels
@@ -17,45 +17,37 @@ import Users.ChangePassword.Update as ChangePassword
 import Users.Delete.Update as Delete
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
-    let
-        mapBothEx msg cmd ( return, out ) =
-            ( Return.mapBoth msg cmd return, out )
-    in
-        case ( model, msg ) of
-            ( _, Open modalType user ) ->
-                ( updateOpen model modalType user, OutNone )
+    case ( model, msg ) of
+        ( _, Open modalType user ) ->
+            updateOpen model modalType user
 
-            ( EditModel model_, EditMsg msg_ ) ->
-                Edit.update msg_ model_
-                    |> mapBothEx EditMsg EditModel
+        ( EditModel model_, EditMsg msg_ ) ->
+            Edit.update msg_ model_
+                |> mapBoth EditMsg EditModel
 
-            ( RestrictModel model_, RestrictMsg msg_ ) ->
-                Restrict.update msg_ model_
-                    |> mapBothEx RestrictMsg RestrictModel
+        ( RestrictModel model_, RestrictMsg msg_ ) ->
+            Restrict.update msg_ model_
+                |> mapBoth RestrictMsg RestrictModel
 
-            ( ResetPasswordModel model_, ResetPasswordMsg msg_ ) ->
-                ResetPassword.update msg_ model_
-                    |> mapBothEx ResetPasswordMsg ResetPasswordModel
+        ( ResetPasswordModel model_, ResetPasswordMsg msg_ ) ->
+            ResetPassword.update msg_ model_
+                |> mapBoth ResetPasswordMsg ResetPasswordModel
 
-            ( ChangePasswordModel model_, ChangePasswordMsg msg_ ) ->
-                ChangePassword.update msg_ model_
-                    |> mapBothEx ChangePasswordMsg ChangePasswordModel
+        ( ChangePasswordModel model_, ChangePasswordMsg msg_ ) ->
+            ChangePassword.update msg_ model_
+                |> mapBoth ChangePasswordMsg ChangePasswordModel
 
-            ( DeleteModel model_, DeleteMsg msg_ ) ->
-                Delete.update msg_ model_
-                    |> mapBothEx DeleteMsg DeleteModel
+        ( DeleteModel model_, DeleteMsg msg_ ) ->
+            Delete.update msg_ model_
+                |> mapBoth DeleteMsg DeleteModel
 
-            x ->
-                let
-                    _ =
-                        Debug.log "Stray found" x
-                in
-                    ( singleton model, OutNone )
+        x ->
+            logStray x model
 
 
-updateOpen : Model -> ModalType -> User -> Return Msg Model
+updateOpen : Model -> ModalType -> User -> ReturnOut Msg OutMsg Model
 updateOpen model modalType user =
     case modalType of
         NewUser ->

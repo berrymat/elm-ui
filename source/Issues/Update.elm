@@ -3,96 +3,94 @@ module Issues.Update exposing (..)
 import Issues.Models exposing (..)
 import Table
 import Ui.DropdownMenu
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Models exposing (..)
 import Issues.Issue exposing (..)
-import Issues.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Issues.Actions.Models as Actions exposing (ModalType(..))
 import Issues.Actions.Update as ActionsUpdate
 
 
-update : Msg -> Model -> Return Msg Model
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
-    let
-        issue =
+    case msg of
+        SetQuery newQuery ->
+            updateSetQuery model newQuery
+
+        SetTableState newState ->
+            updateSetTableState model newState
+
+        ToggleIssue nodeId ->
+            updateToggleIssue model nodeId
+
+        ActionMenu action ->
+            updateActionMenu model action
+
+        CloseActionMenu ->
+            updateCloseActionMenu model
+
+        NoAction ->
+            singleton model
+
+        OpenModal token NewIssue ->
+            (initIssue model.id)
+                |> updateOpenModal token model NewIssue
+
+        OpenModal token modalType ->
             List.filter .checked model.issues
                 |> List.head
-                |> Maybe.withDefault (initIssue model.id)
-    in
-        case msg of
-            SetQuery newQuery ->
-                updateSetQuery model newQuery
+                |> Maybe.map (updateOpenModal token model modalType)
+                |> Maybe.withDefault (singleton model)
 
-            SetTableState newState ->
-                updateSetTableState model newState
-
-            ToggleIssue nodeId ->
-                updateToggleIssue model nodeId
-
-            ActionMenu action ->
-                updateActionMenu model action
-
-            CloseActionMenu ->
-                updateCloseActionMenu model
-
-            NoAction ->
-                ( model, Cmd.none )
-
-            ModalAction token modalType ->
-                updateModalAction token model modalType issue
-
-            ActionsMsg actionsMsg ->
-                updateActionsMsg model actionsMsg
+        ActionsMsg actionsMsg ->
+            updateActionsMsg model actionsMsg
 
 
-updateModalAction : AuthToken -> Model -> ModalType -> Issue -> Return Msg Model
-updateModalAction token model modalType issue =
+updateOpenModal : AuthToken -> Model -> ModalType -> Issue -> ReturnOut Msg OutMsg Model
+updateOpenModal token model modalType issue =
     let
         newActionMenu =
             Ui.DropdownMenu.close model.actionMenu
 
         newModel =
             { model | actionMenu = newActionMenu }
-
-        newIssue =
-            if modalType == NewIssue then
-                (initIssue model.id)
-            else
-                issue
-
-        ( return, out ) =
-            ActionsUpdate.update (Actions.Open modalType model.sites newIssue) model.actions
     in
-        return
+        ActionsUpdate.update (Actions.Open modalType model.sites issue) model.actions
             |> mapBoth ActionsMsg (\na -> { newModel | actions = na })
 
 
-updateActionsMsg : Model -> Actions.Msg -> Return Msg Model
+updateActionsMsg : Model -> Actions.Msg -> ReturnOut Msg OutMsg Model
 updateActionsMsg model actionsMsg =
     let
-        mapBothEx msg cmd ( return, out ) =
-            ( Return.mapBoth msg cmd return, out )
-
-        ( return, out ) =
-            ActionsUpdate.update actionsMsg model.actions
-                |> mapBothEx ActionsMsg (\na -> { model | actions = na })
-
-        newReturn =
+        applyOut out return =
             case out of
-                OutCancel ->
-                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
-
-                OutNone ->
-                    return
-
-                OutUpdate issue ->
+                OutUpdateIssue Post issue ->
                     let
                         newIssues model =
-                            issue :: (List.filter (\u -> u.id /= issue.id) model.issues)
+                            issue :: model.issues
                     in
                         return |> Return.map (\m -> { m | actions = Actions.NoModel, issues = newIssues m })
+
+                OutUpdateIssue Put issue ->
+                    let
+                        newIssues model =
+                            List.map
+                                (\u ->
+                                    if u.id == issue.id then
+                                        issue
+                                    else
+                                        u
+                                )
+                                model.issues
+                    in
+                        return |> Return.map (\m -> { m | actions = Actions.NoModel, issues = newIssues m })
+
+                _ ->
+                    return |> Return.map (\m -> { m | actions = Actions.NoModel })
     in
-        newReturn
+        ActionsUpdate.update actionsMsg model.actions
+            |> mapBoth ActionsMsg (\na -> { model | actions = na })
+            |> mapOut applyOut
 
 
 subscriptions : Model -> Sub Msg
@@ -100,17 +98,17 @@ subscriptions model =
     Sub.map ActionMenu (Ui.DropdownMenu.subscriptions model.actionMenu)
 
 
-updateSetQuery : Model -> String -> Return Msg Model
+updateSetQuery : Model -> String -> ReturnOut Msg OutMsg Model
 updateSetQuery model newQuery =
-    ( { model | query = newQuery }, Cmd.none )
+    singleton { model | query = newQuery }
 
 
-updateSetTableState : Model -> Table.State -> Return Msg Model
+updateSetTableState : Model -> Table.State -> ReturnOut Msg OutMsg Model
 updateSetTableState model newState =
-    ( { model | tableState = newState }, Cmd.none )
+    singleton { model | tableState = newState }
 
 
-updateToggleIssue : Model -> NodeId -> Return Msg Model
+updateToggleIssue : Model -> NodeId -> ReturnOut Msg OutMsg Model
 updateToggleIssue model nodeId =
     let
         newIssues =
@@ -123,19 +121,19 @@ updateToggleIssue model nodeId =
                 )
                 model.issues
     in
-        ( { model | issues = newIssues }, Cmd.none )
+        singleton { model | issues = newIssues }
 
 
 
 -- ACTION MENU UPDATES
 
 
-applyNewActionMenu : Model -> Ui.DropdownMenu.Model -> Return Msg Model
+applyNewActionMenu : Model -> Ui.DropdownMenu.Model -> ReturnOut Msg OutMsg Model
 applyNewActionMenu model newMenu =
-    ( { model | actionMenu = newMenu }, Cmd.none )
+    singleton { model | actionMenu = newMenu }
 
 
-updateActionMenu : Model -> Ui.DropdownMenu.Msg -> Return Msg Model
+updateActionMenu : Model -> Ui.DropdownMenu.Msg -> ReturnOut Msg OutMsg Model
 updateActionMenu model action =
     let
         newActionMenu =
@@ -144,7 +142,7 @@ updateActionMenu model action =
         applyNewActionMenu model newActionMenu
 
 
-updateCloseActionMenu : Model -> Return Msg Model
+updateCloseActionMenu : Model -> ReturnOut Msg OutMsg Model
 updateCloseActionMenu model =
     let
         newActionMenu =

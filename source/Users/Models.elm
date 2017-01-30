@@ -18,7 +18,7 @@ type Msg
     | CloseActionMenu
     | NoAction
       -- MODALS
-    | ModalAction AuthToken Actions.ModalType
+    | OpenModal AuthToken Actions.ModalType
     | ActionsMsg Actions.Msg
 
 

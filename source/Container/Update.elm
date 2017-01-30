@@ -14,7 +14,10 @@ import Content.Update
 import Header.Update
 import Navigation
 import RemoteData exposing (..)
+import Helpers.RemoteData exposing (..)
+import Helpers.Return exposing (..)
 import Return exposing (..)
+import Container.Out exposing (..)
 
 
 update : Msg -> Container -> Return Msg Container
@@ -56,11 +59,8 @@ updateInner msg container =
             updateLoadContainer parentType nodeId childType container
 
         SelectPath nodeId ->
-            let
-                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
-                    Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
-            in
-                updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
+            Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
+                |> updatePathFromTree container
 
         SelectTab tabType ->
             let
@@ -76,15 +76,12 @@ updateInner msg container =
                 ( { container | tab = updatedTab, content = Loading }, cmdContent )
 
         TreeMsg subMsg ->
-            let
-                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
-                    Tree.Update.update subMsg container.tree
-            in
-                updatePathFromTree container cmdTree maybePath maybeRoot updatedTree
+            Tree.Update.update subMsg container.tree
+                |> updatePathFromTree container
 
         FetchHeaderResponse isTree model ->
             RemoteData.map (updateContent container isTree) model
-                |> RemoteData.withDefault (singleton container)
+                |> RemoteData.withDefault (Return.singleton container)
 
         FetchFoldersResponse nodeId folders ->
             ( { container | content = RemoteData.map Content.Models.FoldersContent folders }, Cmd.none )
@@ -96,12 +93,63 @@ updateInner msg container =
             ( { container | content = RemoteData.map Content.Models.IssuesContent issues }, Cmd.none )
 
         ContentMsg subMsg ->
-            RemoteData.update (Content.Update.update subMsg) container.content
-                |> Return.mapBoth ContentMsg (\new -> { container | content = new })
+            updateContentMsg container subMsg
 
         HeaderMsg subMsg ->
-            RemoteData.update (Header.Update.update subMsg) container.header
-                |> Return.mapBoth HeaderMsg (\new -> { container | header = new })
+            updateHeaderMsg container subMsg
+
+
+updateContentMsg : Container -> Content.Models.Msg -> Return Msg Container
+updateContentMsg container subMsg =
+    Helpers.RemoteData.update (Content.Update.update subMsg) container.content
+        |> Helpers.Return.mapBoth ContentMsg (\new -> { container | content = new })
+        |> unwrap
+
+
+updateHeaderMsg : Container -> Header.Models.Msg -> Return Msg Container
+updateHeaderMsg container subMsg =
+    let
+        applyOut out return =
+            let
+                ( ( container, cmd ), outmsgs ) =
+                    return
+
+                nodeInfo =
+                    case out of
+                        OutUpdateRoot method root ->
+                            Just ( root.id, root.name )
+
+                        OutUpdateCustomer method customer ->
+                            Just ( customer.id, customer.name )
+
+                        OutUpdateClient method client ->
+                            Just ( client.id, client.name )
+
+                        OutUpdateSite method site ->
+                            Just ( site.id, site.name )
+
+                        OutUpdateStaff method staff ->
+                            Just ( staff.id, staff.name )
+
+                        _ ->
+                            Nothing
+            in
+                case nodeInfo of
+                    Just ( nodeId, maybeName ) ->
+                        Tree.Update.update (Tree.Messages.UpdateNode nodeId (Maybe.withDefault "" maybeName)) container.tree
+                            |> updatePathFromTree container
+                            |> updateContentNode nodeId (Maybe.withDefault "" maybeName)
+                            |> Helpers.Return.wrap
+
+                    _ ->
+                        return
+
+        returnout =
+            Helpers.RemoteData.update (Header.Update.update subMsg) container.header
+                |> Helpers.Return.mapBoth HeaderMsg (\new -> { container | header = new })
+                |> mapOut applyOut
+    in
+        returnout |> unwrap
 
 
 subscriptions : Container -> Sub Msg
@@ -155,42 +203,41 @@ updateLoadContainer parentType nodeId childType container =
         ( { newContainer | path = [] }, Cmd.batch [ treeCmd, headerCmd ] )
 
 
-updatePathFromTree : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> Return Msg Container
-updatePathFromTree container cmdTree maybePath maybeRoot updatedTree =
-    RemoteData.map (updatePathFromTreeSuccess container cmdTree maybePath maybeRoot) updatedTree
+updatePathFromTree : Container -> ReturnOut Tree.Messages.Msg OutMsg (WebData Tree) -> Return Msg Container
+updatePathFromTree container ( ( updatedTree, cmdTree ), outmsgs ) =
+    RemoteData.map (updatePathFromTreeSuccess container cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( container, Cmd.none )
 
 
-updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> Return Msg Container
-updatePathFromTreeSuccess container cmdTree maybePath maybeRoot updatedTree =
+updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> Return Msg Container
+updatePathFromTreeSuccess container cmdTree outmsgs updatedTree =
     let
-        ( newContainer, cmdHeader ) =
-            case maybePath of
-                Just path ->
-                    List.head path
-                        |> Maybe.map (\s -> ( s.nodeType, s.id, False ))
-                        |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id, True )
-                        |> fetchHeader { container | path = path }
+        selectPath path ( container, cmd ) =
+            List.head path
+                |> Maybe.map (\s -> ( s.nodeType, s.id, False ))
+                |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id, True )
+                |> fetchHeader { container | path = path }
+                |> Return.command cmd
 
-                Nothing ->
-                    ( container, Cmd.none )
+        openRoot ( treeType, treeId ) return =
+            return
+                |> Return.command (goto treeType treeId)
 
-        cmdRoot =
-            case maybeRoot of
-                Just ( treeType, treeId ) ->
-                    goto treeType treeId
+        applyOut outmsg return =
+            case outmsg of
+                OutTreePath path ->
+                    selectPath path return
 
-                Nothing ->
-                    Cmd.none
+                OutTreeRoot root ->
+                    openRoot root return
 
-        cmdBatch =
-            Cmd.batch
-                [ Cmd.map TreeMsg cmdTree
-                , cmdHeader
-                , cmdRoot
-                ]
+                _ ->
+                    return
+
+        newReturn =
+            ( { container | tree = Success updatedTree }, Cmd.map TreeMsg cmdTree )
     in
-        ( { newContainer | tree = Success updatedTree }, cmdBatch )
+        List.foldl applyOut newReturn outmsgs
 
 
 updateContent : Container -> Bool -> Header.Models.Model -> Return Msg Container
@@ -227,3 +274,20 @@ updateContent container isTree model =
                 ]
     in
         ( { newContainer | tab = updatedTab, content = updatedContent }, cmdBatch )
+
+
+updateContentNode : NodeId -> String -> Return Msg Container -> Return Msg Container
+updateContentNode nodeId nodeName return =
+    let
+        ( container, cmd ) =
+            return
+
+        subMsg =
+            Content.Models.UpdateNode nodeId nodeName
+
+        newReturn =
+            Helpers.RemoteData.update (Content.Update.update subMsg) container.content
+                |> Helpers.Return.mapBoth ContentMsg (\new -> { container | content = new })
+                |> Helpers.Return.unwrap
+    in
+        newReturn |> Return.command cmd

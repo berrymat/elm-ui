@@ -8,8 +8,9 @@ import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 import Json.Encode as Encode
 import Users.User exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Helpers exposing (..)
+import Container.Out exposing (..)
 
 
 type Msg
@@ -40,20 +41,21 @@ type alias Model =
     }
 
 
-init : User -> Return Msg Model
+init : User -> ReturnOut Msg OutMsg Model
 init user =
-    ( { id = user.id
-      , modal = Ui.Modal.open Ui.Modal.init
-      , restrictions = Loading
-      , tableState = Table.initialSort "Email"
-      , query = ""
-      , response = NotAsked
-      }
-    , fetcher "Restrictions"
-        user.id
-        restrictionsDecoder
-        (RestrictResponse << RemoteData.fromResult)
-    )
+    return
+        { id = user.id
+        , modal = Ui.Modal.open Ui.Modal.init
+        , restrictions = Loading
+        , tableState = Table.initialSort "Email"
+        , query = ""
+        , response = NotAsked
+        }
+        (fetcher "Restrictions"
+            user.id
+            restrictionsDecoder
+            (RestrictResponse << RemoteData.fromResult)
+        )
 
 
 restrictionsDecoder : Decode.Decoder (List Restriction)

@@ -7,10 +7,12 @@ import Tree.Models exposing (..)
 import Tree.Commands exposing (..)
 import RemoteData exposing (..)
 import Helpers.Helpers
-import Return exposing (..)
+import Helpers.RemoteData
+import Helpers.Return as Return exposing (..)
+import Container.Out exposing (..)
 
 
-update : Msg -> WebData Tree -> ( Return Msg (WebData Tree), Maybe (List Node), Maybe ( NodeType, NodeId ) )
+update : Msg -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
 update msg tree =
     let
         errorCmd =
@@ -23,52 +25,39 @@ update msg tree =
 
                 _ ->
                     Cmd.none
-
-        ( return, path, root ) =
-            updateInner msg tree
     in
-        ( return |> Return.command errorCmd, path, root )
+        updateInner msg tree
 
 
-updateInner : Msg -> WebData Tree -> ( Return Msg (WebData Tree), Maybe (List Node), Maybe ( NodeType, NodeId ) )
+updateInner : Msg -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
 updateInner message tree =
     case message of
         OnFetchRoot tempRoot ->
-            ( fetchedRoot tempRoot tree |> singleton, Nothing, Nothing )
+            fetchedRoot tempRoot tree |> singleton
 
         OnFetchNode nodeId tempChildren ->
-            ( fetchedNode nodeId tempChildren tree |> singleton, Nothing, Nothing )
+            fetchedNode nodeId tempChildren tree |> singleton
 
         ToggleNode nodeId ->
-            let
-                ( newTree, cmds ) =
-                    toggle nodeId tree
-            in
-                ( ( newTree, cmds ), Nothing, Nothing )
+            toggle nodeId tree
+
+        UpdateNode nodeId name ->
+            updateTree nodeId name tree
 
         SelectRoot ->
-            let
-                ( newTree, newPath ) =
-                    select Nothing tree
-            in
-                ( newTree |> singleton, newPath, Nothing )
+            RemoteData.map (\t -> select t.id tree) tree
+                |> RemoteData.withDefault (singleton tree)
 
         SelectNode nodeId ->
-            let
-                ( newTree, newPath ) =
-                    select (Just nodeId) tree
-            in
-                ( newTree |> singleton, newPath, Nothing )
+            select nodeId tree
 
         OpenNewRoot nodeType nodeId ->
-            let
-                ( newTree, newPath ) =
-                    select (Just nodeId) tree
-            in
-                ( newTree |> singleton, Nothing, Just ( nodeType, nodeId ) )
+            select nodeId tree
+                |> dropout
+                |> outmsg (OutTreeRoot ( nodeType, nodeId ))
 
         NoAction ->
-            ( tree |> singleton, Nothing, Nothing )
+            tree |> singleton
 
 
 selectNode : NodeId -> List Node -> Node -> ( Node, List Node )
@@ -116,120 +105,172 @@ selectNodeSuccess nodeId node path (ChildNodes childNodes) =
         ( newNode, newPath )
 
 
-remoteMaybe : (a -> ( b, c )) -> RemoteData e a -> ( RemoteData e b, Maybe c )
-remoteMaybe f remoteData =
-    case remoteData of
-        Success data ->
+deselect : NodeId -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
+deselect nodeId tree =
+    let
+        treeUpdate tree =
+            singleton { tree | selected = False }
+
+        nodeUpdate node =
+            singleton { node | selected = False }
+
+        ( ( newTree1, _ ), _ ) =
+            traverseTree nodeId treeUpdate nodeUpdate tree
+
+        newTree2 =
+            RemoteData.map (\t -> { t | path = [] }) newTree1
+    in
+        singleton newTree2
+
+
+select : NodeId -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
+select nodeId webdata =
+    let
+        selectedId tree =
+            case tree.path of
+                head :: _ ->
+                    head.id
+
+                _ ->
+                    tree.id
+
+        treeUpdate tree =
+            singleton { tree | selected = True }
+
+        nodeUpdate node =
+            singleton { node | selected = True }
+
+        success nodeId tree =
             let
-                ( first, second ) =
-                    f data
+                currentId =
+                    selectedId tree
             in
-                ( Success first, Just second )
+                if nodeId == currentId then
+                    singleton (Success tree)
+                else
+                    let
+                        ( ( newTree, _ ), _ ) =
+                            deselect currentId (Success tree)
 
-        NotAsked ->
-            ( NotAsked, Nothing )
+                        applyPath path webdata =
+                            RemoteData.map (\tree -> { tree | path = path }) webdata
 
-        Loading ->
-            ( Loading, Nothing )
+                        applyOut out return =
+                            case out of
+                                OutTreePath path ->
+                                    return |> Return.map (applyPath path)
 
-        Failure error ->
-            ( Failure error, Nothing )
-
-
-select : Maybe NodeId -> WebData Tree -> ( WebData Tree, Maybe (List Node) )
-select maybeNodeId tree =
-    remoteMaybe (selectSuccess maybeNodeId) tree
-
-
-selectSuccess : Maybe NodeId -> Tree -> ( Tree, List Node )
-selectSuccess maybeNodeId tree =
-    let
-        (ChildNodes childNodes) =
-            tree.childNodes
-
-        nodeId =
-            Maybe.withDefault tree.id maybeNodeId
-
-        results =
-            List.map (selectNode nodeId tree.path) childNodes
-
-        ( newChildren, newPathLists ) =
-            List.unzip results
-
-        newPath =
-            List.concat newPathLists
-
-        newSelected =
-            (List.length newPath) == 0
+                                _ ->
+                                    return
+                    in
+                        traverseTree nodeId treeUpdate nodeUpdate newTree
+                            |> mapOut applyOut
     in
-        ( { tree | childNodes = (ChildNodes newChildren), selected = newSelected, path = newPath }, newPath )
+        RemoteData.map (success nodeId) webdata
+            |> RemoteData.withDefault (singleton webdata)
 
 
-toggleChildNodes : NodeId -> Node -> ( Node, Cmd Msg )
-toggleChildNodes nodeId node =
-    RemoteData.map (toggleChildNodesSuccess nodeId node) node.childNodes
-        |> RemoteData.withDefault ( node, Cmd.none )
-
-
-toggleChildNodesSuccess : NodeId -> Node -> ChildNodes -> ( Node, Cmd Msg )
-toggleChildNodesSuccess nodeId node (ChildNodes childNodes) =
-    let
-        results =
-            List.map (toggleNode nodeId) childNodes
-
-        ( newChildNodes, cmds ) =
-            List.unzip results
-    in
-        ( { node | childNodes = Success (ChildNodes newChildNodes) }, Cmd.batch cmds )
-
-
-toggleNode : NodeId -> Node -> ( Node, Cmd Msg )
-toggleNode nodeId node =
-    let
-        ( newNode, cmd ) =
-            if nodeId == node.id then
-                case node.childrenState of
-                    NoChildren ->
-                        ( node, Cmd.none )
-
-                    Collapsed ->
-                        if node.childNodes == NotAsked then
-                            ( { node | childrenState = Expanding }, Tree.Commands.fetchNode node.id )
-                        else
-                            ( { node | childrenState = Expanded }, Cmd.none )
-
-                    Expanding ->
-                        ( node, Cmd.none )
-
-                    Expanded ->
-                        ( { node | childrenState = Collapsed }, Cmd.none )
-
-                    RootNode ->
-                        ( { node | childrenState = Expanding }, Tree.Commands.fetchRoot node.id )
-            else
-                toggleChildNodes nodeId node
-    in
-        ( newNode, cmd )
-
-
-toggle : NodeId -> WebData Tree -> ( WebData Tree, Cmd Msg )
+toggle : NodeId -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
 toggle nodeId tree =
-    RemoteData.update (toggleSuccess nodeId) tree
-
-
-toggleSuccess : NodeId -> Tree -> ( Tree, Cmd Msg )
-toggleSuccess nodeId tree =
     let
-        (ChildNodes childNodes) =
-            tree.childNodes
+        treeUpdate tree =
+            singleton tree
 
-        results =
-            List.map (toggleNode nodeId) childNodes
+        nodeUpdate node =
+            case node.childrenState of
+                NoChildren ->
+                    singleton node
 
-        ( newChildren, cmds ) =
-            List.unzip results
+                Collapsed ->
+                    if node.childNodes == NotAsked then
+                        return { node | childrenState = Expanding } (Tree.Commands.fetchNode node.id)
+                    else
+                        singleton { node | childrenState = Expanded }
+
+                Expanding ->
+                    singleton node
+
+                Expanded ->
+                    singleton { node | childrenState = Collapsed }
+
+                RootNode ->
+                    return { node | childrenState = Expanding } (Tree.Commands.fetchRoot node.id)
     in
-        ( { tree | childNodes = (ChildNodes newChildren) }, Cmd.batch cmds )
+        traverseTree nodeId treeUpdate nodeUpdate tree
+            |> dropout
+
+
+updateTree : NodeId -> String -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
+updateTree nodeId name tree =
+    let
+        treeUpdate tree =
+            singleton { tree | name = name }
+
+        nodeUpdate node =
+            singleton { node | name = name }
+    in
+        traverseTree nodeId treeUpdate nodeUpdate tree
+            |> logout
+
+
+
+--|> dropout
+
+
+traverseChildNodes : NodeId -> (Node -> ReturnOut Msg OutMsg Node) -> Node -> ReturnOut Msg OutMsg Node
+traverseChildNodes nodeId updateNodeFn node =
+    let
+        applyOut out return =
+            case out of
+                OutTreePath path ->
+                    return
+                        |> dropout
+                        |> outmsg (OutTreePath (path ++ [ node ]))
+
+                _ ->
+                    return
+
+        success nodeId updateNodeFn node (ChildNodes childNodes) =
+            List.map (traverseNode nodeId updateNodeFn) childNodes
+                |> Return.sequence
+                |> Return.mapOut applyOut
+                |> Return.map (\nodes -> { node | childNodes = Success (ChildNodes nodes) })
+    in
+        RemoteData.map (success nodeId updateNodeFn node) node.childNodes
+            |> RemoteData.withDefault (singleton node)
+
+
+traverseNode : NodeId -> (Node -> ReturnOut Msg OutMsg Node) -> Node -> ReturnOut Msg OutMsg Node
+traverseNode nodeId updateNodeFn node =
+    if nodeId == node.id then
+        let
+            returnOut =
+                updateNodeFn node
+
+            ( ( newNode, _ ), _ ) =
+                returnOut
+        in
+            returnOut |> outmsg (OutTreePath [ newNode ])
+    else
+        traverseChildNodes nodeId updateNodeFn node
+
+
+traverseTree : NodeId -> (Tree -> ReturnOut Msg OutMsg Tree) -> (Node -> ReturnOut Msg OutMsg Node) -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
+traverseTree nodeId updateTreeFn updateNodeFn tree =
+    let
+        success nodeId updateTreeFn updateNodeFn tree =
+            if nodeId == tree.id then
+                updateTreeFn tree |> outmsg (OutTreePath [])
+            else
+                let
+                    (ChildNodes childNodes) =
+                        tree.childNodes
+                in
+                    List.map (traverseNode nodeId updateNodeFn) childNodes
+                        |> Return.sequence
+                        |> Return.map (\nodes -> { tree | childNodes = ChildNodes nodes })
+    in
+        Helpers.RemoteData.update (success nodeId updateTreeFn updateNodeFn) tree
 
 
 createNode : TempNode -> Node

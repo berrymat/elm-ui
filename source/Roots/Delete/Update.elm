@@ -3,14 +3,14 @@ module Roots.Delete.Update exposing (..)
 import Roots.Delete.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import RemoteData exposing (..)
 import Ui.Modal
 import Container.Out exposing (..)
 import Roots.Root exposing (..)
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
     case msg of
         Save authToken ->
@@ -26,7 +26,7 @@ update msg model =
             updateModalMsg model modalMsg
 
 
-updateSave : Model -> AuthToken -> ( Return Msg Model, OutMsg )
+updateSave : Model -> AuthToken -> ReturnOut Msg OutMsg Model
 updateSave model authToken =
     let
         saveCmd =
@@ -38,20 +38,22 @@ updateSave model authToken =
                 rootDecoder
                 (SaveResponse << RemoteData.fromResult)
     in
-        ( return model saveCmd, OutNone )
+        return model saveCmd
 
 
-updateCancel : Model -> ( Return Msg Model, OutMsg )
+updateCancel : Model -> ReturnOut Msg OutMsg Model
 updateCancel model =
-    ( singleton { model | modal = Ui.Modal.close model.modal }, OutCancel )
+    out { model | modal = Ui.Modal.close model.modal }
+        Cmd.none
+        OutCancel
 
 
-updateModalMsg : Model -> Ui.Modal.Msg -> ( Return Msg Model, OutMsg )
+updateModalMsg : Model -> Ui.Modal.Msg -> ReturnOut Msg OutMsg Model
 updateModalMsg model modalMsg =
-    ( singleton { model | modal = Ui.Modal.update modalMsg model.modal }, OutNone )
+    singleton { model | modal = Ui.Modal.update modalMsg model.modal }
 
 
-updateSaveResponse : Model -> WebData Root -> ( Return Msg Model, OutMsg )
+updateSaveResponse : Model -> WebData Root -> ReturnOut Msg OutMsg Model
 updateSaveResponse model response =
     let
         newModel =
@@ -60,10 +62,10 @@ updateSaveResponse model response =
         cmd =
             Helpers.Helpers.errorCmd response
 
-        updateSaveResponseSuccess root =
-            ( singleton { newModel | modal = Ui.Modal.close model.modal }
-            , OutDeleteRoot root
-            )
+        success value =
+            out { newModel | modal = Ui.Modal.close model.modal }
+                Cmd.none
+                (OutDeleteRoot value)
     in
-        RemoteData.map updateSaveResponseSuccess response
-            |> RemoteData.withDefault ( return newModel cmd, OutNone )
+        RemoteData.map success response
+            |> RemoteData.withDefault (return newModel cmd)

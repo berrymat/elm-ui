@@ -47,6 +47,8 @@ type Msg
     | FolderMsg Folder.Models.Msg
     | UploadOpened AuthToken (Task Never (List Ui.Native.FileManager.File))
     | UploadGetFiles AuthToken (List Ui.Native.FileManager.File)
+      --
+    | UpdateFolder NodeId String
 
 
 type alias Folders =

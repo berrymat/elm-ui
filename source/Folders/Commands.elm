@@ -70,13 +70,17 @@ createMoveTree tree =
                 , path = []
                 }
 
-            maybeSelected =
+            nodeId =
                 List.tail tree.path
                     |> Maybe.andThen List.head
                     |> Maybe.map (\n -> n.id)
+                    |> Maybe.withDefault tree.id
 
-            ( moveTree, _ ) =
-                selectSuccess maybeSelected newTree
+            ( ( webTree, _ ), _ ) =
+                select nodeId (Success newTree)
+
+            moveTree =
+                webTree |> RemoteData.withDefault newTree
         in
             Just moveTree
 

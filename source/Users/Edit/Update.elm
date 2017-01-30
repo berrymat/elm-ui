@@ -3,19 +3,19 @@ module Users.Edit.Update exposing (..)
 import Users.Edit.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import RemoteData exposing (..)
 import Components.Form as Form
 import Ui.Modal
-import Users.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Users.User exposing (..)
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
     case msg of
         Save authToken ->
-            updateSave model authToken
+            updateValidate model authToken
 
         Cancel ->
             updateCancel model
@@ -30,7 +30,26 @@ update msg model =
             updateFormMsg model formMsg
 
 
-updateSave : Model -> AuthToken -> ( Return Msg Model, OutMsg )
+updateValidate : Model -> AuthToken -> ReturnOut Msg OutMsg Model
+updateValidate model token =
+    let
+        validate model =
+            Form.update Form.Validate model.form
+                |> wrap
+                |> Return.mapBoth FormMsg (\f -> { model | form = f })
+
+        saveIfValid model =
+            if (Maybe.withDefault False model.form.valid) then
+                updateSave model token
+            else
+                singleton model
+    in
+        model
+            |> validate
+            |> Return.andThen saveIfValid
+
+
+updateSave : Model -> AuthToken -> ReturnOut Msg OutMsg Model
 updateSave model authToken =
     let
         newUser =
@@ -45,28 +64,29 @@ updateSave model authToken =
                 userDecoder
                 (SaveResponse << RemoteData.fromResult)
     in
-        ( return model saveCmd, OutNone )
+        return model saveCmd
 
 
-updateCancel : Model -> ( Return Msg Model, OutMsg )
+updateCancel : Model -> ReturnOut Msg OutMsg Model
 updateCancel model =
-    ( singleton { model | modal = Ui.Modal.close model.modal }, OutCancel )
+    out { model | modal = Ui.Modal.close model.modal }
+        Cmd.none
+        OutCancel
 
 
-updateModalMsg : Model -> Ui.Modal.Msg -> ( Return Msg Model, OutMsg )
+updateModalMsg : Model -> Ui.Modal.Msg -> ReturnOut Msg OutMsg Model
 updateModalMsg model modalMsg =
-    ( singleton { model | modal = Ui.Modal.update modalMsg model.modal }, OutNone )
+    singleton { model | modal = Ui.Modal.update modalMsg model.modal }
 
 
-updateFormMsg : Model -> Form.Msg -> ( Return Msg Model, OutMsg )
+updateFormMsg : Model -> Form.Msg -> ReturnOut Msg OutMsg Model
 updateFormMsg model formMsg =
-    ( Form.update formMsg model.form
+    Form.update formMsg model.form
+        |> wrap
         |> Return.mapBoth FormMsg (\nf -> { model | form = nf })
-    , OutNone
-    )
 
 
-updateSaveResponse : Model -> WebData User -> ( Return Msg Model, OutMsg )
+updateSaveResponse : Model -> WebData User -> ReturnOut Msg OutMsg Model
 updateSaveResponse model response =
     let
         newModel =
@@ -75,10 +95,10 @@ updateSaveResponse model response =
         cmd =
             Helpers.Helpers.errorCmd response
 
-        updateSaveResponseSuccess user =
-            ( singleton { newModel | modal = Ui.Modal.close model.modal }
-            , OutUpdate user
-            )
+        success value =
+            out { newModel | modal = Ui.Modal.close model.modal }
+                Cmd.none
+                (OutUpdateUser model.method value)
     in
-        RemoteData.map updateSaveResponseSuccess response
-            |> RemoteData.withDefault ( return newModel cmd, OutNone )
+        RemoteData.map success response
+            |> RemoteData.withDefault (return newModel cmd)

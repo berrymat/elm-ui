@@ -15,6 +15,7 @@ import Ui.DropdownMenu
 import Ui.Modal
 import Ui.Helpers.Env
 import Json.Decode as Decode
+import Container.Out exposing (..)
 
 
 type alias ReturnFolder =
@@ -74,7 +75,7 @@ update message folder =
 
         -- PORTS
         DownloadResponse response ->
-                ( folder, Cmd.none, Nothing )
+            ( folder, Cmd.none, Nothing )
 
 
 subscriptions : Folder -> Sub Msg
@@ -130,34 +131,33 @@ updateMoveTreeMsg folder subMsg =
     case folder.moveTree of
         Just tree ->
             let
-                ( ( updatedTree, cmdTree ), maybePath, maybeRoot ) =
+                ( ( updatedTree, cmdTree ), outmsgs ) =
                     Tree.Update.update subMsg (Success tree)
             in
-                updateMovePathFromTree folder cmdTree maybePath maybeRoot updatedTree
+                updateMovePathFromTree folder cmdTree outmsgs updatedTree
 
         Nothing ->
             ( folder, Cmd.none, Nothing )
 
 
-updateMovePathFromTree : Folder -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> WebData Tree -> ReturnFolder
-updateMovePathFromTree folder cmdTree maybePath maybeRoot updatedTree =
-    RemoteData.map (updateMovePathFromTreeSuccess folder cmdTree maybePath maybeRoot) updatedTree
+updateMovePathFromTree : Folder -> Cmd Tree.Messages.Msg -> List OutMsg -> WebData Tree -> ReturnFolder
+updateMovePathFromTree folder cmdTree outmsgs updatedTree =
+    RemoteData.map (updateMovePathFromTreeSuccess folder cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( folder, Cmd.none, Nothing )
 
 
-updateMovePathFromTreeSuccess : Folder -> Cmd Tree.Messages.Msg -> Maybe (List Node) -> Maybe ( NodeType, NodeId ) -> Tree -> ReturnFolder
-updateMovePathFromTreeSuccess folder cmdTree maybePath maybeRoot updatedTree =
-    case maybePath of
-        Just path ->
-            ( { folder
-                | moveTree = Just updatedTree
-              }
-            , Cmd.none
-            , Nothing
-            )
+updateMovePathFromTreeSuccess : Folder -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> ReturnFolder
+updateMovePathFromTreeSuccess folder cmdTree outmsgs updatedTree =
+    let
+        applyOut outmsg newFolder =
+            case outmsg of
+                OutTreePath _ ->
+                    { newFolder | moveTree = Just updatedTree }
 
-        Nothing ->
-            ( folder, Cmd.none, Nothing )
+                _ ->
+                    newFolder
+    in
+        ( List.foldl applyOut folder outmsgs, Cmd.none, Nothing )
 
 
 

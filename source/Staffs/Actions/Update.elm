@@ -1,7 +1,7 @@
 module Staffs.Actions.Update exposing (..)
 
 import Staffs.Actions.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Models exposing (..)
 import Container.Out exposing (..)
 import Staffs.Staff exposing (..)
@@ -11,33 +11,25 @@ import Staffs.Edit.Update as Edit
 import Staffs.Delete.Update as Delete
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
-    let
-        mapBothEx msg cmd ( return, out ) =
-            ( Return.mapBoth msg cmd return, out )
-    in
-        case ( model, msg ) of
-            ( _, Open modalType staff ) ->
-                ( updateOpen model modalType staff, OutNone )
+    case ( model, msg ) of
+        ( _, Open modalType staff ) ->
+            updateOpen model modalType staff
 
-            ( EditModel model_, EditMsg msg_ ) ->
-                Edit.update msg_ model_
-                    |> mapBothEx EditMsg EditModel
+        ( EditModel model_, EditMsg msg_ ) ->
+            Edit.update msg_ model_
+                |> mapBoth EditMsg EditModel
 
-            ( DeleteModel model_, DeleteMsg msg_ ) ->
-                Delete.update msg_ model_
-                    |> mapBothEx DeleteMsg DeleteModel
+        ( DeleteModel model_, DeleteMsg msg_ ) ->
+            Delete.update msg_ model_
+                |> mapBoth DeleteMsg DeleteModel
 
-            x ->
-                let
-                    _ =
-                        Debug.log "Stray found" x
-                in
-                    ( singleton model, OutNone )
+        x ->
+            logStray x model
 
 
-updateOpen : Model -> ModalType -> Staff -> Return Msg Model
+updateOpen : Model -> ModalType -> Staff -> ReturnOut Msg OutMsg Model
 updateOpen model modalType staff =
     case modalType of
         NewStaff ->

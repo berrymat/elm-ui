@@ -10,6 +10,7 @@ type Msg
     = FoldersMsg Folders.Models.Msg
     | IssuesMsg Issues.Models.Msg
     | UsersMsg Users.Models.Msg
+    | UpdateNode NodeId String
 
 
 type Content
@@ -17,12 +18,6 @@ type Content
     | UsersContent Users.Models.Model
     | IssuesContent Issues.Models.Model
     | EmptyContent
-
-
-type alias Cases =
-    { id : NodeId
-    , name : String
-    }
 
 
 initialContent : Content

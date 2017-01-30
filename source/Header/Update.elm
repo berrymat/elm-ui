@@ -2,7 +2,8 @@ module Header.Update exposing (..)
 
 import Header.Models exposing (..)
 import Helpers.Helpers exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
+import Container.Out exposing (..)
 import Roots.Models
 import Customers.Models
 import Clients.Models
@@ -17,7 +18,7 @@ import Sites.Update
 import Staffs.Update
 
 
-update : Msg -> Model -> Return Msg Model
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
     case ( msg, model.header ) of
         ( RootsMsg rootsMsg, RootHeader root ) ->
@@ -41,11 +42,7 @@ update msg model =
                 |> Return.mapBoth StaffsMsg (\r -> { model | header = StaffHeader r })
 
         x ->
-            let
-                _ =
-                    Debug.log "Stray found" x
-            in
-                singleton model
+            logStray x model
 
 
 subscriptions : Model -> Sub Msg

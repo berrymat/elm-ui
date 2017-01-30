@@ -1,7 +1,7 @@
 module Customers.Actions.Update exposing (..)
 
 import Customers.Actions.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Models exposing (..)
 import Container.Out exposing (..)
 import Customers.Customer exposing (..)
@@ -17,48 +17,35 @@ import Clients.Edit.Update
 import Staffs.Edit.Update
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
-    let
-        mapBothEx msg cmd ( return, out ) =
-            ( Return.mapBoth msg cmd return, out )
-    in
-        case ( model, msg ) of
-            ( _, Open modalType customer ) ->
-                ( updateOpen model modalType customer, OutNone )
+    case ( model, msg ) of
+        ( _, Open modalType customer ) ->
+            updateOpen model modalType customer
 
-            ( EditCustomerModel model_, EditCustomerMsg msg_ ) ->
-                Customers.Edit.Update.update msg_ model_
-                    |> mapBothEx EditCustomerMsg EditCustomerModel
+        ( EditCustomerModel model_, EditCustomerMsg msg_ ) ->
+            Customers.Edit.Update.update msg_ model_
+                |> mapBoth EditCustomerMsg EditCustomerModel
 
-            ( DeleteCustomerModel model_, DeleteCustomerMsg msg_ ) ->
-                Customers.Delete.Update.update msg_ model_
-                    |> mapBothEx DeleteCustomerMsg DeleteCustomerModel
+        ( DeleteCustomerModel model_, DeleteCustomerMsg msg_ ) ->
+            Customers.Delete.Update.update msg_ model_
+                |> mapBoth DeleteCustomerMsg DeleteCustomerModel
 
-            ( EditClientModel model_, EditClientMsg msg_ ) ->
-                Clients.Edit.Update.update msg_ model_
-                    |> mapBothEx EditClientMsg EditClientModel
+        ( EditClientModel model_, EditClientMsg msg_ ) ->
+            Clients.Edit.Update.update msg_ model_
+                |> mapBoth EditClientMsg EditClientModel
 
-            ( EditStaffModel model_, EditStaffMsg msg_ ) ->
-                Staffs.Edit.Update.update msg_ model_
-                    |> mapBothEx EditStaffMsg EditStaffModel
+        ( EditStaffModel model_, EditStaffMsg msg_ ) ->
+            Staffs.Edit.Update.update msg_ model_
+                |> mapBoth EditStaffMsg EditStaffModel
 
-            x ->
-                let
-                    _ =
-                        Debug.log "Stray found" x
-                in
-                    ( singleton model, OutNone )
+        x ->
+            logStray x model
 
 
-updateOpen : Model -> ModalType -> Customer -> Return Msg Model
+updateOpen : Model -> ModalType -> Customer -> ReturnOut Msg OutMsg Model
 updateOpen model modalType customer =
     case modalType of
-        {-
-           NewCustomer ->
-               singleton
-                   (EditModel (EditModels.init customer Post))
-        -}
         EditCustomer ->
             singleton
                 (EditCustomerModel (Customers.Edit.Models.init customer Put))

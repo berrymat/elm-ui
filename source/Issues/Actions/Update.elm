@@ -1,37 +1,29 @@
 module Issues.Actions.Update exposing (..)
 
 import Issues.Actions.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import Helpers.Models exposing (..)
-import Issues.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Issues.Issue exposing (..)
 import Issues.Edit.Models as EditModels
 import Issues.Edit.Update as Edit
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
-    let
-        mapBothEx msg cmd ( return, out ) =
-            ( Return.mapBoth msg cmd return, out )
-    in
-        case ( model, msg ) of
-            ( _, Open modalType sites issue ) ->
-                ( updateOpen model modalType sites issue, OutNone )
+    case ( model, msg ) of
+        ( _, Open modalType sites issue ) ->
+            updateOpen model modalType sites issue
 
-            ( EditModel model_, EditMsg msg_ ) ->
-                Edit.update msg_ model_
-                    |> mapBothEx EditMsg EditModel
+        ( EditModel model_, EditMsg msg_ ) ->
+            Edit.update msg_ model_
+                |> mapBoth EditMsg EditModel
 
-            x ->
-                let
-                    _ =
-                        Debug.log "Stray found" x
-                in
-                    ( singleton model, OutNone )
+        x ->
+            logStray x model
 
 
-updateOpen : Model -> ModalType -> List IssueSite -> Issue -> Return Msg Model
+updateOpen : Model -> ModalType -> List IssueSite -> Issue -> ReturnOut Msg OutMsg Model
 updateOpen model modalType sites issue =
     case modalType of
         NewIssue ->

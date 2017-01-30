@@ -12,4 +12,5 @@ type Msg
     | SelectRoot
     | SelectNode NodeId
     | OpenNewRoot NodeType NodeId
+    | UpdateNode NodeId String
     | NoAction

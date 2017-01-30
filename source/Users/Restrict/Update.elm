@@ -3,15 +3,15 @@ module Users.Restrict.Update exposing (..)
 import Users.Restrict.Models exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
 import RemoteData exposing (..)
 import Table
 import Ui.Modal
-import Users.Actions.Out exposing (..)
+import Container.Out exposing (..)
 import Users.User exposing (..)
 
 
-update : Msg -> Model -> ( Return Msg Model, OutMsg )
+update : Msg -> Model -> ReturnOut Msg OutMsg Model
 update msg model =
     case msg of
         Save authToken ->
@@ -39,7 +39,7 @@ update msg model =
             updateModalMsg model modalMsg
 
 
-updateSave : Model -> AuthToken -> ( Return Msg Model, OutMsg )
+updateSave : Model -> AuthToken -> ReturnOut Msg OutMsg Model
 updateSave model authToken =
     let
         saveRestrictions authToken restrictions =
@@ -58,35 +58,37 @@ updateSave model authToken =
         newModel =
             { model | restrictions = newRestrictions }
     in
-        ( return newModel cmd, OutNone )
+        return newModel cmd
 
 
-updateCancel : Model -> ( Return Msg Model, OutMsg )
+updateCancel : Model -> ReturnOut Msg OutMsg Model
 updateCancel model =
-    ( singleton { model | modal = Ui.Modal.close model.modal }, OutNone )
+    out { model | modal = Ui.Modal.close model.modal }
+        Cmd.none
+        OutCancel
 
 
-updateRestrictResponse : Model -> WebData (List Restriction) -> ( Return Msg Model, OutMsg )
+updateRestrictResponse : Model -> WebData (List Restriction) -> ReturnOut Msg OutMsg Model
 updateRestrictResponse model response =
-    ( singleton { model | restrictions = response }, OutNone )
+    singleton { model | restrictions = response }
 
 
-updateSetQuery : Model -> String -> ( Return Msg Model, OutMsg )
+updateSetQuery : Model -> String -> ReturnOut Msg OutMsg Model
 updateSetQuery model query =
-    ( singleton { model | query = query }, OutNone )
+    singleton { model | query = query }
 
 
-updateSetTableState : Model -> Table.State -> ( Return Msg Model, OutMsg )
+updateSetTableState : Model -> Table.State -> ReturnOut Msg OutMsg Model
 updateSetTableState model tableState =
-    ( singleton { model | tableState = tableState }, OutNone )
+    singleton { model | tableState = tableState }
 
 
-updateModalMsg : Model -> Ui.Modal.Msg -> ( Return Msg Model, OutMsg )
+updateModalMsg : Model -> Ui.Modal.Msg -> ReturnOut Msg OutMsg Model
 updateModalMsg model modalMsg =
-    ( singleton { model | modal = Ui.Modal.update modalMsg model.modal }, OutNone )
+    singleton { model | modal = Ui.Modal.update modalMsg model.modal }
 
 
-updateSaveResponse : Model -> WebData User -> ( Return Msg Model, OutMsg )
+updateSaveResponse : Model -> WebData User -> ReturnOut Msg OutMsg Model
 updateSaveResponse model response =
     let
         newModel =
@@ -95,16 +97,16 @@ updateSaveResponse model response =
         cmd =
             Helpers.Helpers.errorCmd response
 
-        updateSaveResponseSuccess user =
-            ( singleton { newModel | modal = Ui.Modal.close model.modal }
-            , OutUpdate user
-            )
+        success value =
+            out { newModel | modal = Ui.Modal.close model.modal }
+                Cmd.none
+                (OutUpdateUser Put value)
     in
-        RemoteData.map updateSaveResponseSuccess response
-            |> RemoteData.withDefault ( return newModel cmd, OutNone )
+        RemoteData.map success response
+            |> RemoteData.withDefault (return newModel cmd)
 
 
-updateToggleRestriction : Model -> NodeId -> ( Return Msg Model, OutMsg )
+updateToggleRestriction : Model -> NodeId -> ReturnOut Msg OutMsg Model
 updateToggleRestriction model nodeId =
     let
         toggleRestrictions restrictions =
@@ -120,4 +122,4 @@ updateToggleRestriction model nodeId =
         newRestrictions =
             RemoteData.map toggleRestrictions model.restrictions
     in
-        ( singleton { model | restrictions = newRestrictions }, OutNone )
+        singleton { model | restrictions = newRestrictions }

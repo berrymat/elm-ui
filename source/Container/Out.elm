@@ -6,6 +6,9 @@ import Clients.Client exposing (..)
 import Sites.Site exposing (..)
 import Staffs.Staff exposing (..)
 import Helpers.Models exposing (..)
+import Users.User exposing (..)
+import Issues.Issue exposing (..)
+import Tree.Models exposing (..)
 
 
 type OutMsg
@@ -20,4 +23,8 @@ type OutMsg
     | OutDeleteSite Site
     | OutUpdateStaff HttpMethod Staff
     | OutDeleteStaff Staff
-    | OutNone
+    | OutUpdateUser HttpMethod User
+    | OutDeleteUser User
+    | OutUpdateIssue HttpMethod Issue
+    | OutTreePath (List Node)
+    | OutTreeRoot ( NodeType, NodeId )

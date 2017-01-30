@@ -1,17 +1,21 @@
 module Content.Update exposing (..)
 
 import Content.Models exposing (..)
+import Helpers.Models exposing (..)
+import Folders.Models
 import Folders.Update
 import Issues.Update
 import Users.Update
-import Return exposing (..)
+import Helpers.Return as Return exposing (..)
+import Container.Out exposing (..)
 
 
-update : Msg -> Content -> Return Msg Content
+update : Msg -> Content -> ReturnOut Msg OutMsg Content
 update message content =
     case ( message, content ) of
         ( FoldersMsg foldersMsg, FoldersContent folders ) ->
             Folders.Update.update foldersMsg folders
+                |> wrap
                 |> Return.mapBoth FoldersMsg FoldersContent
 
         ( IssuesMsg issuesMsg, IssuesContent issues ) ->
@@ -22,12 +26,11 @@ update message content =
             Users.Update.update usersMsg users
                 |> Return.mapBoth UsersMsg UsersContent
 
+        ( UpdateNode nodeId name, FoldersContent folders ) ->
+            updateFoldersNode content nodeId name folders
+
         x ->
-            let
-                _ =
-                    Debug.log "Stray found" x
-            in
-                singleton content
+            logStray x content
 
 
 subscriptions : Content -> Sub Msg
@@ -44,3 +47,17 @@ subscriptions content =
 
         _ ->
             Sub.none
+
+
+updateFoldersNode : Content -> NodeId -> String -> Folders.Models.Folders -> ReturnOut Msg OutMsg Content
+updateFoldersNode content nodeId name folders =
+    let
+        foldersMsg =
+            Folders.Models.UpdateFolder nodeId name
+
+        x =
+            Debug.log "updateFoldersNode" ( nodeId, name )
+    in
+        Folders.Update.update foldersMsg folders
+            |> wrap
+            |> Return.mapBoth FoldersMsg FoldersContent
