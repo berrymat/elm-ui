@@ -11,6 +11,7 @@ import Ui.DropdownMenu
 import Ui.IconButton
 import Customers.Actions.View as Actions
 import Customers.Actions.Models exposing (ModalType(..))
+import Routing exposing (..)
 
 
 headerItems : Model -> List (Html msg)
@@ -45,8 +46,8 @@ dropdownMenuItem token icon name type_ =
         ]
 
 
-accessibleActions : Model -> List ( String, String, ModalType )
-accessibleActions model =
+accessibleActions : Routing.Route -> Model -> List ( String, String, ModalType )
+accessibleActions route model =
     let
         actions =
             [ ( "record", "Edit Customer", EditCustomer )
@@ -66,12 +67,20 @@ accessibleActions model =
                     True
 
                 NewClient ->
-                    -- TODO model.canEdit
-                    True
+                    case route of
+                        ClientRoute _ ->
+                            True
+
+                        _ ->
+                            False
 
                 NewStaff ->
-                    -- TODO model.canEdit
-                    True
+                    case route of
+                        StaffRoute _ ->
+                            True
+
+                        _ ->
+                            False
     in
         List.filter actionFilter actions
 
@@ -88,11 +97,11 @@ actionDropdownViewModel actions token =
     }
 
 
-viewActionMenu : AuthToken -> Model -> Html Msg
-viewActionMenu token model =
+viewActionMenu : AuthToken -> Routing.Route -> Model -> Html Msg
+viewActionMenu token route model =
     let
         actions =
-            accessibleActions model
+            accessibleActions route model
     in
         case actions of
             [] ->

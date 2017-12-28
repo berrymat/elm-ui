@@ -38,15 +38,10 @@ containerNavItems model =
             model.container
 
         strippedId treeId =
-            String.split "-" treeId
-                |> List.reverse
-                |> List.tail
-                |> Maybe.withDefault []
-                |> List.reverse
-                |> String.join "-"
+            treeId
 
         headerId =
-            RemoteData.map (\t -> strippedId t.id) container.tree
+            RemoteData.map (\t -> t.id) container.tree
                 |> RemoteData.withDefault ""
 
         headeritem entity =
@@ -152,16 +147,16 @@ page model =
             loginPage model.login
 
         HomeRoute ->
-            containerPage (authToken model) model.container
+            containerPage (authToken model) model.route model.container
 
         CustomerRoute id ->
-            containerPage (authToken model) model.container
+            containerPage (authToken model) model.route model.container
 
         ClientRoute id ->
-            containerPage (authToken model) model.container
+            containerPage (authToken model) model.route model.container
 
         StaffRoute id ->
-            containerPage (authToken model) model.container
+            containerPage (authToken model) model.route model.container
 
         ResetRoute resetToken ->
             resetPage (resetAuthToken model) model.reset
@@ -175,9 +170,9 @@ loginPage login =
     Html.map LoginMsg (Login.View.view login)
 
 
-containerPage : AuthToken -> Container.Models.Container -> Html Msg
-containerPage token container =
-    Html.map ContainerMsg (Container.View.view token container)
+containerPage : AuthToken -> Routing.Route -> Container.Models.Container -> Html Msg
+containerPage token route container =
+    Html.map ContainerMsg (Container.View.view token route container)
 
 
 resetPage : AuthToken -> Reset.Models.Model -> Html Msg
@@ -188,7 +183,7 @@ resetPage token reset =
 notFoundView : Html msg
 notFoundView =
     div []
-        [ text "Not found"
+        [ text "Not found!"
         ]
 
 

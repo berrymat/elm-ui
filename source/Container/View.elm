@@ -11,16 +11,17 @@ import Tree.View
 import Header.View
 import Content.View
 import RemoteData exposing (..)
+import Routing
 
 
-view : AuthToken -> Container -> Html Msg
-view token container =
+view : AuthToken -> Routing.Route -> Container -> Html Msg
+view token route container =
     div [ class "fullview" ]
         [ div [ class "sidebar" ]
             [ div [ class "sidebar-content" ]
                 [ viewTree container ]
             , div [ class "sidebar-footer" ]
-                [ viewTreeFooter token container ]
+                [ viewTreeFooter token route container ]
             ]
         , div [ class "body" ]
             [ viewHeader token container
@@ -45,13 +46,13 @@ viewTree container =
         Html.map TreeMsg htmlTree
 
 
-viewTreeFooter : AuthToken -> Container -> Html Msg
-viewTreeFooter token container =
+viewTreeFooter : AuthToken -> Routing.Route -> Container -> Html Msg
+viewTreeFooter token route container =
     let
         htmlContent =
             Helpers.RemoteData.view
                 container.header
-                (Header.View.viewActions token)
+                (Header.View.viewActions token route)
                 (Helpers.RemoteData.viewPendingDefault "")
     in
         Html.map HeaderMsg htmlContent
