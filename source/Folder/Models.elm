@@ -26,6 +26,8 @@ type Msg
     | UpdateFolderInfo FolderInfo
     | UpdateMoveTree Tree
     | MoveTreeMsg Tree.Models.Msg
+    | MoveSelectedNodeMsg Tree.Models.Msg
+    | MoveOpenRootMsg ( NodeType, NodeId ) Tree.Models.Msg
       -- ACTION MENU
     | ActionMenu Ui.DropdownMenu.Msg
     | CloseActionMenu

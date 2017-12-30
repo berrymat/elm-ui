@@ -6,6 +6,7 @@ import Html.Events exposing (..)
 import Helpers.Models exposing (..)
 import Helpers.Table exposing (..)
 import Folder.Models exposing (..)
+import Tree.Models
 import Tree.View
 import Table
 import Dict
@@ -17,6 +18,15 @@ import Ui.IconButton
 import Ui.Modal
 import Ui.Helpers.Env
 import Json.Decode as Decode
+
+
+moveConfig : Tree.Models.Config Msg
+moveConfig =
+    Tree.Models.config
+        { treeMsg = MoveTreeMsg
+        , selectedMsg = MoveSelectedNodeMsg
+        , openRootMsg = MoveOpenRootMsg
+        }
 
 
 view : AuthToken -> Folder -> Html Msg
@@ -66,9 +76,7 @@ viewFooter token folder =
                 case folder.moveTree of
                     Just tree ->
                         [ div [ class "padded-modal-content" ]
-                            [ Html.map
-                                MoveTreeMsg
-                                (Tree.View.view tree)
+                            [ Tree.View.view moveConfig tree
                             ]
                         ]
 

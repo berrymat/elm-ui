@@ -17,6 +17,8 @@ type Msg
     | SelectPath NodeId
     | SelectTab TabType
     | TreeMsg Tree.Models.Msg
+    | SelectedNodeMsg Tree.Models.Msg
+    | OpenRootMsg ( NodeType, NodeId ) Tree.Models.Msg
     | HeaderMsg Header.Models.Msg
     | ContentMsg Content.Models.Msg
     | FetchHeaderResponse Bool (WebData Header.Models.Model)

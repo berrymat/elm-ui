@@ -78,6 +78,14 @@ updateInner msg container =
             Tree.Update.update subMsg container.tree
                 |> updatePathFromTree container
 
+        SelectedNodeMsg subMsg ->
+            Tree.Update.update subMsg container.tree
+                |> updateSelectedNodeFromTree container
+
+        OpenRootMsg root subMsg ->
+            Tree.Update.update subMsg container.tree
+                |> updateOpenRootFromTree root container
+
         FetchHeaderResponse isTree model ->
             RemoteData.map (updateContent container isTree) model
                 |> RemoteData.withDefault (Return.singleton container)
@@ -208,35 +216,32 @@ updatePathFromTree container ( ( updatedTree, cmdTree ), outmsgs ) =
         |> RemoteData.withDefault ( container, Cmd.none )
 
 
-updatePathFromTreeSuccess : Container -> Cmd Tree.Models.Msg -> List OutMsg -> Tree -> Return Msg Container
-updatePathFromTreeSuccess container cmdTree outmsgs updatedTree =
+updateSelectedNodeFromTree : Container -> ReturnOut Tree.Models.Msg OutMsg (WebData Tree) -> Return Msg Container
+updateSelectedNodeFromTree container return =
     let
-        selectPath path ( container, cmd ) =
-            List.head path
+        selectPath ( container, cmd ) tree =
+            List.head tree.path
                 |> Maybe.map (\s -> ( s.nodeType, s.id, False ))
-                |> Maybe.withDefault ( updatedTree.nodeType, updatedTree.id, True )
-                |> fetchHeader { container | path = path }
+                |> Maybe.withDefault ( tree.nodeType, tree.id, True )
+                |> fetchHeader { container | path = tree.path }
                 |> Return.command cmd
 
-        openRoot ( treeType, treeId ) return =
-            return
-                |> Return.command (goto treeType treeId)
-
-        applyOut outmsg return =
-            case outmsg of
-                OutTreePath path ->
-                    selectPath path return
-
-                OutTreeRoot root ->
-                    openRoot root return
-
-                _ ->
-                    return
-
-        newReturn =
-            ( { container | tree = Success updatedTree }, Cmd.map TreeMsg cmdTree )
+        ( newContainer, cmdTree ) =
+            updatePathFromTree container return
     in
-        List.foldl applyOut newReturn outmsgs
+        RemoteData.map (selectPath ( newContainer, cmdTree )) newContainer.tree
+            |> RemoteData.withDefault ( newContainer, cmdTree )
+
+
+updateOpenRootFromTree : ( NodeType, NodeId ) -> Container -> ReturnOut Tree.Models.Msg OutMsg (WebData Tree) -> Return Msg Container
+updateOpenRootFromTree ( nodeType, nodeId ) container return =
+    updatePathFromTree container return
+        |> Return.command (goto nodeType nodeId)
+
+
+updatePathFromTreeSuccess : Container -> Cmd Tree.Models.Msg -> List OutMsg -> Tree -> Return Msg Container
+updatePathFromTreeSuccess container cmdTree outmsgs updatedTree =
+    ( { container | tree = Success updatedTree }, Cmd.map TreeMsg cmdTree )
 
 
 updateContent : Container -> Bool -> Header.Models.Model -> Return Msg Container

@@ -42,6 +42,12 @@ update message folder =
         MoveTreeMsg subMsg ->
             updateMoveTreeMsg folder subMsg
 
+        MoveSelectedNodeMsg subMsg ->
+            updateMoveTreeMsg folder subMsg
+
+        MoveOpenRootMsg ( nodeType, nodeId ) subMsg ->
+            updateMoveTreeMsg folder subMsg
+
         ActionMenu action ->
             updateActionMenu folder action
 
@@ -130,33 +136,16 @@ updateMoveTreeMsg folder subMsg =
     case folder.moveTree of
         Just tree ->
             let
-                ( ( updatedTree, cmdTree ), outmsgs ) =
+                ( ( webdataTree, cmdTree ), outmsgs ) =
                     Tree.Update.update subMsg (Success tree)
+
+                updatedTree =
+                    RemoteData.withDefault tree webdataTree
             in
-                updateMovePathFromTree folder cmdTree outmsgs updatedTree
+                ( { folder | moveTree = Just updatedTree }, Cmd.map MoveTreeMsg cmdTree, Nothing )
 
         Nothing ->
             ( folder, Cmd.none, Nothing )
-
-
-updateMovePathFromTree : Folder -> Cmd Tree.Models.Msg -> List OutMsg -> WebData Tree -> ReturnFolder
-updateMovePathFromTree folder cmdTree outmsgs updatedTree =
-    RemoteData.map (updateMovePathFromTreeSuccess folder cmdTree outmsgs) updatedTree
-        |> RemoteData.withDefault ( folder, Cmd.none, Nothing )
-
-
-updateMovePathFromTreeSuccess : Folder -> Cmd Tree.Models.Msg -> List OutMsg -> Tree -> ReturnFolder
-updateMovePathFromTreeSuccess folder cmdTree outmsgs updatedTree =
-    let
-        applyOut outmsg newFolder =
-            case outmsg of
-                OutTreePath _ ->
-                    { newFolder | moveTree = Just updatedTree }
-
-                _ ->
-                    newFolder
-    in
-        ( List.foldl applyOut folder outmsgs, Cmd.none, Nothing )
 
 
 

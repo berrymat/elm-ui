@@ -1,6 +1,5 @@
 module Folders.Models exposing (..)
 
-import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models
 import Folder.Models
@@ -29,7 +28,11 @@ type ModalAction
 
 type Msg
     = MainTreeMsg Tree.Models.Msg
+    | MainSelectedNodeMsg Tree.Models.Msg
+    | MainOpenRootMsg ( NodeType, NodeId ) Tree.Models.Msg
     | MoveTreeMsg Tree.Models.Msg
+    | MoveSelectedNodeMsg Tree.Models.Msg
+    | MoveOpenRootMsg ( NodeType, NodeId ) Tree.Models.Msg
       -- ACTION MENU
     | ActionMenu Ui.DropdownMenu.Msg
     | CloseActionMenu

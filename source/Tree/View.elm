@@ -7,24 +7,27 @@ import Tree.Models exposing (..)
 import RemoteData exposing (..)
 
 
-view : Tree -> Html Msg
-view tree =
+view : Config msg -> Tree -> Html msg
+view config tree =
     div [ class "flexer" ]
-        [ viewTree tree
+        [ viewTree config tree
         ]
 
 
-viewTree : Tree -> Html Msg
-viewTree tree =
+viewTree : Config msg -> Tree -> Html msg
+viewTree config tree =
     div [ class "k-treeview" ]
         [ ul [ class "k-group", attribute "role" "group", attribute "style" "display: block;" ]
-            [ viewRoot tree ]
+            [ viewRoot config tree ]
         ]
 
 
-viewRoot : Tree -> Html Msg
-viewRoot tree =
+viewRoot : Config msg -> Tree -> Html msg
+viewRoot config tree =
     let
+        (Config cfg) =
+            config
+
         childStyle =
             if tree.childrenState == Expanded then
                 "display: block;"
@@ -54,16 +57,16 @@ viewRoot tree =
             , attribute "role" "treeitem"
             ]
             [ div [ class "k-mid" ]
-                [ nodeIcon (nodeClasses tree.childrenState) (ToggleNode tree.id)
-                , nodeText tree.selected tree.name SelectRoot
+                [ nodeIcon (nodeClasses tree.childrenState) (cfg.treeMsg (ToggleNode tree.id))
+                , nodeText tree.selected tree.name (cfg.selectedMsg SelectRoot)
                 ]
             , ul [ class "k-group", attribute "role" "group", attribute "style" childStyle ]
-                (List.map viewNode childNodes)
+                (List.map (viewNode config) childNodes)
             ]
 
 
-viewNode : Node -> Html Msg
-viewNode node =
+viewNode : Config msg -> Node -> Html msg
+viewNode config node =
     let
         childStyle =
             if node.childrenState == Expanded then
@@ -85,21 +88,21 @@ viewNode node =
             , attribute "data-expanded" expandedValue
             , attribute "role" "treeitem"
             ]
-            [ nodeView node
+            [ nodeView config node
             , ul [ class "k-group", attribute "role" "group", attribute "style" childStyle ]
-                (viewChildNodes node.childNodes)
+                (viewChildNodes config node.childNodes)
             ]
 
 
-viewChildNodes : WebData ChildNodes -> List (Html Msg)
-viewChildNodes childNodes =
-    RemoteData.map viewChildren childNodes
+viewChildNodes : Config msg -> WebData ChildNodes -> List (Html msg)
+viewChildNodes config childNodes =
+    RemoteData.map (viewChildren config) childNodes
         |> RemoteData.withDefault [ div [] [] ]
 
 
-viewChildren : ChildNodes -> List (Html Msg)
-viewChildren (ChildNodes childNodes) =
-    List.map viewNode childNodes
+viewChildren : Config msg -> ChildNodes -> List (Html msg)
+viewChildren config (ChildNodes childNodes) =
+    List.map (viewNode config) childNodes
 
 
 nodeClasses : ChildrenState -> ( String, String )
@@ -125,37 +128,40 @@ nodeClasses childrenState =
 -- msg = (ToggleNode node.id)
 
 
-nodeView : Node -> Html Msg
-nodeView node =
+nodeView : Config msg -> Node -> Html msg
+nodeView config node =
     let
-        iconMsg =
+        (Config cfg) =
+            config
+
+        iconmsg =
             case node.childrenState of
                 Collapsed ->
-                    ToggleNode node.id
+                    cfg.treeMsg (ToggleNode node.id)
 
                 Expanding ->
-                    ToggleNode node.id
+                    cfg.treeMsg (ToggleNode node.id)
 
                 Expanded ->
-                    ToggleNode node.id
+                    cfg.treeMsg (ToggleNode node.id)
 
                 NoChildren ->
-                    NoAction
+                    cfg.treeMsg (NoAction)
 
                 RootNode ->
-                    OpenNewRoot node.rootType node.id
+                    cfg.openRootMsg ( node.rootType, node.id ) (OpenNewRoot node.rootType node.id)
 
         iconHtml =
-            nodeIcon (nodeClasses node.childrenState) iconMsg
+            nodeIcon (nodeClasses node.childrenState) iconmsg
 
         textHtml =
-            nodeText node.selected node.name (SelectNode node.id)
+            nodeText node.selected node.name (cfg.selectedMsg (SelectNode node.id))
     in
         div [ class "k-mid" ]
             [ iconHtml, textHtml ]
 
 
-nodeIcon : ( String, String ) -> Msg -> Html Msg
+nodeIcon : ( String, String ) -> msg -> Html msg
 nodeIcon ( iconClass, faClass ) msg =
     span
         [ class iconClass
@@ -165,7 +171,7 @@ nodeIcon ( iconClass, faClass ) msg =
         [ i [ class faClass ] [] ]
 
 
-nodeText : Bool -> String -> Msg -> Html Msg
+nodeText : Bool -> String -> msg -> Html msg
 nodeText selected name msg =
     let
         nodeStyle =

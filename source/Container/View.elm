@@ -4,7 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style, attribute, href, id, classList, src)
 import Html.Events exposing (onClick)
 import Container.Models exposing (..)
-import Tree.Models exposing (Tree, Node, ChildrenState(..))
+import Tree.Models exposing (Tree, Node)
 import Helpers.Models exposing (..)
 import Helpers.RemoteData
 import Tree.View
@@ -12,6 +12,15 @@ import Header.View
 import Content.View
 import RemoteData exposing (..)
 import Routing
+
+
+treeConfig : Tree.Models.Config Msg
+treeConfig =
+    Tree.Models.config
+        { treeMsg = TreeMsg
+        , selectedMsg = SelectedNodeMsg
+        , openRootMsg = OpenRootMsg
+        }
 
 
 view : AuthToken -> Routing.Route -> Container -> Html Msg
@@ -36,14 +45,10 @@ view token route container =
 
 viewTree : Container -> Html Msg
 viewTree container =
-    let
-        htmlTree =
-            Helpers.RemoteData.view
-                container.tree
-                Tree.View.view
-                (Helpers.RemoteData.viewPendingDefault "flexer")
-    in
-        Html.map TreeMsg htmlTree
+    Helpers.RemoteData.view
+        container.tree
+        (Tree.View.view treeConfig)
+        (Helpers.RemoteData.viewPendingDefault "flexer")
 
 
 viewTreeFooter : AuthToken -> Routing.Route -> Container -> Html Msg

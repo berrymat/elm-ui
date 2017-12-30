@@ -85,3 +85,25 @@ initialTree =
     , childNodes = ChildNodes []
     , path = []
     }
+
+
+type Config msg
+    = Config
+        { treeMsg : Msg -> msg
+        , selectedMsg : Msg -> msg
+        , openRootMsg : ( NodeType, NodeId ) -> Msg -> msg
+        }
+
+
+config :
+    { treeMsg : Msg -> msg
+    , selectedMsg : Msg -> msg
+    , openRootMsg : ( NodeType, NodeId ) -> Msg -> msg
+    }
+    -> Config msg
+config { treeMsg, selectedMsg, openRootMsg } =
+    Config
+        { treeMsg = treeMsg
+        , selectedMsg = selectedMsg
+        , openRootMsg = openRootMsg
+        }

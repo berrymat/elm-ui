@@ -22,6 +22,24 @@ import Ui.Modal
 import Ui.Native.FileManager
 
 
+mainConfig : Tree.Models.Config Msg
+mainConfig =
+    Tree.Models.config
+        { treeMsg = MainTreeMsg
+        , selectedMsg = MainSelectedNodeMsg
+        , openRootMsg = MainOpenRootMsg
+        }
+
+
+moveConfig : Tree.Models.Config Msg
+moveConfig =
+    Tree.Models.config
+        { treeMsg = MoveTreeMsg
+        , selectedMsg = MoveSelectedNodeMsg
+        , openRootMsg = MoveOpenRootMsg
+        }
+
+
 view : AuthToken -> Folders -> Html Msg
 view token folders =
     let
@@ -66,9 +84,7 @@ view token folders =
                 case folders.moveTree of
                     Just tree ->
                         [ div [ class "padded-modal-content" ]
-                            [ Html.map
-                                MoveTreeMsg
-                                (Tree.View.view tree)
+                            [ Tree.View.view moveConfig tree
                             ]
                         ]
 
@@ -104,9 +120,7 @@ view token folders =
         div [ class "body-content" ]
             [ div [ class "body-content-sidebar" ]
                 [ div [ class "body-content-sidebar-content" ]
-                    [ Html.map
-                        MainTreeMsg
-                        (Tree.View.view folders.tree)
+                    [ Tree.View.view mainConfig folders.tree
                     ]
                 , div [ class "body-content-sidebar-footer" ]
                     [ Ui.DropdownMenu.view dropdownViewModel ActionMenu folders.folderActionMenu
