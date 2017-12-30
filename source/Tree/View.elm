@@ -3,7 +3,6 @@ module Tree.View exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (class, attribute, href, id, classList)
 import Html.Events exposing (onClick)
-import Tree.Messages exposing (..)
 import Tree.Models exposing (..)
 import RemoteData exposing (..)
 

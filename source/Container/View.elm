@@ -4,7 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style, attribute, href, id, classList, src)
 import Html.Events exposing (onClick)
 import Container.Models exposing (..)
-import Tree.Models exposing (..)
+import Tree.Models exposing (Tree, Node, ChildrenState(..))
 import Helpers.Models exposing (..)
 import Helpers.RemoteData
 import Tree.View

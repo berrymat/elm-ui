@@ -47,7 +47,7 @@ updateActionsMsg model actionsMsg =
     let
         applyOut out return =
             case out of
-                OutUpdateClient method client ->
+                OutUpdateClient _ _ client ->
                     return |> Return.map (\m -> { m | actions = Actions.NoModel, client = client })
 
                 _ ->

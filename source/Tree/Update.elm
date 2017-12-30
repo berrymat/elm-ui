@@ -1,6 +1,5 @@
 module Tree.Update exposing (..)
 
-import Tree.Messages exposing (Msg(..))
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Tree.Models exposing (..)
@@ -40,6 +39,9 @@ updateInner message tree =
 
         ToggleNode nodeId ->
             toggle nodeId tree
+
+        InsertNode parentId nodeId nodeType childrenState name ->
+            insertTree parentId nodeId nodeType childrenState name tree
 
         UpdateNode nodeId name ->
             updateTree nodeId name tree
@@ -198,6 +200,58 @@ toggle nodeId tree =
     in
         traverseTree nodeId treeUpdate nodeUpdate tree
             |> dropout
+
+
+insertNode : Node -> List Node -> List Node
+insertNode node children =
+    let
+        compare n1 n2 =
+            (String.toLower n1.name) > (String.toLower n2.name)
+
+        before =
+            List.filter (compare node) children
+
+        after =
+            List.filter (not << compare node) children
+    in
+        before ++ [ node ] ++ after
+
+
+insertTree : NodeId -> NodeId -> NodeType -> ChildrenState -> String -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)
+insertTree parentId nodeId nodeType childrenState name tree =
+    let
+        newNode =
+            { id = nodeId
+            , nodeType = nodeType
+            , name = name
+            , selected = False
+            , childrenState = childrenState
+            , childNodes = NotAsked
+            , rootType = nodeType
+            }
+
+        treeUpdate tree =
+            let
+                (ChildNodes children) =
+                    tree.childNodes
+            in
+                singleton { tree | childNodes = ChildNodes (insertNode newNode children) }
+
+        nodeUpdate node =
+            let
+                success childNodes =
+                    let
+                        (ChildNodes children) =
+                            childNodes
+                    in
+                        ChildNodes (insertNode newNode children)
+
+                newChildNodes =
+                    RemoteData.map success node.childNodes
+            in
+                singleton { node | childNodes = newChildNodes }
+    in
+        traverseTree parentId treeUpdate nodeUpdate tree
 
 
 updateTree : NodeId -> String -> WebData Tree -> ReturnOut Msg OutMsg (WebData Tree)

@@ -3,10 +3,9 @@ module Container.Update exposing (..)
 import Container.Commands exposing (..)
 import Container.Models exposing (..)
 import Content.Models
-import Tree.Messages
 import Tree.Commands
 import Tree.Update
-import Tree.Models exposing (..)
+import Tree.Models exposing (Tree, Node, ChildrenState(..))
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Header.Models exposing (getTabFromType)
@@ -59,7 +58,7 @@ updateInner msg container =
             updateLoadContainer parentType nodeId childType container
 
         SelectPath nodeId ->
-            Tree.Update.update (Tree.Messages.SelectNode nodeId) container.tree
+            Tree.Update.update (Tree.Models.SelectNode nodeId) container.tree
                 |> updatePathFromTree container
 
         SelectTab tabType ->
@@ -122,7 +121,7 @@ updateHeaderMsg container subMsg =
                         OutUpdateCustomer method customer ->
                             Just ( customer.id, customer.name )
 
-                        OutUpdateClient method client ->
+                        OutUpdateClient method nodeId client ->
                             Just ( client.id, client.name )
 
                         OutUpdateSite method site ->
@@ -136,7 +135,7 @@ updateHeaderMsg container subMsg =
             in
                 case nodeInfo of
                     Just ( nodeId, maybeName ) ->
-                        Tree.Update.update (Tree.Messages.UpdateNode nodeId (Maybe.withDefault "" maybeName)) container.tree
+                        Tree.Update.update (Tree.Models.UpdateNode nodeId (Maybe.withDefault "" maybeName)) container.tree
                             |> updatePathFromTree container
                             |> updateContentNode nodeId (Maybe.withDefault "" maybeName)
                             |> Helpers.Return.wrap
@@ -203,13 +202,13 @@ updateLoadContainer parentType nodeId childType container =
         ( { newContainer | path = [] }, Cmd.batch [ treeCmd, headerCmd ] )
 
 
-updatePathFromTree : Container -> ReturnOut Tree.Messages.Msg OutMsg (WebData Tree) -> Return Msg Container
+updatePathFromTree : Container -> ReturnOut Tree.Models.Msg OutMsg (WebData Tree) -> Return Msg Container
 updatePathFromTree container ( ( updatedTree, cmdTree ), outmsgs ) =
     RemoteData.map (updatePathFromTreeSuccess container cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( container, Cmd.none )
 
 
-updatePathFromTreeSuccess : Container -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> Return Msg Container
+updatePathFromTreeSuccess : Container -> Cmd Tree.Models.Msg -> List OutMsg -> Tree -> Return Msg Container
 updatePathFromTreeSuccess container cmdTree outmsgs updatedTree =
     let
         selectPath path ( container, cmd ) =

@@ -8,6 +8,10 @@
     <a id="downloadLink" style="display:none;"></a>
     <script src='Main.js' type='application/javascript'></script>
     <script type="text/javascript">
+      window.ENV = {
+        "endpoint": "http://cleanlinktest.elasticbeanstalk.com/"        
+      };
+
       var app = Elm.Main.fullscreen();
 
       app.ports.download.subscribe(function(request) {

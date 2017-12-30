@@ -4,6 +4,18 @@ import Helpers.Models exposing (..)
 import RemoteData exposing (..)
 
 
+type Msg
+    = OnFetchRoot (WebData TempRoot)
+    | OnFetchNode NodeId (WebData TempChildren)
+    | ToggleNode NodeId
+    | SelectRoot
+    | SelectNode NodeId
+    | OpenNewRoot NodeType NodeId
+    | InsertNode NodeId NodeId NodeType ChildrenState String
+    | UpdateNode NodeId String
+    | NoAction
+
+
 type alias TempNode =
     { id : NodeId
     , type_ : String
@@ -61,8 +73,6 @@ type alias Tree =
     , childNodes : ChildNodes
     , path : List Node
     }
-
-
 
 
 initialTree : Tree

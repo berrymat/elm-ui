@@ -6,7 +6,6 @@ import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Helpers.Ports exposing (..)
 import Tree.Models exposing (Tree, Node)
-import Tree.Messages
 import Tree.Update
 import Http exposing (..)
 import Table
@@ -126,7 +125,7 @@ updateUpdateMoveTree folder tree =
     ( { folder | moveTree = Just tree }, Cmd.none, Nothing )
 
 
-updateMoveTreeMsg : Folder -> Tree.Messages.Msg -> ReturnFolder
+updateMoveTreeMsg : Folder -> Tree.Models.Msg -> ReturnFolder
 updateMoveTreeMsg folder subMsg =
     case folder.moveTree of
         Just tree ->
@@ -140,13 +139,13 @@ updateMoveTreeMsg folder subMsg =
             ( folder, Cmd.none, Nothing )
 
 
-updateMovePathFromTree : Folder -> Cmd Tree.Messages.Msg -> List OutMsg -> WebData Tree -> ReturnFolder
+updateMovePathFromTree : Folder -> Cmd Tree.Models.Msg -> List OutMsg -> WebData Tree -> ReturnFolder
 updateMovePathFromTree folder cmdTree outmsgs updatedTree =
     RemoteData.map (updateMovePathFromTreeSuccess folder cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( folder, Cmd.none, Nothing )
 
 
-updateMovePathFromTreeSuccess : Folder -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> ReturnFolder
+updateMovePathFromTreeSuccess : Folder -> Cmd Tree.Models.Msg -> List OutMsg -> Tree -> ReturnFolder
 updateMovePathFromTreeSuccess folder cmdTree outmsgs updatedTree =
     let
         applyOut outmsg newFolder =

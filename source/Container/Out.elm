@@ -17,7 +17,7 @@ type OutMsg
     | OutDeleteRoot Root
     | OutUpdateCustomer HttpMethod Customer
     | OutDeleteCustomer Customer
-    | OutUpdateClient HttpMethod Client
+    | OutUpdateClient HttpMethod NodeId Client
     | OutDeleteClient Client
     | OutUpdateSite HttpMethod Site
     | OutDeleteSite Site

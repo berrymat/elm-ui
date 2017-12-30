@@ -5,8 +5,7 @@ import Folders.Commands exposing (..)
 import Helpers.Helpers exposing (..)
 import Helpers.Models exposing (..)
 import Helpers.Progress
-import Tree.Messages
-import Tree.Models exposing (..)
+import Tree.Models exposing (Tree, Node)
 import Tree.Update
 import Folder.Commands
 import Folder.Models exposing (FolderInfo, Folder)
@@ -94,7 +93,7 @@ updateInner msg folders =
                 handleNewFolders newFolders =
                     let
                         ( ( updatedTree, cmdTree ), outmsgs ) =
-                            Tree.Update.update (Tree.Messages.SelectNode folders.folderId) (Success newFolders.tree)
+                            Tree.Update.update (Tree.Models.SelectNode folders.folderId) (Success newFolders.tree)
                     in
                         updateMainPathFromTree folders cmdTree outmsgs updatedTree
             in
@@ -146,7 +145,7 @@ updateInner msg folders =
                 ( newFolders, effect )
 
         UpdateFolder nodeId nodeName ->
-            updateMainTreeMsg folders (Tree.Messages.UpdateNode nodeId nodeName)
+            updateMainTreeMsg folders (Tree.Models.UpdateNode nodeId nodeName)
 
 
 subscriptions : Folders -> Sub Msg
@@ -175,7 +174,7 @@ subscriptions folders =
             ]
 
 
-updateMainTreeMsg : Folders -> Tree.Messages.Msg -> Return Msg Folders
+updateMainTreeMsg : Folders -> Tree.Models.Msg -> Return Msg Folders
 updateMainTreeMsg folders subMsg =
     let
         ( ( updatedTree, cmdTree ), outmsgs ) =
@@ -184,13 +183,13 @@ updateMainTreeMsg folders subMsg =
         updateMainPathFromTree folders cmdTree outmsgs updatedTree
 
 
-updateMainPathFromTree : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> WebData Tree -> Return Msg Folders
+updateMainPathFromTree : Folders -> Cmd Tree.Models.Msg -> List OutMsg -> WebData Tree -> Return Msg Folders
 updateMainPathFromTree folders cmdTree outmsgs updatedTree =
     RemoteData.map (updateMainPathFromTreeSuccess folders cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( folders, Cmd.none )
 
 
-updateMainPathFromTreeSuccess : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> Return Msg Folders
+updateMainPathFromTreeSuccess : Folders -> Cmd Tree.Models.Msg -> List OutMsg -> Tree -> Return Msg Folders
 updateMainPathFromTreeSuccess folders cmdTree outmsgs updatedTree =
     let
         selectPath path ( folders, cmd ) =
@@ -253,7 +252,7 @@ requestFolder folders folderId =
         ( { folders | folderId = folderId, folder = Progress.None, folderRequest = Just ( url, request ) }, Cmd.none )
 
 
-updateMoveTreeMsg : Folders -> Tree.Messages.Msg -> Return Msg Folders
+updateMoveTreeMsg : Folders -> Tree.Models.Msg -> Return Msg Folders
 updateMoveTreeMsg folders subMsg =
     case folders.moveTree of
         Just tree ->
@@ -267,13 +266,13 @@ updateMoveTreeMsg folders subMsg =
             ( folders, Cmd.none )
 
 
-updateMovePathFromTree : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> WebData Tree -> Return Msg Folders
+updateMovePathFromTree : Folders -> Cmd Tree.Models.Msg -> List OutMsg -> WebData Tree -> Return Msg Folders
 updateMovePathFromTree folders cmdTree outmsgs updatedTree =
     RemoteData.map (updateMovePathFromTreeSuccess folders cmdTree outmsgs) updatedTree
         |> RemoteData.withDefault ( folders, Cmd.none )
 
 
-updateMovePathFromTreeSuccess : Folders -> Cmd Tree.Messages.Msg -> List OutMsg -> Tree -> Return Msg Folders
+updateMovePathFromTreeSuccess : Folders -> Cmd Tree.Models.Msg -> List OutMsg -> Tree -> Return Msg Folders
 updateMovePathFromTreeSuccess folders cmdTree outmsgs updatedTree =
     let
         applyOut outmsg newFolders =

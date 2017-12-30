@@ -20,8 +20,8 @@ update msg model =
         Cancel ->
             updateCancel model
 
-        SaveResponse response ->
-            updateSaveResponse model response
+        SaveResponse nodeId response ->
+            updateSaveResponse model nodeId response
 
         ModalMsg modalMsg ->
             updateModalMsg model modalMsg
@@ -62,7 +62,7 @@ updateSave model authToken =
                 model.method
                 (encodeClient newClient)
                 clientDecoder
-                (SaveResponse << RemoteData.fromResult)
+                ((SaveResponse model.id) << RemoteData.fromResult)
     in
         return model saveCmd
 
@@ -86,8 +86,8 @@ updateFormMsg model formMsg =
         |> Return.mapBoth FormMsg (\nf -> { model | form = nf })
 
 
-updateSaveResponse : Model -> WebData Client -> ReturnOut Msg OutMsg Model
-updateSaveResponse model response =
+updateSaveResponse : Model -> NodeId -> WebData Client -> ReturnOut Msg OutMsg Model
+updateSaveResponse model nodeId response =
     let
         newModel =
             { model | response = response }
@@ -98,7 +98,7 @@ updateSaveResponse model response =
         success value =
             out { newModel | modal = Ui.Modal.close model.modal }
                 Cmd.none
-                (OutUpdateClient model.method value)
+                (OutUpdateClient model.method nodeId value)
     in
         RemoteData.map success response
             |> RemoteData.withDefault (return newModel cmd)

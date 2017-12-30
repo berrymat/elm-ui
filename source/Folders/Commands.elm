@@ -5,7 +5,7 @@ import Helpers.Models exposing (..)
 import Folders.Models exposing (..)
 import Folder.Commands
 import Folder.Models
-import Tree.Models exposing (..)
+import Tree.Models exposing (Tree, ChildNodes(..), Node, ChildrenState(..))
 import Tree.Update exposing (..)
 import Json.Decode as Decode exposing (field, at)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)

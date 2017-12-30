@@ -1,7 +1,6 @@
 module Container.Models exposing (..)
 
 import Helpers.Models exposing (..)
-import Tree.Messages
 import Tree.Models exposing (Tree, initialTree, Node)
 import Header.Models
 import Folders.Models
@@ -17,7 +16,7 @@ type Msg
     | LoadContainer NodeType NodeId NodeType
     | SelectPath NodeId
     | SelectTab TabType
-    | TreeMsg Tree.Messages.Msg
+    | TreeMsg Tree.Models.Msg
     | HeaderMsg Header.Models.Msg
     | ContentMsg Content.Models.Msg
     | FetchHeaderResponse Bool (WebData Header.Models.Model)

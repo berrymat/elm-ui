@@ -7,7 +7,7 @@ import Helpers.Progress
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Tree.Models exposing (..)
+import Tree.Models exposing (Tree, Node, ChildrenState(..))
 import Tree.View
 import Folders.Models exposing (..)
 import Folder.Models
